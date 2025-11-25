@@ -11,7 +11,7 @@ Eoff = 108e-3;                                          % [J] @ Tj = 125°C
 Eerr = 9.7e-3;                                          % [J] @ Tj = 125°C
 Voff_sw_losses = 1300;                                  % [V]
 Ion_sw_losses = 1000;                                   % [A]
-JunctionTermalMass = 2;                                 % [J/K]
+JunctionTermalMass = 0.2;                               % [J/K]
 Rtim = 0.01;                                            % [K/W]
 Rth_mosfet_JC = 19/1000;                                % [K/W]
 Rth_mosfet_CH = 6/1000;                                 % [K/W]

@@ -22,7 +22,7 @@ Eoff = Eoff_100;                                        % [J] @ Tj = 125°C
 Erec = Erec_100;                                        % [J] @ Tj = 125°C
 Voff_sw_losses = 900;                                   % [V]
 Ion_sw_losses = 650;                                    % [A]
-JunctionTermalMass = 2;                                 % [J/K]
+JunctionTermalMass = 0.2;                               % [J/K]
 Rtim = 0.01;                                            % [K/W]
 Rth_switch_JC = 37.0/1000;                              % [K/W]
 Rth_switch_CH = 16.0/1000;                              % [K/W]
