@@ -1,6 +1,7 @@
 
 
-%% SKM1000GB17E4 (MOSFET)
+%% SKM1000GB17E4 (Si-IGBT) - values at Tj = 125°C
+
 Vth = 5.5;                                              % [V]
 Rce_on = 0.15e-3;                                       % [Ohm]
 Vce_sat = 2.77;                                         % [V]
