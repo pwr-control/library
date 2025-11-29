@@ -42,7 +42,7 @@ component basic_mosfet
             
             if (ugs <= Vth)
                 ids == 0;
-            elseif (ugs > Vth || ib < ids_on)
+            elseif (ugs > Vth && ib < ids_on)
                 ids == ib;
             else
                 ids == ids_on;
