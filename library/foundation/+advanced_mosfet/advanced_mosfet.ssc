@@ -80,7 +80,7 @@ component advanced_mosfet
             udsi_out == udsi;     
             igs_out == igs;
             ugs_out == ugs;
-            p_device == idsi*udsi;
+            p_device == idsi*udsi/2;
         end
     end
 end
