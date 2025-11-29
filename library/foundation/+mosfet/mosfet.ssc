@@ -1,0 +1,61 @@
+component mosfet
+% mosfet without body-drain diode
+
+
+    nodes        
+        D = foundation.electrical.electrical; % D:left
+        S = foundation.electrical.electrical; % S:left
+        G = foundation.electrical.electrical; % G:left
+    end
+
+    outputs
+        ids_out = { 0, 'A' };               % ids:right
+        uds_out = { 0, 'V' };               % uds:right
+        igs_out = { 0, 'A' };               % igs:right
+        ugs_out = { 0, 'V' };               % ugs:right
+    end
+
+    parameters
+        Vth = { 1, 'V' };                       % Vth
+        g_fs = { 2000, 'A/V' };                 % g_fs
+        Rds_on = { 2e-3, 'Ohm' };               % Rds_on
+        Cgs = { 45e-9, 'F' };                   % Cgs
+        Cgd = { 45e-9, 'F' };                   % Cgd
+        Cds = { 45e-9, 'F' };                   % Cds
+        Rg = { 2.0, 'Ohm' };                    % Rg
+    end
+
+    variables
+        ids = {value = { 0, 'A'}, priority = priority.high};     % ids
+        uds = { 0, 'V'};                                         % uds
+        igs = {value = { 0, 'A'}, priority = priority.high};     % ids
+        ugs = { 0, 'V'};                                         % uds
+        ib = { 0, 'A'};                                          % ub
+        ids_on = { 0, 'A'};                                      % ub
+    end
+
+        branches
+        ids : D.i -> S.i;
+    end
+
+    equations
+        let
+        in
+            uds == D.v - S.v;
+            ib == g_fs * (uds - Vth);
+            ids_on == uds/Rds_on;
+            
+            if (ugs <= Vth)
+                ids == 0;
+            elseif (ugs > Vth || ib < ids_on)
+                ids == ib;
+            else
+                ids == ids_on;
+            end
+            
+            ids_out == ids;
+            uds_out == uds;     
+            
+        end
+    end
+end
