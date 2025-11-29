@@ -83,7 +83,7 @@ component advanced_mosfet
             elseif (ucgs > Vth && idsi_active < idsi_on)
                 idsi == idsi_active;
                 ploss_cond == 0;
-                ploss_sw == 1/2*abs(idsi*udsi);
+                ploss_sw == 1/8*(abs(idsi*udsi)-ploss_cond);
             else
                 idsi == idsi_on;
                 ploss_cond == Rds_on*idsi^2;
