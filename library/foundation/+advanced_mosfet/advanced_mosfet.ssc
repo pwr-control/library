@@ -13,7 +13,8 @@ component advanced_mosfet
         udsi_out = { 0, 'V' };               % uds:right
         igs_out = { 0, 'A' };                % igs:right
         ugs_out = { 0, 'V' };                % ugs:right
-        p_device = { 0, 'W' };               % ploss:right
+        ploss_cond = { 0, 'W' };             % ploss_cond:right
+        ploss_sw = { 0, 'W' };               % ploss_sw:right
     end
 
     parameters
@@ -24,6 +25,11 @@ component advanced_mosfet
         Cgd = { 45e-9, 'F' };                   % Cgd
         Cds = { 45e-9, 'F' };                   % Cds
         Rg = { 2.0, 'Ohm' };                    % Rg
+        Eon = { 5.0e-3, 'J' };                  % Eon
+        Eoff = { 0.45e-3, 'J' };                % Eoff
+        Err = { 0.45e-3, 'J' };                 % Err
+        Voff_sw_loss = { 600, 'V' };            % Voff_sw_loss
+        Ion_sw_loss = { 200, 'A' };             % Ion_sw_loss
     end
 
     variables
@@ -41,6 +47,9 @@ component advanced_mosfet
         igs = {value = { 0, 'A'}, priority = priority.high};        % igs
         idsi_active = { 0, 'A'};                                    % idsi_active
         idsi_on = { 0, 'A'};                                        % idsi_on
+        ids_sw = { 0, '1'};                                      % ids_sw
+        uds_sw = { 0, '1'};                                      % uds_sw
+        Eloss = { 0, 'J'};                                      % Eloss
     end
 
     branches
@@ -50,6 +59,7 @@ component advanced_mosfet
 
     equations
         let
+
         in
             uds == D.v - S.v;
             ugs == G.v - S.v;
@@ -59,11 +69,12 @@ component advanced_mosfet
             idsi_on == udsi/Rds_on;
            
             ugs - Rg * igs - ucgs == 0;
-            ugs - Rg * igs - ucgd - udsi == 0;
+            % ugs - Rg * igs - ucgd - udsi == 0;
             Cgs * ucgs.der == icgs;
             Cgd * ucgd.der == icgd;
             Cds * udsi.der == icds;
-            ucgs + udsi + ucgd == 0;
+            -ucgs + udsi + ucgd == 0;
+            igs == icgs + icgd;
 
             ids_i + icgd == idsi + icds;
             ids_ii + icds == idsi + icgs;
@@ -80,7 +91,11 @@ component advanced_mosfet
             udsi_out == udsi;     
             igs_out == igs;
             ugs_out == ucgs;
-            p_device == idsi*udsi/2;
+            ploss_cond == Rds_on*idsi^2;
+            ids_sw == ids_i/Ion_sw_loss;
+            uds_sw == uds/Voff_sw_loss;
+            Eloss == abs((Eon + Eoff + Err));
+            ploss_sw == Eloss.der;
         end
     end
 end

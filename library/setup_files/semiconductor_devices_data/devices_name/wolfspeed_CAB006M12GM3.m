@@ -25,6 +25,7 @@ Crss = 43e-12;                                          % [F]
 Cgs = Ciss - Crss;                                      % [F]
 Cgd = Crss;                                             % [F]
 Cds = Coss - Crss;                                      % [F]
+Rgate_internal = 1.12;                                  % [Ohm]
 Csnubber = 12e-12;                                      % [F]
 Rsnubber = 2200;                                        % [Ohm]
 % ------------------------------------------------------------
