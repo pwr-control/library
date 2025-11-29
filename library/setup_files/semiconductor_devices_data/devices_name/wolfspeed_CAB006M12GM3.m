@@ -3,7 +3,7 @@
 
 Vth = 2.5;                                              % [V]
 Rds_on = 5.3e-3*1.25;                                   % [Ohm]
-g_fs = 200;                                             % [A/V]
+g_fs = 150;                                             % [A/V]
 Vdon_diode = 4.4;                                       % [V]
 Vgamma = Vdon_diode;                                    % [V]
 Rdon_diode = 0.85e-3;                                   % [Ohm]

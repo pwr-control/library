@@ -47,9 +47,6 @@ component advanced_mosfet
         igs = {value = { 0, 'A'}, priority = priority.high};        % igs
         idsi_active = { 0, 'A'};                                    % idsi_active
         idsi_on = { 0, 'A'};                                        % idsi_on
-        ids_sw = { 0, '1'};                                      % ids_sw
-        uds_sw = { 0, '1'};                                      % uds_sw
-        Eloss = { 0, 'J'};                                      % Eloss
     end
 
     branches
@@ -69,12 +66,12 @@ component advanced_mosfet
             idsi_on == udsi/Rds_on;
            
             ugs - Rg * igs - ucgs == 0;
-            % ugs - Rg * igs - ucgd - udsi == 0;
+            ugs - Rg * igs - ucgd - udsi == 0;
             Cgs * ucgs.der == icgs;
             Cgd * ucgd.der == icgd;
             Cds * udsi.der == icds;
-            -ucgs + udsi + ucgd == 0;
-            igs == icgs + icgd;
+            ucgs + udsi + ucgd == 0;
+            % igs == icgs + icgd;
 
             ids_i + icgd == idsi + icds;
             ids_ii + icds == idsi + icgs;
@@ -92,10 +89,7 @@ component advanced_mosfet
             igs_out == igs;
             ugs_out == ucgs;
             ploss_cond == Rds_on*idsi^2;
-            ids_sw == ids_i/Ion_sw_loss;
-            uds_sw == uds/Voff_sw_loss;
-            Eloss == abs((Eon + Eoff + Err));
-            ploss_sw == Eloss.der;
+            ploss_sw == 1/2*(idsi*udsi - ploss_cond);
         end
     end
 end
