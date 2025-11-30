@@ -66,11 +66,11 @@ component advanced_mosfet
             idsi_on == udsi/Rds_on;
            
             ugs - Rg * igs - ucgs == 0;
-            % ugs - Rg * igs - ucgd - udsi == 0;
+            ugs - Rg * igs - ucgd - udsi == 0;
             Cgs * ucgs.der == icgs;
             Cgd * ucgd.der == icgd;
             Cds * udsi.der == icds;
-            -ucgs + udsi + ucgd == 0;
+            % -ucgs + udsi + ucgd == 0;
             igs == icgs + icgd;
 
             ids_i + icgd == idsi + icds;
@@ -83,7 +83,7 @@ component advanced_mosfet
             elseif (ucgs > Vth && idsi_active < idsi_on)
                 idsi == idsi_active;
                 ploss_cond == 0;
-                ploss_sw == 1/8*(abs(idsi*udsi)-ploss_cond);
+                ploss_sw == 1/2*(abs(idsi*udsi)-ploss_cond);
             else
                 idsi == idsi_on;
                 ploss_cond == Rds_on*idsi^2;
