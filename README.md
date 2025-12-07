@@ -6,7 +6,7 @@ saved as **library** and masked, to be usable by other repositories like **solid
 This repository contains the followind data.
 
 # Documentation
-**documentsations**.
+**documentsation**.
 - This folder contains the following documentations.
   - **advanced control engineering**: collections of problems and model derivations with some pages on theory derivation;
   - **electrification of heavy duty**: an approach to mapping an hydrostatic power train into an electrical powertrain;
