@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 #ifndef _ADVANCED_SPEED_CONTROL_
 #define _ADVANCED_SPEED_CONTROL_
 

@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 #ifndef _MATH_F_
 #define _MATH_F_
 

@@ -1,4 +1,9 @@
-/* Dual six pulses rectifier */
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
+ /* Dual six pulses rectifier */
 
 #ifndef _DSPRCTRL_
 #define _DSPRCTRL_
@@ -86,6 +91,8 @@ typedef struct dspr_pd_neg_s {
 	int pd_neg_6;
 }  dspr_pd_neg_t;
 #define DSPR_PD_NEG dspr_pd_neg_t
+
+
 
 float dsprProcess(DSPRCTRL *dspr, float wt, float alpha, int block, DSPR_PD_POS *pd_pos, DSPR_PD_NEG *pd_neg);
 

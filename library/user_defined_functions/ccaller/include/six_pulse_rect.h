@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 /* six pulses rectifier */
 
 #define MATH_PI_6		0.523598775598299f

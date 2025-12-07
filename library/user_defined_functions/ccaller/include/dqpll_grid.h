@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 #ifndef _DQPLL_GRID_
 #define _DQPLL_GRID_
 

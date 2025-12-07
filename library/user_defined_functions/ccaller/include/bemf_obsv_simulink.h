@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 #ifndef _BEMF_OBSV_SIMULINK_
 #define _BEMF_OBSV_SIMULINK_
 

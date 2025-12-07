@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 #ifndef _GLOBAL_STATE_MACHINE_SIMULINK_
 #define _GLOBAL_STATE_MACHINE_SIMULINK_
 

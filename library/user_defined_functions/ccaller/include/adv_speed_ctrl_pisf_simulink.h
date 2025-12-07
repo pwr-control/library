@@ -1,3 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
+/* ADV_SPEED_CTRL_PISF_SIMULINK_H */
+/* Advanced Speed Controller with PISF - Simulink interface */
+
 #ifndef _ADV_SPEED_CTRL_PISF_SIMULINK_
 #define _ADV_SPEED_CTRL_PISF_SIMULINK_
 

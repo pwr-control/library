@@ -1,4 +1,10 @@
-#ifndef _BEMF_OBSV_LOAD_EST_SIMULINK_
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
+
+ #ifndef _BEMF_OBSV_LOAD_EST_SIMULINK_
 #define _BEMF_OBSV_LOAD_EST_SIMULINK_
 
 #define BEMF_OBSV_LOAD_EST_INSTANCES				16

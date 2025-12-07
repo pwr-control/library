@@ -45,8 +45,8 @@ colormap(gray(256));
 grid on
 ylabel('$\tau/Nm$','Interpreter','latex')
 xlabel('$n/rpm$','Interpreter','latex')
-title('\textbf{Liebherr D9508 Engine - Consumption $\mathbf{[g/kWh]}$}','Interpreter','latex')
-print -depsc engine_D9508_consumption
+title('\textbf{Engine 2 - Consumption $\mathbf{[g/kWh]}$}','Interpreter','latex')
+print -depsc engine_2_consumption
 
 figure; 
 plot(rpm_nom, torque_nom,'k-','LineWidth',1.8);
@@ -59,9 +59,9 @@ h = get(gca,'Children');
 set(gca,'Children',[h(2) h(1)])
 ylabel('$\tau_e/Nm$','Interpreter','latex')
 xlabel('$n/rpm$','Interpreter','latex')
-title('\textbf{Liebherr D9508 Engine - Maximum torque and friction curve}','Interpreter','latex')
+title('\textbf{Engine 2 - Maximum torque and friction curve}','Interpreter','latex')
 grid on
-print -depsc engine_D9508_torque
+print -depsc engine_2_torque
 
 figure; 
 plot(rpm_nom, (torque_nom+torque_fricion_nom).*omega*1e-3,'k-','LineWidth',1.8);
@@ -69,6 +69,6 @@ legend('$P_e$','Interpreter','latex','Location','best');
 set(gca,'xlim',[0 omega(end)/(2*pi/60)]); 
 ylabel('$P_e/kW$','Interpreter','latex')
 xlabel('$n/rpm$','Interpreter','latex')
-title('\textbf{Liebherr D9508 Engine - Maximum power curve}','Interpreter','latex')
+title('\textbf{Engine 2 - Maximum power curve}','Interpreter','latex')
 grid on
-print -depsc engine_D9508_power
+print -depsc engine_2_power

@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 #ifndef _MAVGFLTS_SIMULINK_
 #define _MAVGFLTS_SIMULINK_
 

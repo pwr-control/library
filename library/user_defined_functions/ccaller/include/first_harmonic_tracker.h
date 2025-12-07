@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Davide Bagnara
+ */
+
 #ifndef _FIRST_HARMONIC_TRACKER_
 #define _FIRST_HARMONIC_TRACKER_
 
