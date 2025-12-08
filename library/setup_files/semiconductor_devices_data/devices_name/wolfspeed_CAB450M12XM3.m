@@ -2,19 +2,19 @@
 %% CAB450M12XM3 (SiC MOSFET - assume Tj = 100 degC)
 
 Vth = 2.5;                                              % [V]
-Rds_on = 3.7e-3;                                          % [Ohm]
+Rds_on = 2.6e-3;                                          % [Ohm]
 g_fs = 350;                                             % [A/V]
 Vdon_diode = 4.5;                                         % [V]
 Vgamma = Vdon_diode;                                    % [V]
 Rdon_diode = 0.185e-3;                                  % [Ohm]
-Eon = 12e-3;                                            % [J] @ Tj = 125°C
-Eoff = 12e-3;                                           % [J] @ Tj = 125°C
+Eon = 24e-3;                                            % [J] @ Tj = 125°C
+Eoff = 8e-3;                                           % [J] @ Tj = 125°C
 Eerr = 1.1e-3;                                          % [J] @ Tj = 125°C
 Voff_sw_losses = 600;                                   % [V]
 Ion_sw_losses = 450;                                    % [A]
 JunctionTermalMass = 0.2;                               % [J/K]
 Rtim = 0.01;                                            % [K/W]
-Rth_mosfet_JC = 110/1000;                                % [K/W]
+Rth_mosfet_JC = 94/1000;                                % [K/W]
 Rth_mosfet_CH = 12/1000;                                % [K/W]
 Rth_mosfet_JH = Rtim + Rth_mosfet_JC + Rth_mosfet_CH;   % [K/W]
 Lstray_module = 7e-9;                                  % [H]
