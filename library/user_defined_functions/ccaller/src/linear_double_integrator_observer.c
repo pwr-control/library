@@ -20,31 +20,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <phase_shift_flt.h>
-#include <phase_shift_flt_simulink.h>
+#include <linear_double_integrator_observer.h>
+#include <linear_double_integrator_observer_simulink.h>
 #include <math_f.h>
 
-void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *flt, volatile float ts, 
-	volatile float fcut, volatile float scaling)
+void linear_double_integrator_observer_init(volatile LINEAR_DOUBLE_INTEGRATOR_OBSVR *obsv, volatile float ts, 
+	volatile float kx, volatile float kv)
 {
-	flt->ts = ts;
-	flt->fcut = fcut;
-	flt->a = 1.0f + MATH_2PI * ts * fcut;
-	flt->b = 1.0f - MATH_2PI * ts * fcut;
-	flt->input_flt_1 = 0.0f;
-	flt->output_flt_1 = 0.0f;
-	flt->scaling = scaling;
+	obsv->ts = ts;
+	obsv->kx = kx;
+	obsv->kv = kv;
+	obsv->state_observer_x = 0.0f;
+	obsv->state_observer_v = 0.0f;
 }
 
 
-float phase_shift_flt_process(volatile PHASE_SHIFT_FLT *flt, float input)
+float linear_double_integrator_observer_process(volatile LINEAR_DOUBLE_INTEGRATOR_OBSVR *obsv, float input)
 {
-	const float filter_output = flt->scaling * (flt->output_flt_1 * flt->b + input - 
-		flt->input_flt_1  * flt->a);
+	const float observer_output = obsv->kx * (obsv->state_observer_v + input - 
+		obsv->state_observer_x);
 
-	flt->input_flt_1 = input;
-	flt->output_flt_1 = filter_output;
+	obsv->state_observer_x = obsv->state_observer_x + obsv->ts * obsv->state_observer_v;
+	obsv->state_observer_v = obsv->state_observer_v + obsv->ts * observer_output;
 	
-	return filter_output;
+	return observer_output;
 }
 
