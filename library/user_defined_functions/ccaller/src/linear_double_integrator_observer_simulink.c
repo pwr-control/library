@@ -38,7 +38,7 @@ static void init_all_linear_double_integrator_observer_instances(LINEAR_DOUBLE_I
 }
 
 // ------------------------------------------------------------------------------
-LINEAR_DOUBLE_INTEGRATOR_OBSVR linear_double_integrator_observer_process_simulink(const float input, const float kx, const float kv,
+LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT linear_double_integrator_observer_process_simulink(const float input, const float kx, const float kv,
 	const float ts, const unsigned char reset, const unsigned char instance) {
 	if (!observer_initialized){
 	    init_all_linear_double_integrator_observer_instances(observer_instances, NLIN_DOUBLE_INT_OBSVR_INSTANCES, ts, kx, kv);
@@ -52,12 +52,9 @@ LINEAR_DOUBLE_INTEGRATOR_OBSVR linear_double_integrator_observer_process_simulin
 
 	const float output_value = linear_double_integrator_observer_process(observer_instance, input);
 	
-	const LINEAR_DOUBLE_INTEGRATOR_OBSVR observer_output = {
-			.ts = observer_instance->ts,
-			.kx = observer_instance->kx,
-			.kv = observer_instance->kv,
-			.state_observer_x = observer_instance->state_observer_x,
-			.state_observer_v = observer_instance->state_observer_v
+	const LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT observer_output = {
+			.x_hat = observer_instance->state_observer_x,
+			.v_hat = observer_instance->state_observer_v
 	};
 
 	return observer_output;

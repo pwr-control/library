@@ -11,12 +11,8 @@
 #define NLIN_DOUBLE_INT_OBSVR_INSTANCES				8
 
 typedef struct phase_shift_flt_output_s {
-	float					ts;		        			/* sampling time */
-	float					fcut;		        		/* frequency at 90 deg phase shift*/
-	float					scaling_factor;				/* correction factor */
-	unsigned char			instance;					/* instance */
-	unsigned char			reset;						/* reset */
-	float 					phase_shift_flt_output; 	/* output filter */
+	float 					x_hat; 	/* output state x */
+	float 					v_hat; 	/* output state y */
 } linear_double_integrator_observer_output_t;
 
 #define LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT linear_double_integrator_observer_output_t

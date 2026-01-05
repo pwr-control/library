@@ -34,15 +34,16 @@ void linear_double_integrator_observer_init(volatile LINEAR_DOUBLE_INTEGRATOR_OB
 	obsv->state_observer_v = 0.0f;
 }
 
-
 float linear_double_integrator_observer_process(volatile LINEAR_DOUBLE_INTEGRATOR_OBSVR *obsv, float input)
 {
-	const float observer_output = obsv->kx * (obsv->state_observer_v + input - 
-		obsv->state_observer_x);
-
-	obsv->state_observer_x = obsv->state_observer_x + obsv->ts * obsv->state_observer_v;
-	obsv->state_observer_v = obsv->state_observer_v + obsv->ts * observer_output;
+	const float x_hat_hat = obsv->state_observer_x + obsv->state_observer_v * obsv->ts + 
+					obsv->ts * obsv->kx * (input - obsv->state_observer_x);
+	const float v_hat_hat = obsv->state_observer_v +
+					obsv->ts * obsv->kv * (input - obsv->state_observer_x);
 	
-	return observer_output;
+	obsv->state_observer_x = x_hat_hat;
+	obsv->state_observer_v = v_hat_hat;
+	
+	return obsv->state_observer_x;
 }
 
