@@ -12,12 +12,12 @@
 
 typedef struct phase_shift_flt_output_s {
 	float 					x_hat; 	/* output state x */
-	float 					v_hat; 	/* output state y */
+	float 					v_hat; 	/* output state v */
 } linear_double_integrator_observer_output_t;
 
 #define LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT linear_double_integrator_observer_output_t
 
-extern LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT observer_instances[NLIN_DOUBLE_INT_OBSVR_INSTANCES];
+extern LINEAR_DOUBLE_INTEGRATOR_OBSVR observer_instances[NLIN_DOUBLE_INT_OBSVR_INSTANCES];
 extern unsigned int observer_initialized;
 
 LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT linear_double_integrator_observer_process_simulink(const float input, const float kx, 

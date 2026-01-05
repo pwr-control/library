@@ -15,7 +15,9 @@ typedef struct linear_double_integrator_observer_s {
 } linear_double_integrator_observer_t;
 
 #define LINEAR_DOUBLE_INTEGRATOR_OBSVR linear_double_integrator_observer_t
-void linear_double_integrator_observer_init(volatile LINEAR_DOUBLE_INTEGRATOR_OBSVR *observer, volatile float ts, volatile float kx, volatile float kv);
+
+void linear_double_integrator_observer_init(volatile LINEAR_DOUBLE_INTEGRATOR_OBSVR *observer, 
+	volatile float ts, volatile float kx, volatile float kv);
 
 float linear_double_integrator_observer_process(volatile LINEAR_DOUBLE_INTEGRATOR_OBSVR *observer, float input);
 
