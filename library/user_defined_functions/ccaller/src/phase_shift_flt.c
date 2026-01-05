@@ -29,8 +29,8 @@ void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *flt, volatile float ts,
 {
 	flt->ts = ts;
 	flt->fcut = fcut;
-	flt->a = 1.0f + MATH_2PI * flt->ts * flt->fcut;
-	flt->b = 1.0f - MATH_2PI * flt->ts * flt->fcut;
+	flt->a = 1.0f + MATH_2PI * ts * fcut;
+	flt->b = 1.0f - MATH_2PI * ts * fcut;
 	flt->input_flt_1 = 0.0f;
 	flt->output_flt_1 = 0.0f;
 	flt->scaling = scaling;

@@ -8,7 +8,7 @@
 
 #include <phase_shift_flt.h>
 
-#define NPHASE_SHIFT_FLT_INSTANCES				31
+#define NPHASE_SHIFT_FLT_INSTANCES				8
 
 typedef struct phase_shift_flt_output_s {
 	float					ts;		        			/* sampling time */
@@ -25,6 +25,6 @@ extern PHASE_SHIFT_FLT filter_instances[NPHASE_SHIFT_FLT_INSTANCES];
 extern unsigned int filter_initialized;
 
 PHASE_SHIFT_FLT_OUTPUT phase_shift_flt_process_simulink(const float input, const float fcut, 
-	const float ts, const float scaling, unsigned char reset, unsigned char instance);
+	const float ts, const float scaling, const unsigned char reset, const unsigned char instance);
 
 #endif
