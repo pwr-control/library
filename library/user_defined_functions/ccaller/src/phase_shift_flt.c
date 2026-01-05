@@ -22,24 +22,17 @@ SOFTWARE.
 
 #include <phase_shift_flt.h>
 
-void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *f)
+void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *flt, volatile float ts, 
+	volatile float fcut, volatile float scaling)
 {
-	f->ts = 0.0;
-	phase_shift_flt_reset(f);
+	flt->ts = ts;
+	flt->a = 1.0f + 2.0f * MATH_PI * ts * fcut;
+	flt->b = 1.0f - 2.0f * MATH_PI * ts * fcut;
+	flt->scaling = scaling;
 }
 
-void phase_shift_flt_ts(volatile PHASE_SHIFT_FLT *f, volatile float ts)
-{
-	f->ts = ts;
-}
 
-void phase_shift_flt_reset(volatile PHASE_SHIFT_FLT *f)
-{
-	int i;
-
-}
-
-float phase_shift_flt_process(volatile PHASE_SHIFT_FLT *f, float input, const float period)
+float phase_shift_flt_process(volatile PHASE_SHIFT_FLT *f, float input)
 {
 	if (period > 0.0) {
 		

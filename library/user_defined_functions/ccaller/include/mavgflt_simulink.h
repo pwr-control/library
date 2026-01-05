@@ -19,6 +19,7 @@ typedef struct mavgflt_output_s {
 } mavgflt_output_t;
 #define MAVGFLT_OUTPUT mavgflt_output_t
 
-MAVGFLT_OUTPUT mavgflt_process_simulink(const float input, const float period, const float ts, unsigned char reset, unsigned char instance);
+MAVGFLT_OUTPUT mavgflt_process_simulink(const float input, const float period, 
+	const float ts, unsigned char reset, unsigned char instance);
 
 #endif
