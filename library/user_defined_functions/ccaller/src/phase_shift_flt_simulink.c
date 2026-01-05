@@ -21,8 +21,10 @@ SOFTWARE.
 */
 
 
-#include <phase_shift_flt.h>
 #include <phase_shift_flt_simulink.h>
+
+PHASE_SHIFT_FLT filter_instances[NPHASE_SHIFT_FLT_INSTANCES] = {0};
+unsigned int filter_initialized = 0;
 
 // ------------------------------------------------------------------------------
 static void init_allphase_shift_flt_instances(PHASE_SHIFT_FLT *const filter_list, const unsigned int filter_num, 
@@ -40,9 +42,6 @@ static void init_allphase_shift_flt_instances(PHASE_SHIFT_FLT *const filter_list
 PHASE_SHIFT_FLT_OUTPUT phase_shift_flt_process_simulink(const float input, const float fcut, const float ts, 
 		const float scaling, unsigned char reset, unsigned char instance)
 {
-	static PHASE_SHIFT_FLT filter_instances[NPHASE_SHIFT_FLT_INSTANCES] = {0};
-	static unsigned int filter_initialized = 0;
-
 	if (!filter_initialized){
 	    init_allphase_shift_flt_instances(filter_instances, NPHASE_SHIFT_FLT_INSTANCES, ts, fcut, scaling);
 		filter_initialized = 1;
@@ -52,23 +51,20 @@ PHASE_SHIFT_FLT_OUTPUT phase_shift_flt_process_simulink(const float input, const
 		const PHASE_SHIFT_FLT* filter_instance = &filter_instances[instance];
 
 		phase_shift_flt_init(filter_instance, ts, fcut, scaling);
-		
-		if(reset)
-		{
-		    phase_shift_flt_init(filter_instance, ts, fcut, scaling);
-		}
 
 		const float output_value = phase_shift_flt_process(filter_instance, input);
 
 		const PHASE_SHIFT_FLT_OUTPUT filter_output = {
 			.phase_shift_flt_output = output_value
 		};
+
 		return filter_output;
 	}
 	else{
 		const PHASE_SHIFT_FLT_OUTPUT empty_output = {
 			0
 		};
+		
 		return empty_output;
 	}
 }

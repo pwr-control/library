@@ -21,6 +21,7 @@ SOFTWARE.
 */
 
 #include <phase_shift_flt.h>
+#include <phase_shift_flt_simulink.h>
 #include <math_f.h>
 
 void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *flt, volatile float ts, 
@@ -38,18 +39,12 @@ void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *flt, volatile float ts,
 
 float phase_shift_flt_process(volatile PHASE_SHIFT_FLT *flt, float input)
 {
-	if (flt->fcut > 0.0) {
-		
-		const float filter_output = flt->scaling * (flt->output_flt_1 * flt->b + input - 
-			flt->input_flt_1  * flt->a);
-		
-		flt->input_flt_1 = input;
-		flt->output_flt_1 = filter_output;
-		
-		return filter_output;
-	}
-	else {
-		return input;
-	}
+	const float filter_output = flt->scaling * (flt->output_flt_1 * flt->b + input - 
+		flt->input_flt_1  * flt->a);
+
+	flt->input_flt_1 = input;
+	flt->output_flt_1 = filter_output;
+	
+	return filter_output;
 }
 
