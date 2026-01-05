@@ -9,11 +9,12 @@
 #define NPHASE_SHIFT_FLT_INSTANCES				31
 
 typedef struct phase_shift_flt_output_s {
-	float								ts;		        	/* sampling time */
-	float								fcut;		        /* frequency at 90 deg phase shift*/
-	float								scaling_factor;		/* correction factor */
-	unsigned char						instance;			/* instance */
-	unsigned char						reset;				/* reset */
+	float					ts;		        			/* sampling time */
+	float					fcut;		        		/* frequency at 90 deg phase shift*/
+	float					scaling_factor;				/* correction factor */
+	unsigned char			instance;					/* instance */
+	unsigned char			reset;						/* reset */
+	float 					phase_shift_flt_output; 	/* output filter */
 } phase_shift_flt_output_t;
 
 #define PHASE_SHIFT_FLT_OUTPUT phase_shift_flt_output_t

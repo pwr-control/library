@@ -21,26 +21,35 @@ SOFTWARE.
 */
 
 #include <phase_shift_flt.h>
+#include <math_f.h>
 
 void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *flt, volatile float ts, 
 	volatile float fcut, volatile float scaling)
 {
 	flt->ts = ts;
-	flt->a = 1.0f + 2.0f * MATH_PI * ts * fcut;
-	flt->b = 1.0f - 2.0f * MATH_PI * ts * fcut;
+	flt->fcut = fcut;
+	flt->a = 1.0f + MATH_2PI * flt->ts * flt->fcut;
+	flt->b = 1.0f - MATH_2PI * flt->ts * flt->fcut;
+	flt->input_flt_1 = 0.0f;
+	flt->output_flt_1 = 0.0f;
 	flt->scaling = scaling;
 }
 
 
-float phase_shift_flt_process(volatile PHASE_SHIFT_FLT *f, float input)
+float phase_shift_flt_process(volatile PHASE_SHIFT_FLT *flt, float input)
 {
-	if (period > 0.0) {
+	if (flt->fcut > 0.0) {
 		
+		const float filter_output = flt->scaling * (flt->output_flt_1 * flt->b + input - 
+			flt->input_flt_1  * flt->a);
+		
+		flt->input_flt_1 = input;
+		flt->output_flt_1 = filter_output;
 		
 		return filter_output;
 	}
 	else {
-		return 0.0;
+		return input;
 	}
 }
 

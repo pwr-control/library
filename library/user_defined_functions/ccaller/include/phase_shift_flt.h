@@ -8,9 +8,12 @@
 
 typedef struct phase_shift_flt_s {
 	float								ts;				/* sampling time */
+	float								fcut;			/* frequency at 90 degree phase shit */
 	float								a;				/* filter coefficient a */
 	float								b;				/* filter coefficient b */
 	float								scaling;		/* output */
+	float								input_flt_1;	/* input z^-1 */
+	float								output_flt_1;	/* output z^-1 */
 } phase_shift_flt_t;
 
 #define PHASE_SHIFT_FLT phase_shift_flt_t
