@@ -32,8 +32,7 @@ DQVECTOR_PI dqpi_ctrl = {0.0};
 DQVECTOR_PI_OUTPUT dqvector_pi_process_simulink(unsigned char reset, const float id_ref, const float id, 
 		const float iq_ref, const float iq, const float u_dc, const float ts, 
 		const float kp_id, const float ki_id, const float kp_iq, const float ki_iq, 
-		const float u_lim)
-{
+		const float u_lim) {
 
 	if (dqpi_ctrl_initialized == 0) {
 	    dqvector_pi_init(&dqpi_ctrl, kp_id, ki_id, kp_iq, ki_iq, u_lim);

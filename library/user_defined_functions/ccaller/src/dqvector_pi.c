@@ -48,7 +48,7 @@ void dqvector_pi_reset(volatile DQVECTOR_PI *dqvpi_ctrl)
 	dqvpi_ctrl->clip_active = 0;
 }
 
-VECTORDQ dqvector_pi_process(volatile DQVECTOR_PI *dqvpi_ctrl, volatile float id_ref, volatile float id, 
+VECTORDQ    (volatile DQVECTOR_PI *dqvpi_ctrl, volatile float id_ref, volatile float id, 
 	volatile float iq_ref, volatile float iq, volatile float u_dc)
 {
 	const float id_tilde = id_ref - id;

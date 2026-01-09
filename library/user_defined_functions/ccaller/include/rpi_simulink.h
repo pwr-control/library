@@ -3,8 +3,8 @@
  * Copyright (c) 2025 Davide Bagnara
  */
 
-#ifndef _DQVECTOR_PI_SIMULINK_
-#define _DQVECTOR_PI_SIMULINK_
+#ifndef _RPI_SIMULINK_
+#define _RPI_SIMULINK_
 
 typedef struct rpi_output_s {
 	float		u_out;		/*  */	
