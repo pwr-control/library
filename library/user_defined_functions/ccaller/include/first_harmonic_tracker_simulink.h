@@ -10,6 +10,7 @@
 
 typedef struct first_harmonic_tracker_output_s {
 	float	output_pu_hat;		/* output pu hat */
+	float	output_pu_hat_dot;	/* output pu dot hat */
 } first_harmonic_tracker_output_t;
 #define FIRST_HARMONIC_TRACKER_OUTPUT first_harmonic_tracker_output_t
 

@@ -10,7 +10,7 @@
 
 #define NLIN_DOUBLE_INT_OBSVR_INSTANCES				8
 
-typedef struct phase_shift_flt_output_s {
+typedef struct linear_double_integrator_observer_output_s {
 	float 					x_hat; 	/* output state x */
 	float 					v_hat; 	/* output state v */
 } linear_double_integrator_observer_output_t;

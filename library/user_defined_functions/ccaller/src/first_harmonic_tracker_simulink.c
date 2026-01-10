@@ -60,7 +60,7 @@ FIRST_HARMONIC_TRACKER_OUTPUT first_harmonic_tracker_process_simulink(const unsi
 	const float output_value = first_harmonic_tracker_process(fht_instance, u);
 
 	const FIRST_HARMONIC_TRACKER_OUTPUT output = {
-//		.output_pu_hat = fht_instance->first_harmonic_tracker_output
+		.output_pu_hat_dot = fht_instance->first_harmonic_tracker_state2,
 		.output_pu_hat = output_value
 	};
 	return output;
