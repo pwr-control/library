@@ -3,28 +3,25 @@
  * Copyright (c) 2025 Davide Bagnara
  */
 
-#ifndef _SOGI_FLT_SIMULINK_
-#define _SOGI_FLT_SIMULINK_
+#ifndef _SINGLE_PHASE_PLL_SIMULINK_
+#define _SINGLE_PHASE_PLL_SIMULINK_
 
-#include <sogi_flt.h>
+#include <single_phase_pll.h>
 
-#define NSOGI_FLT_INSTANCES				8
+#define NSINGLE_PHASE_PLL_INSTANCES				8
 
-typedef struct sogi_flt_output_s {
-	float					ts;		        			/* sampling time */
-	float					fcut;		        		/* frequency at 90 deg phase shift */
-	unsigned char			instance;					/* instance */
-	unsigned char			reset;						/* reset */
-	float 					sogi_flt_output_alpha; 		/* output filter alpha */
-	float 					sogi_flt_output_beta; 		/* output filter beta */
-} sogi_flt_output_t;
+typedef struct single_phase_pll_output_s {
+	float					ts;		        					/* sampling time */
+	float 					single_phase_pll_output_alpha; 		/* output filter alpha */
+	float 					single_phase_pll_output_beta; 		/* output filter beta */
+} single_phase_pll_output_t;
 
-#define SOGI_FLT_OUTPUT sogi_flt_output_t
+#define SINGLE_PHASE_PLL_OUTPUT single_phase_pll_output_t
 
-extern SOGI_FLT sogi_flt_instances[NSOGI_FLT_INSTANCES];
-extern unsigned int sogi_flt_initialized;
+extern SINGLE_PHASE_PLL single_phase_pll_instances[NSINGLE_PHASE_PLL_INSTANCES];
+extern unsigned int single_phase_pll_initialized;
 
-SOGI_FLT_OUTPUT sogi_flt_process_simulink(const float input, const float fcut, 
+SINGLE_PHASE_PLL_OUTPUT single_phase_pll_process_simulink(const float input, const float fcut, 
 	const float ts, const unsigned char reset, const unsigned char instance);
 
 #endif

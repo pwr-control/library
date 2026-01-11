@@ -28,37 +28,37 @@ unsigned int sogi_flt_initialized = 0;
 
 // ------------------------------------------------------------------------------
 static void init_all_sogi_flt_instances(SOGI_FLT *const filter_list, const unsigned int filter_num, 
-	const float ts, const float fcut) {
+	const float ts, const float omega, const float kepsilon) {
     unsigned int i;
     for (i = 0; i < filter_num; ++i) {
         SOGI_FLT *const filter = &filter_list[i];
-		sogi_flt_init(filter, ts, fcut);
+		sogi_flt_init(filter, ts, omega, kepsilon);
 		i++;
 	}
 }
 
 // ------------------------------------------------------------------------------
-SOGI_FLT_OUTPUT sogi_flt_process_simulink(const float input, const float fcut, const float ts, 
+SOGI_FLT_OUTPUT sogi_flt_process_simulink(const float input, const float ts, const float omega, const float kepsilon, 
 		const unsigned char reset, const unsigned char instance) {
 	if (!sogi_flt_initialized){
-	    init_all_sogi_flt_instances(sogi_flt_instances, NSOGI_FLT_INSTANCES, ts, fcut);
+	    init_all_sogi_flt_instances(sogi_flt_instances, NSOGI_FLT_INSTANCES, ts, omega, kepsilon);
 		sogi_flt_initialized = 1;
 	}
 
 	const SOGI_FLT* sogi_flt_instance = &sogi_flt_instances[instance];
 	if (reset) {
-		sogi_flt_init(sogi_flt_instance, ts, fcut);
+		sogi_flt_init(sogi_flt_instance, ts, omega, kepsilon);
 	}
 
 	const float output_value = sogi_flt_process(sogi_flt_instance, input);
 	
 	const SOGI_FLT_OUTPUT sogi_flt_output = {
 			.ts = sogi_flt_instance->ts,
-			.fcut = sogi_flt_instance->fcut,
+			.omega = sogi_flt_instance->omega,
 			.instance = instance,
 			.reset = reset,
-			.sogi_flt_output_alpha = sogi_flt_instance->output_alpha,
-			.sogi_flt_output_beta = sogi_flt_instance->output_beta
+			.sogi_flt_output_alpha = sogi_flt_instance->alpha,
+			.sogi_flt_output_beta = sogi_flt_instance->beta
 	};
 	
 	return sogi_flt_output;

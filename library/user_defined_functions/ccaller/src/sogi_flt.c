@@ -24,51 +24,32 @@ SOFTWARE.
 #include <sogi_flt_simulink.h>
 #include <math_f.h>
 
-void sogi_flt_init(volatile SOGI_FLT *flt, volatile float ts, 
-	volatile float fcut)
+void sogi_flt_init(volatile SOGI_FLT *sogi_flt, volatile float ts, 
+	volatile float omega, volatile float kepsilon)
 {
-	flt->ts = ts;
-	flt->fcut = fcut;
-	flt->a1 = A1;
-	flt->a2 = A2;
-	flt->b1_alpha = B1_ALPHA;
-	flt->b2_alpha = B2_ALPHA;
-	flt->b1_beta = B1_BETA;
-	flt->b2_beta = B2_BETA;
-	sogi_flt_reset(flt);
+	sogi_flt->ts = ts;
+	sogi_flt->omega = omega;
+	sogi_flt->kepsilon = kepsilon;
+	sogi_flt_reset(sogi_flt);
 }
 
-void sogi_flt_reset(volatile SOGI_FLT *flt)
+void sogi_flt_reset(volatile SOGI_FLT *sogi_flt)
 {
-	flt->input = 0.0f;
-	flt->input_1 = 0.0f;	
-	flt->input_2 = 0.0f;
-	flt->output_alpha = 0.0f;
-	flt->output_alpha_1 = 0.0f;
-	flt->output_alpha_2 = 0.0f;
-	flt->output_beta = 0.0f;
-	flt->output_beta_1 = 0.0f;
-	flt->output_beta_2 = 0.0f;
+	sogi_flt->input = 0.0f;
+	sogi_flt->alpha = 0.0f;
+	sogi_flt->beta = 0.0f;
 }
-float sogi_flt_process(volatile SOGI_FLT *flt, float input) {
 
-	const float sogi_output_alpha = flt->b1_alpha * flt->input_1 + 
-		flt->b2_alpha * flt->input_2 - flt->a1 * flt->output_alpha_1 - 
-		flt->a2 * flt->output_alpha_2;
+float sogi_flt_process(volatile SOGI_FLT *sogi_flt, float input) {
 
-	const float sogi_output_beta = flt->b1_beta * flt->input_1 + 
-		flt->b2_beta * flt->input_2 - flt->a1 * flt->output_beta_1 - 
-		flt->a2 * flt->output_beta_2;
+	const float sogi_output_alpha_dot = (input - sogi_flt->alpha) * sogi_flt->kepsilon - sogi_flt->beta;
+	const float sogi_output_alpha = sogi_output_alpha_dot * sogi_flt->ts * sogi_flt->omega + sogi_flt->alpha;
 
-	flt->input_2 = flt->input_1;
-	flt->input_1 = input;
-	flt->output_alpha_2 = flt->output_alpha_1;
-	flt->output_alpha_1 = sogi_output_alpha;
-	flt->output_beta_2 = flt->output_beta_1;
-	flt->output_beta_1 = sogi_output_beta;
+	const float sogi_output_beta_dot = sogi_flt->alpha;
+	const float sogi_output_beta = sogi_output_beta_dot * sogi_flt->ts * sogi_flt->omega + sogi_flt->beta;
 
-	flt->output_alpha = sogi_output_alpha;
-	flt->output_beta = sogi_output_beta;
+	sogi_flt->alpha = sogi_output_alpha;
+	sogi_flt->beta = sogi_output_beta;
 
 	return sogi_output_alpha;
 }

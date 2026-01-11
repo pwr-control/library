@@ -12,7 +12,7 @@
 
 typedef struct sogi_flt_output_s {
 	float					ts;		        			/* sampling time */
-	float					fcut;		        		/* frequency at 90 deg phase shift */
+	float					omega;		        		/* frequency at 90 deg phase shift */
 	unsigned char			instance;					/* instance */
 	unsigned char			reset;						/* reset */
 	float 					sogi_flt_output_alpha; 		/* output filter alpha */
@@ -24,7 +24,7 @@ typedef struct sogi_flt_output_s {
 extern SOGI_FLT sogi_flt_instances[NSOGI_FLT_INSTANCES];
 extern unsigned int sogi_flt_initialized;
 
-SOGI_FLT_OUTPUT sogi_flt_process_simulink(const float input, const float fcut, 
-	const float ts, const unsigned char reset, const unsigned char instance);
+SOGI_FLT_OUTPUT sogi_flt_process_simulink(const float input, const float ts, const float omega, const float kepsilon, 
+		const unsigned char reset, const unsigned char instance);
 
 #endif

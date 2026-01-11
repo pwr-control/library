@@ -20,57 +20,62 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <sogi_flt.h>
-#include <sogi_flt_simulink.h>
+#include <single_phase_pll.h>
+#include <single_phase_pll_simulink.h>
 #include <math_f.h>
 
-void sogi_flt_init(volatile SOGI_FLT *flt, volatile float ts, 
-	volatile float fcut)
+void single_phase_pll_init(volatile SINGLE_PHASE_PLL *single_phase_pll, volatile float ts, 
+	volatile float kp_pll, volatile float ki1_pll, volatile float ki2_pll, volatile float omega_base, 
+	volatile float tau)
 {
-	flt->ts = ts;
-	flt->fcut = fcut;
-	flt->a1 = A1;
-	flt->a2 = A2;
-	flt->b1_alpha = B1_ALPHA;
-	flt->b2_alpha = B2_ALPHA;
-	flt->b1_beta = B1_BETA;
-	flt->b2_beta = B2_BETA;
-	sogi_flt_reset(flt);
+	single_phase_pll->ts = ts;
+	single_phase_pll->kp_pll = kp_pll;
+	single_phase_pll->ki1_pll = ki1_pll;
+	single_phase_pll->ki2_pll = ki2_pll;
+	single_phase_pll->omega_base = omega_base;
+	single_phase_pll->tau = tau;
+
+	single_phase_pll_reset(single_phase_pll);
 }
 
-void sogi_flt_reset(volatile SOGI_FLT *flt)
+void single_phase_pll_reset(volatile SINGLE_PHASE_PLL *single_phase_pll)
 {
-	flt->input = 0.0f;
-	flt->input_1 = 0.0f;	
-	flt->input_2 = 0.0f;
-	flt->output_alpha = 0.0f;
-	flt->output_alpha_1 = 0.0f;
-	flt->output_alpha_2 = 0.0f;
-	flt->output_beta = 0.0f;
-	flt->output_beta_1 = 0.0f;
-	flt->output_beta_2 = 0.0f;
+	single_phase_pll->gamma_hat = 0.0f;
+	single_phase_pll->omega_hat = 0.0f;
+	single_phase_pll->omega_i_hat = 0.0f;
+	single_phase_pll->u_input = 0.0f;
+	single_phase_pll->u_alpha = 0.0f;
+	single_phase_pll->u_input = 0.0f;
+	single_phase_pll->u_alpha_out = 0.0f;
+	single_phase_pll->u_beta_out = 0.0f;
+	single_phase_pll->u_xi = 0.0f;
+	single_phase_pll->u_eta = 0.0f;
+	single_phase_pll->u_xi_flt = 0.0f;
+	single_phase_pll->u_eta_flt = 0.0f;
 }
-float sogi_flt_process(volatile SOGI_FLT *flt, float input) {
+float single_phase_pll_process(volatile SINGLE_PHASE_PLL *single_phase_pll, float input) {
 
-	const float sogi_output_alpha = flt->b1_alpha * flt->input_1 + 
-		flt->b2_alpha * flt->input_2 - flt->a1 * flt->output_alpha_1 - 
-		flt->a2 * flt->output_alpha_2;
+	const float single_phase_pll_alpha = single_phase_pll->u_input;
+	const float single_phase_pll_beta = single_phase_pll->u_beta;
 
-	const float sogi_output_beta = flt->b1_beta * flt->input_1 + 
-		flt->b2_beta * flt->input_2 - flt->a1 * flt->output_beta_1 - 
-		flt->a2 * flt->output_beta_2;
+	const float x_tilde = 0;
+	const float ts = single_phase_pll->ts;
+	const float kp_pll = single_phase_pll->kp_pll;
+	const float ki1_pll = single_phase_pll->ki1_pll;
+	const float ki2_pll = single_phase_pll->ki2_pll;
 
-	flt->input_2 = flt->input_1;
-	flt->input_1 = input;
-	flt->output_alpha_2 = flt->output_alpha_1;
-	flt->output_alpha_1 = sogi_output_alpha;
-	flt->output_beta_2 = flt->output_beta_1;
-	flt->output_beta_1 = sogi_output_beta;
+	const float omega_i_hat = single_phase_pll->omega_i_hat;
+	const float gamma_hat = single_phase_pll->gamma_hat;
 
-	flt->output_alpha = sogi_output_alpha;
-	flt->output_beta = sogi_output_beta;
+	const float th_sin = sinf(gamma_hat);
+	const float th_cos = cosf(gamma_hat);
+	
+	single_phase_pll->omega_i_hat = x_tilde * ki1_pll * ts + omega_i_hat;
+	single_phase_pll->omega_hat = x_tilde * kp_pll + single_phase_pll->omega_i_hat + 1.0f;
+	single_phase_pll->gamma_hat = single_phase_pll->omega_hat * ki2_pll * ts + gamma_hat;
+	single_phase_pll->gamma_hat = fmodf(single_phase_pll->gamma_hat + MATH_3PI, MATH_2PI) - MATH_PI;
 
-	return sogi_output_alpha;
+	return single_phase_pll_alpha;
 }
 
 
