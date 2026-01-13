@@ -18,11 +18,11 @@ typedef struct first_harmonic_tracker_s {
 	float			ts;		    						/* sampling time */
 	float 			first_harmonic_tracker_l1;			/*  */
 	float 			first_harmonic_tracker_l2;			/*  */
-	float 			first_harmonic_tracker_A11;			/*  */
-	float 			first_harmonic_tracker_A12;			/*  */
-	float 			first_harmonic_tracker_A21;			/*  */
-	float 			first_harmonic_tracker_A22;			/*  */
-	float 			first_harmonic_tracker_C1;			/*  */
+	float 			first_harmonic_tracker_a11;			/*  */
+	float 			first_harmonic_tracker_a12;			/*  */
+	float 			first_harmonic_tracker_a21;			/*  */
+	float 			first_harmonic_tracker_a22;			/*  */
+	float 			first_harmonic_tracker_c1;			/*  */
 	float			first_harmonic_tracker_error;		/*  */
 	float			first_harmonic_tracker_state1;		/*  */
 	float			first_harmonic_tracker_state2;		/*  */
@@ -32,7 +32,8 @@ typedef struct first_harmonic_tracker_s {
 
 void first_harmonic_tracker_ts(volatile FIRST_HARMONIC_TRACKER *f, volatile float ts);
 
-void first_harmonic_tracker_init(volatile FIRST_HARMONIC_TRACKER *f,const float omega_base, const float delta, const float l1, const float l2);
+void first_harmonic_tracker_init(volatile FIRST_HARMONIC_TRACKER *f, volatile float ts, const float omega_base,
+	const float delta, const float l1, const float l2);
 
 void first_harmonic_tracker_reset(volatile FIRST_HARMONIC_TRACKER *f);
 

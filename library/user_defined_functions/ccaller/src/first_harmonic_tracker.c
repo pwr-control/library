@@ -22,16 +22,20 @@ SOFTWARE.
 
 #include <first_harmonic_tracker.h>
 
-void first_harmonic_tracker_init(volatile FIRST_HARMONIC_TRACKER *f,const float omega_base, const float delta, const float l1, const float l2)
-{
-	f->ts = 0.0F;
+void first_harmonic_tracker_init(volatile FIRST_HARMONIC_TRACKER *f, volatile float ts, const float omega_base, 
+	const float delta, const float l1, const float l2) {
+
+	const float a = -omega_base*omega_base;
+	const float b = -delta*omega_base;
+
+	f->ts = ts;
 	f->first_harmonic_tracker_l1 = l1;
 	f->first_harmonic_tracker_l2 = l2;
-	f->first_harmonic_tracker_A11 = FIRST_HARMONIC_TRACKER_A11;
-	f->first_harmonic_tracker_A12 = FIRST_HARMONIC_TRACKER_A12;
-	f->first_harmonic_tracker_A21 = -omega_base*omega_base;
-	f->first_harmonic_tracker_A22 = -delta*omega_base;
-	f->first_harmonic_tracker_C1 = FIRST_HARMONIC_TRACKER_C1;
+	f->first_harmonic_tracker_a11 = 1.0f + 0.5f*a*ts*ts;
+	f->first_harmonic_tracker_a12 = ts + 0.5f*b*ts*ts;
+	f->first_harmonic_tracker_a21 = a*ts + 0.5f*a*b*ts*ts;
+	f->first_harmonic_tracker_a22 = 1.0f + b*ts + 0.5f*(a+b*b)*ts*ts;
+	f->first_harmonic_tracker_c1 = 1.0f;
 	first_harmonic_tracker_reset(f);
 }
 
@@ -52,19 +56,23 @@ float first_harmonic_tracker_process(volatile FIRST_HARMONIC_TRACKER *f, const f
 {
 	const float first_harmonic_tracker_ld1 = f->first_harmonic_tracker_l1;
 	const float first_harmonic_tracker_ld2 = f->first_harmonic_tracker_l2;
-	const float first_harmonic_tracker_Ad11 = 1.0F + f->first_harmonic_tracker_A11 * f->ts;
-	const float first_harmonic_tracker_Ad12 = f->first_harmonic_tracker_A12 * f->ts;
-	const float first_harmonic_tracker_Ad21 = f->first_harmonic_tracker_A21 * f->ts;
-	const float first_harmonic_tracker_Ad22 = 1.0F + f->first_harmonic_tracker_A22 * f->ts;
+	const float first_harmonic_tracker_ad11 = f->first_harmonic_tracker_a11;
+	const float first_harmonic_tracker_ad12 = f->first_harmonic_tracker_a12;
+	const float first_harmonic_tracker_ad21 = f->first_harmonic_tracker_a21;
+	const float first_harmonic_tracker_ad22 = f->first_harmonic_tracker_a22;
 
 	const float first_harmonic_tracker_output = f->first_harmonic_tracker_output;
 	const float error = u - first_harmonic_tracker_output;
-	const float stat1 = first_harmonic_tracker_ld1 * error + first_harmonic_tracker_Ad11 * f->first_harmonic_tracker_state1 + first_harmonic_tracker_Ad12 * f->first_harmonic_tracker_state2;
-	const float stat2 = first_harmonic_tracker_ld2 * error + first_harmonic_tracker_Ad21 * f->first_harmonic_tracker_state1 + first_harmonic_tracker_Ad22 * f->first_harmonic_tracker_state2;
+	const float state1 = first_harmonic_tracker_ld1 * error + first_harmonic_tracker_ad11 * 
+			f->first_harmonic_tracker_state1 + first_harmonic_tracker_ad12 * 
+			f->first_harmonic_tracker_state2;
+	const float state2 = first_harmonic_tracker_ld2 * error + first_harmonic_tracker_ad21 * 
+			f->first_harmonic_tracker_state1 + first_harmonic_tracker_ad22 * 
+			f->first_harmonic_tracker_state2;
 
-	f->first_harmonic_tracker_output = f->first_harmonic_tracker_state1 * f->first_harmonic_tracker_C1;
-	f->first_harmonic_tracker_state1 = stat1;
-	f->first_harmonic_tracker_state2 = stat2;
+	f->first_harmonic_tracker_output = f->first_harmonic_tracker_state1 * f->first_harmonic_tracker_c1;
+	f->first_harmonic_tracker_state1 = state1;
+	f->first_harmonic_tracker_state2 = state2;
 
 	return f->first_harmonic_tracker_output;
 }

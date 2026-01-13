@@ -26,13 +26,13 @@ SOFTWARE.
 
 // ------------------------------------------------------------------------------
 static void init_allfht_instances(FIRST_HARMONIC_TRACKER *const fht_list, const unsigned int fht_num, 
-	const float omega_base, const float delta, const float l1, const float l2)
+	const float ts,const float omega_base, const float delta, const float l1, const float l2)
 {
    /* issue - instance number in simulink at step of two : 0, 2, 4, 6, 8 - double FHTI_N than expected */
 	unsigned int i;
     for (i = 0; i < fht_num; ++i) {
         FIRST_HARMONIC_TRACKER *const fht_i = &fht_list[i];
-		first_harmonic_tracker_init(fht_i, omega_base, delta,l1, l2);
+		first_harmonic_tracker_init(fht_i, ts, omega_base, delta,l1, l2);
 		i++;
 	}
 }
@@ -46,7 +46,7 @@ FIRST_HARMONIC_TRACKER_OUTPUT first_harmonic_tracker_process_simulink(const unsi
 	static unsigned int fht_init = 0;
 
 	if (!fht_init) {
-	    init_allfht_instances(fht_i, FIRST_HARMONIC_TRACKER_INSTANCES, omega_base, delta, l1, l2);
+	    init_allfht_instances(fht_i, FIRST_HARMONIC_TRACKER_INSTANCES, ts, omega_base, delta, l1, l2);
 		fht_init = 1;
 	}
 
