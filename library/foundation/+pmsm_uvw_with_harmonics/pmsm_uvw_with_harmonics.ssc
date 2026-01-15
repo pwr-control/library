@@ -40,6 +40,9 @@ component pmsm_uvw_with_harmonics
         id_out = { 0, 'A' };                    % id:right
         iq_out = { 0, 'A' };                    % iq:right
         
+        ialpha_out = { 0, 'A' };                % ialpha:right
+        ibeta_out = { 0, 'A' };                 % ibeta:right
+
         ud_out = { 0, 'V' };                    % ud:right
         uq_out = { 0, 'V' };                    % uq:right
         
@@ -91,6 +94,8 @@ component pmsm_uvw_with_harmonics
         iw = { 0, 'A' };                     % iw
         id = { 0, 'A' };                     % id
         iq = { 0, 'A' };                     % iq
+        ialpha = { 0, 'A' };                     % ialpha
+        ibeta = { 0, 'A' };                     % ibeta
         uv = { 0, 'V' };                     % uv
         uu = { 0, 'V' };                     % uu
         uw = { 0, 'V' };                     % uw
@@ -182,6 +187,9 @@ component pmsm_uvw_with_harmonics
             psi_s_q == psi_r_q + Lq*iq;
             psi_s_d == psi_r_d + Ld*id;
             
+            ialpha == 2/3 * (iu - 1/2*iv - 1/2*iw);
+            ibeta ==  2/3 * (sqrt(3)/2*iv - sqrt(3)/2*iw);
+
             id == 2/3 * (iu*cos(theta) + iv*cos(theta-2*pi/3) + iw*cos(theta+2*pi/3));
             iq == -2/3 * (iu*sin(theta) + iv*sin(theta-2*pi/3) + iw*sin(theta+2*pi/3));
             
@@ -196,6 +204,9 @@ component pmsm_uvw_with_harmonics
     
             id_out == id;
             iq_out == iq;
+            
+            ialpha_out == ialpha;
+            ibeta_out == ibeta;
             
             ud_out == ud;
             uq_out == uq;
