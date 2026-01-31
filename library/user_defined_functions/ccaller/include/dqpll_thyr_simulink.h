@@ -6,7 +6,7 @@
 #ifndef _DQPLL_THYR_SIMULINK_
 #define _DQPLL_THYR_SIMULINK_
 
-#define DQPLL_THYR_INSTANCES				1
+#define DQPLL_THYR_INSTANCES				31
 
 typedef struct dqpll_thyr_output_s {
 	float				omega_pu_hat;		/*  */

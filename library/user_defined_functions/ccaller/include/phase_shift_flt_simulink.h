@@ -8,7 +8,7 @@
 
 #include <phase_shift_flt.h>
 
-#define NPHASE_SHIFT_FLT_INSTANCES				8
+#define NPHASE_SHIFT_FLT_INSTANCES				31
 
 typedef struct phase_shift_flt_output_s {
 	float					ts;		        			/* sampling time */

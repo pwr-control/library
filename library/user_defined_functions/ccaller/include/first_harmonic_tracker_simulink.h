@@ -6,7 +6,7 @@
 #ifndef _FIRST_HARMONIC_TRACKER_SIMULINK_
 #define _FIRST_HARMONIC_TRACKER_SIMULINK_
 
-#define FIRST_HARMONIC_TRACKER_INSTANCES 16
+#define FIRST_HARMONIC_TRACKER_INSTANCES 31
 
 typedef struct first_harmonic_tracker_output_s {
 	float	output_pu_hat;		/* output pu hat */

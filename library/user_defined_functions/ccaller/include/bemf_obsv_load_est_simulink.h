@@ -7,7 +7,7 @@
  #ifndef _BEMF_OBSV_LOAD_EST_SIMULINK_
 #define _BEMF_OBSV_LOAD_EST_SIMULINK_
 
-#define BEMF_OBSV_LOAD_EST_INSTANCES				16
+#define BEMF_OBSV_LOAD_EST_INSTANCES				31
 
 typedef struct bemf_obsv_load_est_output_s {
 	float					omega_pu_hat;				/* omega pu hat */

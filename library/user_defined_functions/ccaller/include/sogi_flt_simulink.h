@@ -8,7 +8,7 @@
 
 #include <sogi_flt.h>
 
-#define NSOGI_FLT_INSTANCES				8
+#define NSOGI_FLT_INSTANCES				31
 
 typedef struct sogi_flt_output_s {
 	float					ts;		        			/* sampling time */

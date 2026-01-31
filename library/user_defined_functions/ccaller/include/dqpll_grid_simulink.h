@@ -6,7 +6,7 @@
 #ifndef _DQPLL_GRID_SIMULINK_
 #define _DQPLL_GRID_SIMULINK_
 
-#define DQPLL_GRID_INSTANCES				1
+#define DQPLL_GRID_INSTANCES				31
 
 typedef struct dqpll_grid_output_s {
 	float				omega_pu_hat;		/*  */

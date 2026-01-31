@@ -8,7 +8,7 @@
 
 #include <single_phase_pll.h>
 
-#define NSINGLE_PHASE_PLL_INSTANCES				8
+#define NSINGLE_PHASE_PLL_INSTANCES				31
 
 typedef struct single_phase_pll_output_s {
 	float					ts;		        					/* sampling time */

@@ -8,7 +8,7 @@
 
 #include <linear_double_integrator_observer.h>
 
-#define NLIN_DOUBLE_INT_OBSVR_INSTANCES				8
+#define NLIN_DOUBLE_INT_OBSVR_INSTANCES				31
 
 typedef struct linear_double_integrator_observer_output_s {
 	float 					x_hat; 	/* output state x */
