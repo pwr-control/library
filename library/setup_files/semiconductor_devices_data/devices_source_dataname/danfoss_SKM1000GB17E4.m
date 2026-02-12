@@ -1,6 +1,7 @@
 
 
 %% SKM1000GB17E4 (Si-IGBT) - values at Tj = 125°C
+device_name = 'infineon_SKM1000GB17E4';
 
 Vth = 5.5;                                              % [V]
 Rce_on = 0.15e-3;                                       % [Ohm]

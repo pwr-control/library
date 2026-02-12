@@ -1,6 +1,7 @@
 
 
 %% SEMiX604GB17E4s (IGBT) (Tj = 150 degC.)
+device_name = 'infineon_SEMiX604GB17E4s';
 
 Vth = 5.8;                                              % [V]
 Rce_on = 0.15e-3;                                       % [Ohm]

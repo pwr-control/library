@@ -1,5 +1,6 @@
 
 %% CAB006A12GM3 (MOSFET) (data at Tj = 100 degC)
+device_name = 'infineon_CAB006A12GM3';
 
 Vth = 2.5;                                              % [V]
 Rds_on = 5.3e-3*1.25;                                   % [Ohm]

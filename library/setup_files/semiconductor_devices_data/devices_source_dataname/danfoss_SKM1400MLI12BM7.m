@@ -1,6 +1,7 @@
 
 
 %% SKM1400MLI12BM7 (IGBT - 3L NPC) (Tj = 100 degC.)
+device_name = 'infineon_SKM1400MLI12BM7';
 
 Vce_sat_25 = 1.55;
 Vce_sat_150 = 1.81;

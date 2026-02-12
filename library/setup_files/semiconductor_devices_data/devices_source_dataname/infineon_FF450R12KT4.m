@@ -1,5 +1,7 @@
 
 %% FF450R12KT4 (IGBT)
+device_name = 'infineon_FF450R12KT4';
+
 Vth = 5.8;                                              % [V]
 Rce_on = 0.15e-3;                                       % [Ohm]
 Vce_sat = 2.15;                                         % [V]

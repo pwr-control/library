@@ -1,5 +1,6 @@
 
 %% high power ideal switch
+device_name = 'ideal_power_switch';
 Vth = 5.5;                                              % [V]
 Ron = 1.5e-3;                                           % [Ohm]
 Rds_on = Ron;                                           % [Ohm]

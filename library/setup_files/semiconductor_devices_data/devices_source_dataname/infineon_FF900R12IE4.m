@@ -1,4 +1,6 @@
 %% FF900R12IE4 (IGBT)
+device_name = 'infineon_FF900R12IE4';
+
 Vth = 5.5;                                              % [V]
 Rce_on = 0.15e-3;                                       % [Ohm]
 Vce_sat = 2.05;                                         % [V]

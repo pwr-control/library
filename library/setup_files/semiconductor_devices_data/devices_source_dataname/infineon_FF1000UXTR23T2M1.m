@@ -1,5 +1,7 @@
 
 %% FF1000UXTR23T2M1 (MOSFET)
+device_name = 'infineon_FF1000UXTR23T2M1';
+
 Vth = 4.2;                                              % [V]
 Rds_on = 1.7e-3;                                        % [Ohm]
 g_fs = 500;                                            % [A/V]
