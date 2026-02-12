@@ -1,4 +1,5 @@
 function afe = device_mosfet_setting_afe(fpwm)
+    afe.device_name = evalin('base', 'device_name');
     afe.Vth = evalin('base', 'Vth');                                  % [V]
     afe.Rds_on = evalin('base', 'Rds_on');                            % [V]
     afe.Vdon_diode = evalin('base', 'Vdon_diode');                    % [V]

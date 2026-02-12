@@ -1,4 +1,5 @@
 function ideal_switch = device_ideal_switch_setting(fpwm)
+    ideal_switch.device_name = evalin('base', 'device_name');
     ideal_switch.Vth = evalin('base', 'Vth');                                  % [V]
     ideal_switch.Rds_on = evalin('base', 'Rds_on');                            % [Ohm]
     ideal_switch.Vdon_diode = evalin('base', 'Vdon_diode');                    % [V]

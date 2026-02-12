@@ -1,4 +1,5 @@
 function afe = device_igbt_setting_afe(fpwm)
+    afe.device_name = evalin('base', 'device_name');
     afe.Vth = evalin('base', 'Vth');                                 % [V]
     afe.Vce_sat = evalin('base', 'Vce_sat');                          % [V]
     afe.Rce_on = evalin('base', 'Rce_on');                            % [Ohm]

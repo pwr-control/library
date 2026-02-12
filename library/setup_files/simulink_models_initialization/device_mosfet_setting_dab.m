@@ -1,4 +1,5 @@
 function dab = device_mosfet_setting_dab(fpwm)
+    dab.device_name = evalin('base', 'device_name');
     dab.Vth = evalin('base', 'Vth');                                  % [V]
     dab.Rds_on = evalin('base', 'Rds_on');                            % [V]
     dab.Vdon_diode = evalin('base', 'Vdon_diode');                    % [V]

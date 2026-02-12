@@ -1,4 +1,5 @@
 function inv = device_mosfet_setting_inv(fpwm)
+    inv.device_name = evalin('base', 'device_name');
     inv.Vth = evalin('base', 'Vth');                                  % [V]
     inv.Rds_on = evalin('base', 'Rds_on');                            % [V]
     inv.Vdon_diode = evalin('base', 'Vdon_diode');                    % [V]

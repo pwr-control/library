@@ -1,4 +1,5 @@
 function dab = device_igbt_setting_dab(fpwm)
+    dab.device_name = evalin('base', 'device_name');
     dab.Vth = evalin('base', 'Vth');                                 % [V]
     dab.Vce_sat = evalin('base', 'Vce_sat');                          % [V]
     dab.Rce_on = evalin('base', 'Rce_on');                            % [Ohm]

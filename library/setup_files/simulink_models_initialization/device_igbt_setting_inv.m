@@ -1,4 +1,5 @@
 function inv = device_igbt_setting_inv(fpwm)
+    inv.device_name = evalin('base', 'device_name');
     inv.Vth = evalin('base', 'Vth');                                 % [V]
     inv.Vce_sat = evalin('base', 'Vce_sat');                          % [V]
     inv.Rce_on = evalin('base', 'Rce_on');                            % [Ohm]
