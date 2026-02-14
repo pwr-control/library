@@ -26,15 +26,25 @@ void first_harmonic_tracker_init(volatile FIRST_HARMONIC_TRACKER *f, volatile fl
 	const float delta, const float l1, const float l2) {
 
 	const float a = -omega_base*omega_base;
+//	const float a = omega_base;
 	const float b = -delta*omega_base;
 
 	f->ts = ts;
 	f->first_harmonic_tracker_l1 = l1;
 	f->first_harmonic_tracker_l2 = l2;
+
 	f->first_harmonic_tracker_a11 = 1.0f + 0.5f*a*ts*ts;
 	f->first_harmonic_tracker_a12 = ts + 0.5f*b*ts*ts;
 	f->first_harmonic_tracker_a21 = a*ts + 0.5f*a*b*ts*ts;
 	f->first_harmonic_tracker_a22 = 1.0f + b*ts + 0.5f*(a+b*b)*ts*ts;
+
+/*
+	f->first_harmonic_tracker_a11 = 1.0f;
+	f->first_harmonic_tracker_a12 = ts*a;
+	f->first_harmonic_tracker_a21 = -a*ts;
+	f->first_harmonic_tracker_a22 = 1.0f + b*ts;
+*/
+
 	f->first_harmonic_tracker_c1 = 1.0f;
 	first_harmonic_tracker_reset(f);
 }
