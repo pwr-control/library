@@ -23,8 +23,8 @@ end
 
 annotations
     G : Side = left;
-    C : Side = right;
-    E : Side = right;
+    C : Side = top;
+    E : Side = bottom;
 end
 
 nodes(Access = private)
