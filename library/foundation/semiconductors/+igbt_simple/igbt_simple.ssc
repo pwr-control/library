@@ -1,0 +1,68 @@
+component igbt_simple
+% IGBT_SIMPLE  Simplified IGBT + antiparallel FWD
+%
+
+nodes
+    p  = foundation.electrical.electrical; % C:left
+    n  = foundation.electrical.electrical; % E:right
+end
+
+inputs
+    g = { 0, 'V' };                       % G:left
+end
+
+outputs
+    it = { 0, 'A' };                      % it:right
+    id = { 0, 'A' };                      % id:right
+end
+
+parameters
+    % --- conduction (Tvj = 125 C, terminal values) ---
+    Vce_sat  = { 2.40, 'V'    };  % Collector-emitter on-state voltage
+    Vf       = { 2.80, 'V'    };  % Diode forward voltage
+
+    % --- gate ---
+    Vth      = { 6,    'V'    };  % Gate-emitter threshold voltage
+    Vhyst    = { 0.85, 'V'    };  % Half hysteresis band for the switching events
+
+    % --- numerical ---
+    Ron      = { 0.05, 'mOhm' };  % IGBT on-state series resistance
+    Rd       = { 0.05, 'mOhm' };  % Diode series resistance
+    Goff     = { 1e-6, '1/Ohm'};  % Off-state conductance
+end
+
+variables
+    i     = { 0, 'A' };           % terminal current, C -> E
+    v     = { 0, 'V' };           % terminal voltage, C - E
+    i_t   = { 0, 'A' };           % IGBT current
+    i_d   = { 0, 'A' };           % diode current
+end
+
+branches
+    i  : p.i  -> n.i;
+end
+
+equations
+
+    v == p.v - n.v;
+    i == i_t + i_d;
+
+    % ---------- conduction ----------
+    if (g > Vth) && (v > Vce_sat)
+        i_t == (v - Vce_sat)/Ron;
+    else
+        i_t == v*Goff;
+    end
+
+    if v < -Vf
+        i_d == (v + Vf)/Rd;
+    else
+        i_d == v*Goff;
+    end
+    
+    it == i_t;
+    id == i_d;
+
+end
+
+end
