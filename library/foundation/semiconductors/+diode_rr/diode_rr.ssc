@@ -1,18 +1,35 @@
 component diode_rr
-% RR Diode (Lauritzen-Ma) : 1.5
+% RR Diode (Lauritzen-Ma) : 2.0
 % Charge-controlled diode for switching-transient studies (no losses).
 % Diffusion-charge dynamics per Lauritzen-Ma (1991) reproduce reverse
 % recovery: Irr, trr and softness emerge from the circuit di/dt and the
 % two charge parameters tau and TM. Depletion capacitance (SPICE
-% convention) and series resistance are included for the blocking and
-% ringing phase.
+% convention), series resistance and an optional reverse leakage
+% resistance (for static voltage-sharing studies of series stacks) are
+% included for the blocking and ringing phase.
 %
-% Parameter extraction from datasheet (Irr, Qrr at di/dt = a):
+% Parameter extraction from one datasheet point (Irr, Qrr at di/dt = a):
 %   t_tail = Qrr/Irr - Irr/(2*a)      (recovery tail time constant)
 %   tau    = t_tail + Irr/a
 %   TM     = tau*t_tail*a/Irr
+% These formulas hold in the long-ramp limit of the model, i.e. when the
+% ramp lasts much longer than tau: (IF + Irr)/a >> tau. In that limit
+% the model gives Irr = a*(tau - t_tail) and Qrr ~ a*tau^2, independent of
+% IF: the recovered charge is recombination-limited, not IF-limited.
+% A single lifetime cannot fit a whole Qrr(di/dt) datasheet curve (the
+% extracted tau falls with di/dt): extract at the datasheet point closest
+% to the di/dt of the application, or extrapolate tau along the curve.
+%
 % Static check (on-state):
 %   If = Is*tau/(tau + TM)*(exp(Vf/(N*Vt)) - 1), plus Rs*If.
+%
+% Example: Infineon D711N (Tvj = 160 C, Vt = 37.3 mV), see the extraction
+% script d711n_lm_extract.py:
+%   set A, datasheet test 10 A/us : tau = 37.5 us, TM = 32.8 us
+%   set B, datasheet point 1 A/us : tau = 62.5 us, TM = 24.3 us
+%   set C, extrapolated to 0.23 A/us: tau = 87 us,   TM = 22 us
+%   static (200-1600 A, Tvj max): Is = 0.14-0.19 A, N = 2.9, Rs = 0.7 mOhm
+%   Cj0 ~ 10 nF, Vj = 0.7 V, m = 0.5 (34 mm wafer, N_D ~ 1e13 cm^-3)
 
 nodes
     p = foundation.electrical.electrical; % A
@@ -31,6 +48,7 @@ parameters
     tau = {350e-9, 's'  }; % Carrier lifetime, tau
     TM  = {60e-9,  's'  }; % Transit time, TM
     Rs  = {0.5e-3, 'Ohm'}; % Series resistance, Rs
+    Rr  = {1e12,   'Ohm'}; % Reverse leakage resistance, Rr (1e12 = none)
     Cj0 = {10e-9,  'F'  }; % Zero-bias depletion capacitance, Cj0
     Vjp = {0.7,    'V'  }; % Junction potential, Vj
     mg  = {0.5,    '1'  }; % Grading coefficient, m
@@ -74,7 +92,7 @@ equations
     % depletion charge, linear extension above FC*Vjp
     qj == Cj0*Vjp/(1 - mg)*(1 - (1 - vjc/Vjp)^(1 - mg)) + Cfc*(vj - vjc);
 
-    % total current = diffusion + depletion displacement
-    i == (qE - qM)/TM + qj.der;
+    % total current = diffusion + depletion displacement + leakage
+    i == (qE - qM)/TM + qj.der + vj/Rr;
 end
 end
