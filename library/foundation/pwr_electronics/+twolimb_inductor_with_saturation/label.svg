@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:d="http://www.mathworks.com/blockgraphics" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="svg" width="390" height="321" d:options="Foreground:PortStyled;PreserveAspect:On;StrokeScaling:PortStyled;StrokeScalingOnResize:NonScaling;LineExtension:On;Rotate:On;Resize:FitToBlock;PreAdjustStrokeWidth:Normalized;">
+
+	<g ie-elementType="Part" id="part" title="part_0" ie-ports="left:simulink*simulink,top:,right:simulink*simulink,bottom:">
+		<text ie-elementType="Text" id="portLabel" class="text dvg-port-label" d:options="Port:L0;" x="1.6" y="58.75">
+			<tspan dx="0" dy="35" x="1.6" style="white-space: pre;"> a(+)</tspan>
+		</text>
+		<text ie-elementType="Text" id="portLabel_1" class="text dvg-port-label" d:options="Port:L0;" x="1.6" y="58.75">
+			<tspan dx="0" dy="35" x="1.6" style="white-space: pre;"> a(+)</tspan>
+		</text>
+		<text ie-elementType="Text" id="portLabel_2" class="text dvg-port-label" d:options="Port:L1;" x="1.6" y="219.25">
+			<tspan dx="0" dy="35" x="1.6" style="white-space: pre;"> a(-)</tspan>
+		</text>
+		<text ie-elementType="Text" id="portLabel_3" class="text dvg-port-label" d:options="Port:R0;" x="307.11" y="58.75">
+			<tspan dx="0" dy="35" x="307.11" style="white-space: pre;"> b(+)</tspan>
+		</text>
+		<text ie-elementType="Text" id="portLabel_4" class="text dvg-port-label" d:options="Port:R1;" x="317.06" y="219.25">
+			<tspan dx="0" dy="35" x="317.06" style="white-space: pre;"> b</tspan>
+			<tspan dx="0.83em" dy="0" x="317.06">(-)</tspan>
+		</text>
+		<math id="equation" class="equation" cx="195" cy="155.44" width="78.17" height="48.89" scalingFactors="3.9" style="font-size:39px">
+			$$L(I)
+			$$		</math>
+	</g>
+</svg>
