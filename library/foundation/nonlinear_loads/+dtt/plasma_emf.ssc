@@ -1,0 +1,44 @@
+component plasma_emf
+% Plasma EMF
+% Plasma-induced e.m.f. from externally supplied plasma current Ip(t) and
+% plasma-coil mutual inductance Mcp(t) (physical-signal inputs):
+%   Psi = Mcp*Ip
+%   e   = k*[(1-gam) dPsi/dt + gam*x],   tau_v dx/dt + x = dPsi/dt
+% The derivative of the flux variation is obtained with a first-order filter of
+% time constant tau_f (keep tau_f << tcq). Psi_init is the flux at t = 0 (Mcp(0)*Ip(0)),
+% used to initialise the filter states without a start-up transient
+% (alternatively use "Start simulation from steady state" in the Solver Configuration).
+% Build Ip(t), Mcp(t) with dtt_plasma_scenario.m or any Simulink signal source.
+
+  inputs
+    Ip  = {0, 'A'}; % Ip:left
+    Mcp = {0, 'H'}; % Mcp:left
+  end
+
+  outputs
+    e   = {0, 'V'};  % e:right
+    Psi = {0, 'Wb'}; % Psi:right
+  end
+
+  parameters
+    tau_v    = {25.8e-3, 's'}; % Passive-structure time constant tau_v
+    gam      = {0.92, '1'};    % Fraction of flux delivered through the passive structures
+    tau_f    = {50e-6, 's'};   % Derivative filter time constant tau_f
+    k        = {1, '1'};       % Gain k
+    Psi_init = {30.60, 'Wb'};  % Initial linked flux Mcp(0)*Ip(0)
+  end
+
+  variables
+    z = {value = Psi_init, priority = priority.high}; % Fast-filtered flux
+    y = {value = Psi_init, priority = priority.high}; % Delayed flux (passive structures)
+  end
+
+  equations
+    assert(tau_f > 0 && tau_v > 0)
+    assert(gam >= 0 && gam <= 1)
+    Psi == Mcp*Ip;
+    tau_f*der(z) + z == Psi;
+    tau_v*der(y) + y == Psi;
+    e == k*((1 - gam)*(Psi - z)/tau_f + gam*(Psi - y)/tau_v);
+  end
+end

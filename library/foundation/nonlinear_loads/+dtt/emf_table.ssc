@@ -1,0 +1,23 @@
+component emf_table
+% EMF Table
+% Time-table source of the plasma-induced open-circuit e.m.f. e_oc(t), e.g. the
+% digitised spec PSS-SPT-59401 Fig. 6 curves (file dtt_fig6_fig7_digitised.csv,
+% loaded with dtt_load_curves.m). The table is shifted by t0 (disruption starts
+% at t = t0) and scaled by k. Outside the table range the end values are held.
+% Connect the output to the "e" input of a DIV Coil block.
+
+  outputs
+    e = {0, 'V'}; % e:right
+  end
+
+  parameters
+    t_tab = {[0 0.1 0.2 0.3], 's'}; % Time vector (strictly increasing)
+    e_tab = {[0 0 0 0], 'V'};       % e.m.f. vector
+    t0    = {0, 's'};               % Time offset t0
+    k     = {1, '1'};               % Gain k
+  end
+
+  equations
+    e == k*tablelookup(t_tab, e_tab, time - t0, interpolation = linear, extrapolation = nearest);
+  end
+end

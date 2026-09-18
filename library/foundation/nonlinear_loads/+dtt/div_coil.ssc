@@ -1,0 +1,64 @@
+component div_coil
+% DIV Coil
+% Thevenin model of one DTT DIV in-vessel coil seen from its terminals.
+%
+% Terminal equation (p -> n, current i entering at p):
+%   v = R0 i + L0 di/dt + Lm1 dx1/dt + Lm2 dx2/dt + k_e e
+% Eddy-current loops (passive structures, spec PSS-SPT-59401 Fig. 3):
+%   tau_k dxk/dt + xk + tau_k di/dt = 0        (Lm_k = M_k^2/L_k, tau_k = L_k/R_k)
+% e is the plasma-induced open-circuit e.m.f. (spec Fig. 6 sign convention:
+% positive during the VDE flux growth, negative spike at the current quench).
+% With p connected to the converter positive terminal, a short circuit
+% (ideal crowbar) gives the positive induced current of spec Fig. 7.
+% Cable (L, R) and protection reactor Lp are NOT included: add them in series.
+% Set Lm1 = Lm2 = 0 for a pure R-L coil. If i0 is not zero, give the same initial
+% current to the external series inductors (cable, Lp) to avoid conflicting targets.
+% Block ports: left = e (PS), p ; right = i (PS), n.
+
+  inputs
+    e = {0, 'V'}; % e:left
+  end
+
+  outputs
+    i_out = {0, 'A'}; % i:right
+  end
+
+  nodes
+    p = foundation.electrical.electrical; % +:left
+    n = foundation.electrical.electrical; % -:right
+  end
+
+  parameters
+    R0   = {24.9e-3, 'Ohm'}; % Coil resistance R0
+    L0   = {1.7e-3, 'H'};    % Coil self-inductance L0 (stand-alone)
+    Lm1  = {0.593e-3, 'H'};  % Eddy loop 1: Lm1 = M1^2/L1
+    tau1 = {11.8e-3, 's'};   % Eddy loop 1: time constant tau1
+    Lm2  = {0.152e-3, 'H'};  % Eddy loop 2: Lm2 = M2^2/L2
+    tau2 = {102e-3, 's'};    % Eddy loop 2: time constant tau2
+    k_e  = {1, '1'};         % e.m.f. gain k_e (1: spec Fig. 6; 1.84: spec Fig. 7 current case)
+    i0   = {0, 'A'};         % Initial coil current
+  end
+
+  variables
+    i  = {value = i0, priority = priority.high};      % Coil current
+    v  = {0, 'V'};                                    % Terminal voltage
+    x1 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 1 current (referred to the coil)
+    x2 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 2 current (referred to the coil)
+  end
+
+  branches
+    i : p.i -> n.i;
+  end
+
+  equations
+    assert(L0 > 0, 'L0 must be positive')
+    assert(Lm1 >= 0 && Lm2 >= 0, 'Lm1 and Lm2 must be non-negative')
+    assert(Lm1 + Lm2 < L0, 'Lm1 + Lm2 must be smaller than L0 (positive high-frequency inductance)')
+    assert(tau1 > 0 && tau2 > 0, 'tau1 and tau2 must be positive')
+    v == p.v - n.v;
+    v == R0*i + L0*der(i) + Lm1*der(x1) + Lm2*der(x2) + k_e*e;
+    tau1*der(x1) + x1 + tau1*der(i) == 0;
+    tau2*der(x2) + x2 + tau2*der(i) == 0;
+    i_out == i;
+  end
+end
