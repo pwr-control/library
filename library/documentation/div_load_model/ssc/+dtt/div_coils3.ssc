@@ -1,0 +1,75 @@
+component div_coils3
+% DIV Coils 3
+% The three DTT DIV in-vessel coils (DIV1, DIV2, DIV3) with mutual coupling and
+% two eddy-current loops per coil. For coil j (ports pj -> nj, current ij):
+%   vj = R0(j) ij + sum_k L(j,k) dik/dt + Lm(j,1) dxj1/dt + Lm(j,2) dxj2/dt + k_e(j) ej
+%   tau(j,m) dxjm/dt + xjm + tau(j,m) dij/dt = 0
+% L is the 3x3 inductance matrix [L1 M12 M13; M12 L2 M23; M13 M23 L3].
+% The coil-coil mutual inductances are NOT given in spec PSS-SPT-59401 (default 0,
+% to be requested from ENEA). Cables and protection reactors are external.
+% Block ports: left = e1, e2, e3 (PS), 1+, 2+, 3+ ; right = 1-, 2-, 3-.
+
+  inputs
+    e1 = {0, 'V'}; % e1:left
+    e2 = {0, 'V'}; % e2:left
+    e3 = {0, 'V'}; % e3:left
+  end
+
+  nodes
+    p1 = foundation.electrical.electrical; % 1+:left
+    n1 = foundation.electrical.electrical; % 1-:right
+    p2 = foundation.electrical.electrical; % 2+:left
+    n2 = foundation.electrical.electrical; % 2-:right
+    p3 = foundation.electrical.electrical; % 3+:left
+    n3 = foundation.electrical.electrical; % 3-:right
+  end
+
+  parameters
+    R0  = {[10.6e-3 18.7e-3 24.9e-3], 'Ohm'};            % Coil resistances [R1 R2 R3]
+    L   = {[0.5e-3 0 0; 0 1.2e-3 0; 0 0 1.7e-3], 'H'};   % Inductance matrix [L1 M12 M13; M12 L2 M23; M13 M23 L3]
+    Lm  = {[0.161e-3 0.034e-3; 0.466e-3 0.069e-3; 0.593e-3 0.152e-3], 'H'}; % Eddy loops Lm(j,m)
+    tau = {[9.8e-3 86.9e-3; 11.3e-3 140.9e-3; 11.8e-3 102.3e-3], 's'};      % Eddy loop time constants tau(j,m)
+    k_e = {[1 1 1], '1'};                                  % e.m.f. gains [k1 k2 k3]
+    i10 = {0, 'A'};                                        % Initial current DIV1
+    i20 = {0, 'A'};                                        % Initial current DIV2
+    i30 = {0, 'A'};                                        % Initial current DIV3
+  end
+
+  variables
+    i1 = {value = i10, priority = priority.high}; % Current DIV1
+    i2 = {value = i20, priority = priority.high}; % Current DIV2
+    i3 = {value = i30, priority = priority.high}; % Current DIV3
+    v1 = {0, 'V'}; % Voltage DIV1
+    v2 = {0, 'V'}; % Voltage DIV2
+    v3 = {0, 'V'}; % Voltage DIV3
+    x11 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 1 of DIV1
+    x12 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 2 of DIV1
+    x21 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 1 of DIV2
+    x22 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 2 of DIV2
+    x31 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 1 of DIV3
+    x32 = {value = {0, 'A'}, priority = priority.high}; % Eddy loop 2 of DIV3
+  end
+
+  branches
+    i1 : p1.i -> n1.i;
+    i2 : p2.i -> n2.i;
+    i3 : p3.i -> n3.i;
+  end
+
+  equations
+    assert(L(1,2) == L(2,1) && L(1,3) == L(3,1) && L(2,3) == L(3,2), 'L must be symmetric')
+    assert(L(1,1) > 0 && L(2,2) > 0 && L(3,3) > 0)
+    v1 == p1.v - n1.v;
+    v2 == p2.v - n2.v;
+    v3 == p3.v - n3.v;
+    v1 == R0(1)*i1 + L(1,1)*der(i1) + L(1,2)*der(i2) + L(1,3)*der(i3) + Lm(1,1)*der(x11) + Lm(1,2)*der(x12) + k_e(1)*e1;
+    v2 == R0(2)*i2 + L(2,1)*der(i1) + L(2,2)*der(i2) + L(2,3)*der(i3) + Lm(2,1)*der(x21) + Lm(2,2)*der(x22) + k_e(2)*e2;
+    v3 == R0(3)*i3 + L(3,1)*der(i1) + L(3,2)*der(i2) + L(3,3)*der(i3) + Lm(3,1)*der(x31) + Lm(3,2)*der(x32) + k_e(3)*e3;
+    tau(1,1)*der(x11) + x11 + tau(1,1)*der(i1) == 0;
+    tau(1,2)*der(x12) + x12 + tau(1,2)*der(i1) == 0;
+    tau(2,1)*der(x21) + x21 + tau(2,1)*der(i2) == 0;
+    tau(2,2)*der(x22) + x22 + tau(2,2)*der(i2) == 0;
+    tau(3,1)*der(x31) + x31 + tau(3,1)*der(i3) == 0;
+    tau(3,2)*der(x32) + x32 + tau(3,2)*der(i3) == 0;
+  end
+end

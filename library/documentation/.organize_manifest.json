@@ -1,0 +1,165 @@
+{
+  "moves": [
+    {
+      "from": "active_clamping_5SNA1000G650300.pdf",
+      "to": "active_clamping_5sna1000g650300/active_clamping_5SNA1000G650300.pdf"
+    },
+    {
+      "from": "active_clamping_5SNA1000G650300.tex",
+      "to": "active_clamping_5sna1000g650300/active_clamping_5SNA1000G650300.tex"
+    },
+    {
+      "from": "crowbar_bidir.pdf",
+      "to": "crowbar_bidir/crowbar_bidir.pdf"
+    },
+    {
+      "from": "crowbar_bidir.ssc",
+      "to": "crowbar_bidir/ssc/crowbar_bidir.ssc"
+    },
+    {
+      "from": "crowbar_bidir.tex",
+      "to": "crowbar_bidir/crowbar_bidir.tex"
+    },
+    {
+      "from": "diode_rr.ssc",
+      "to": "diode_rr/ssc/diode_rr.ssc"
+    },
+    {
+      "from": "hs778746_analytic.py",
+      "to": "hs778746_thermal/py/hs778746_analytic.py"
+    },
+    {
+      "from": "hs778746_fd.py",
+      "to": "hs778746_thermal/py/hs778746_fd.py"
+    },
+    {
+      "from": "hs778746_thermal.pdf",
+      "to": "hs778746_thermal/hs778746_thermal.pdf"
+    },
+    {
+      "from": "hs778746_thermal.tex",
+      "to": "hs778746_thermal/hs778746_thermal.tex"
+    },
+    {
+      "from": "igbt_dyn.ssc",
+      "to": "igbt_dyn/ssc/igbt_dyn.ssc"
+    },
+    {
+      "from": "igbt_dyn_diode_rr.pdf",
+      "to": "igbt_dyn/igbt_dyn_diode_rr.pdf"
+    },
+    {
+      "from": "igbt_dyn_diode_rr.tex",
+      "to": "igbt_dyn/igbt_dyn_diode_rr.tex"
+    },
+    {
+      "from": "igbt_simple_2th.ssc",
+      "to": "igbt_simple/ssc/igbt_simple_2th.ssc"
+    },
+    {
+      "from": "igbt_simple_doc.pdf",
+      "to": "igbt_simple/igbt_simple_doc.pdf"
+    },
+    {
+      "from": "igbt_simple_doc.tex",
+      "to": "igbt_simple/igbt_simple_doc.tex"
+    },
+    {
+      "from": "mos_dyn.ssc",
+      "to": "mos_dyn/ssc/mos_dyn.ssc"
+    },
+    {
+      "from": "mos_dyn_doc.pdf",
+      "to": "mos_dyn/mos_dyn_doc.pdf"
+    },
+    {
+      "from": "mos_dyn_doc.tex",
+      "to": "mos_dyn/mos_dyn_doc.tex"
+    },
+    {
+      "from": "mos_loss.ssc",
+      "to": "mos_loss/ssc/mos_loss.ssc"
+    },
+    {
+      "from": "mos_simple_2th.ssc",
+      "to": "mos_simple_2th/ssc/mos_simple_2th.ssc"
+    },
+    {
+      "from": "mos_simple_2th_doc.pdf",
+      "to": "mos_simple_2th/mos_simple_2th_doc.pdf"
+    },
+    {
+      "from": "mos_simple_2th_doc.tex",
+      "to": "mos_simple_2th/mos_simple_2th_doc.tex"
+    },
+    {
+      "from": "scott_t.pdf",
+      "to": "scott_t/scott_t.pdf"
+    },
+    {
+      "from": "scott_t.ssc",
+      "to": "scott_t/ssc/scott_t.ssc"
+    },
+    {
+      "from": "scott_t.tex",
+      "to": "scott_t/scott_t.tex"
+    },
+    {
+      "from": "singlephase_inductor_with_saturation_1.ssc",
+      "to": "singlephase_inductor_with_saturation/ssc/singlephase_inductor_with_saturation_1.ssc"
+    },
+    {
+      "from": "snubber_design.pdf",
+      "to": "snubber_design/snubber_design.pdf"
+    },
+    {
+      "from": "snubber_design.tex",
+      "to": "snubber_design/snubber_design.tex"
+    },
+    {
+      "from": "thyristor_rr.ssc",
+      "to": "thyristor_rr/ssc/thyristor_rr.ssc"
+    },
+    {
+      "from": "thyristor_rr_model.pdf",
+      "to": "thyristor_rr/thyristor_rr_model.pdf"
+    },
+    {
+      "from": "thyristor_rr_model.tex",
+      "to": "thyristor_rr/thyristor_rr_model.tex"
+    },
+    {
+      "from": "tvs_clamp.ssc",
+      "to": "tvs_clamp/ssc/tvs_clamp.ssc"
+    },
+    {
+      "from": "twolimb_inductor_with_saturation.pdf",
+      "to": "twolimb_inductor_with_saturation/twolimb_inductor_with_saturation.pdf"
+    },
+    {
+      "from": "twolimb_inductor_with_saturation.tex",
+      "to": "twolimb_inductor_with_saturation/twolimb_inductor_with_saturation.tex"
+    },
+    {
+      "from": "twolimb_inductor_with_saturation_1.ssc",
+      "to": "twolimb_inductor_with_saturation/ssc/twolimb_inductor_with_saturation_1.ssc"
+    }
+  ],
+  "readmes": [
+    "active_clamping_5sna1000g650300/README.md",
+    "crowbar_bidir/README.md",
+    "diode_rr/README.md",
+    "hs778746_thermal/README.md",
+    "igbt_dyn/README.md",
+    "igbt_simple/README.md",
+    "mos_dyn/README.md",
+    "mos_loss/README.md",
+    "mos_simple_2th/README.md",
+    "scott_t/README.md",
+    "singlephase_inductor_with_saturation/README.md",
+    "snubber_design/README.md",
+    "thyristor_rr/README.md",
+    "tvs_clamp/README.md",
+    "twolimb_inductor_with_saturation/README.md"
+  ]
+}

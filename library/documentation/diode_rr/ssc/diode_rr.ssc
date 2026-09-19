@@ -1,0 +1,80 @@
+component diode_rr
+% RR Diode (Lauritzen-Ma) : 1.5
+% Charge-controlled diode for switching-transient studies (no losses).
+% Diffusion-charge dynamics per Lauritzen-Ma (1991) reproduce reverse
+% recovery: Irr, trr and softness emerge from the circuit di/dt and the
+% two charge parameters tau and TM. Depletion capacitance (SPICE
+% convention) and series resistance are included for the blocking and
+% ringing phase.
+%
+% Parameter extraction from datasheet (Irr, Qrr at di/dt = a):
+%   t_tail = Qrr/Irr - Irr/(2*a)      (recovery tail time constant)
+%   tau    = t_tail + Irr/a
+%   TM     = tau*t_tail*a/Irr
+% Static check (on-state):
+%   If = Is*tau/(tau + TM)*(exp(Vf/(N*Vt)) - 1), plus Rs*If.
+
+nodes
+    p = foundation.electrical.electrical; % +
+    n = foundation.electrical.electrical; % -
+end
+
+annotations
+    p : Side = left;
+    n : Side = right;
+end
+
+parameters
+    Is  = {5e-9,   'A'  }; % Saturation current, Is
+    N   = {2,      '1'  }; % Emission coefficient, N
+    Vt  = {26e-3,  'V'  }; % Thermal voltage, kT/q
+    tau = {350e-9, 's'  }; % Carrier lifetime, tau
+    TM  = {60e-9,  's'  }; % Transit time, TM
+    Rs  = {0.5e-3, 'Ohm'}; % Series resistance, Rs
+    Cj0 = {10e-9,  'F'  }; % Zero-bias depletion capacitance, Cj0
+    Vjp = {0.7,    'V'  }; % Junction potential, Vj
+    mg  = {0.5,    '1'  }; % Grading coefficient, m
+    FC  = {0.5,    '1'  }; % Forward-bias depletion clamp factor
+    dsm = {10e-3,  'V'  }; % Smoothing width (numerics)
+end
+
+variables
+    i  = {0, 'A'};                                     % through
+    v  = {0, 'V'};                                     % across
+    vj = {0, 'V'};                                     % internal junction voltage
+    qE = {value = {0, 'C'}, nominal = {1e-4, 'C'}};                           % injected junction charge
+    qM = {value = {0, 'C'}, nominal = {1e-4, 'C'}, priority = priority.high}; % mid-region stored charge
+    qj = {value = {0, 'C'}, nominal = {1e-5, 'C'}};                           % depletion charge
+end
+
+branches
+    i : p.i -> n.i;
+end
+
+intermediates
+    % smooth-limited exponential argument (protects the solver only;
+    % never active in normal operation)
+    xr  = 50 - vj/(N*Vt);
+    xe  = 50 - 0.5*(xr + sqrt(xr^2 + 1e-4));
+    % smooth clamp of vj at FC*Vjp for the depletion charge
+    xc  = FC*Vjp - vj;
+    xcp = 0.5*(xc + sqrt(xc^2 + dsm^2));  % positive part of xc
+    vjc = FC*Vjp - xcp;                   % min(vj, FC*Vjp), smooth
+    Cfc = Cj0/(1 - FC)^mg;                % depletion C at the clamp point
+end
+
+equations
+    v == p.v - n.v;
+    v == vj + Rs*i;
+
+    % Lauritzen-Ma lumped charge model
+    qE     == tau*Is*(exp(xe) - 1);
+    qM.der == (qE - qM)/TM - qM/tau;
+
+    % depletion charge, linear extension above FC*Vjp
+    qj == Cj0*Vjp/(1 - mg)*(1 - (1 - vjc/Vjp)^(1 - mg)) + Cfc*(vj - vjc);
+
+    % total current = diffusion + depletion displacement
+    i == (qE - qM)/TM + qj.der;
+end
+end

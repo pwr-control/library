@@ -1,0 +1,60 @@
+component emf_analytic
+% EMF Analytic
+% Parametrised plasma-flux model of the open-circuit e.m.f. (see note, Sec. 3.3).
+% Flux linked by the coil (tt = time - t0):
+%   tt <= 0          : Psi = Psi_a                                    (flat top)
+%   0 < tt <= tq     : Psi = Psi_a + dPsi_v (exp(g(tt-tq)) - exp(-g tq))/(1 - exp(-g tq))   (VDE)
+%   tq < tt < tq+tcq : Psi = (Psi_a + dPsi_v)(1 - (tt-tq)/tcq)        (current quench)
+%   tt >= tq+tcq     : Psi = 0
+% e.m.f. with passive-structure delay:
+%   e = (1-gam) dPsi/dt + gam*x ,  tau_v dx/dt + x = dPsi/dt
+% Default parameters reproduce spec Fig. 6 (DIV3) within 53 V rms; use k to scale
+% (k = 1.84 reproduces the spec Fig. 7 crowbar current with the Sec. 8.2 circuit).
+
+  outputs
+    e   = {0, 'V'};  % e:right
+    Psi = {0, 'Wb'}; % Psi:right
+  end
+
+  parameters
+    Psi_a  = {30.60, 'Wb'};   % Flat-top linked flux Psi_a
+    dPsi_v = {11.93, 'Wb'};   % Flux increase during the VDE dPsi_v
+    g      = {31.8, '1/s'};   % VDE growth rate g
+    tq     = {81.1e-3, 's'};  % Quench start tq (after t0)
+    tcq    = {3.19e-3, 's'};  % Current quench duration tcq
+    tau_v  = {25.8e-3, 's'};  % Passive-structure time constant tau_v
+    gam    = {0.92, '1'};     % Fraction of flux delivered through the passive structures
+    t0     = {0, 's'};        % Time offset t0
+    k      = {1, '1'};        % Gain k
+  end
+
+  variables
+    y    = {value = {0, 'Wb'}, priority = priority.high}; % Delayed flux (passive structures)
+    dPsi = {0, 'V'};                                       % dPsi/dt
+  end
+
+  intermediates
+    Psi0 = Psi_a + dPsi_v; % Flux at the quench
+  end
+
+  equations
+    assert(tq > 0 && tcq > 0 && tau_v > 0 && g > 0)
+    assert(gam >= 0 && gam <= 1)
+    if time - t0 <= 0
+      Psi  == Psi_a;
+      dPsi == 0;
+    elseif time - t0 <= tq
+      Psi  == Psi_a + dPsi_v*(exp(g*(time - t0 - tq)) - exp(-g*tq))/(1 - exp(-g*tq));
+      dPsi == dPsi_v*g*exp(g*(time - t0 - tq))/(1 - exp(-g*tq));
+    elseif time - t0 < tq + tcq
+      Psi  == Psi0*(1 - (time - t0 - tq)/tcq);
+      dPsi == -Psi0/tcq;
+    else
+      Psi  == 0;
+      dPsi == 0;
+    end
+    % passive-structure delay applied to the flux variation (y tracks Psi - Psi_a)
+    tau_v*der(y) + y == Psi - Psi_a;
+    e == k*((1 - gam)*dPsi + gam*(Psi - Psi_a - y)/tau_v);
+  end
+end
