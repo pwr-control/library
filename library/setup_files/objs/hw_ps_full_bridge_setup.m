@@ -1,13 +1,16 @@
 %% ps_full_bridge_setup
 
-% ps_full_bridge = hw_ps_full_bridge_setup(CFi, RCFi, LFu, RLFu, CFu1, RCFu1, CFu2, RCFu2, udc_nom, udc_bez, u_nom, i_nom, u_bez, i_bez, fpwm);
+% ps_full_bridge = hw_ps_full_bridge_setup(CFi, RCFi, LFu, RLFu, CFu1, RCFu1, CFu2, RCFu2, udc_nom, udc_bez, ...
+%            u_nom, i_nom, u_bez, i_bez, Lload, Rload, fpwm);
 
 classdef hw_ps_full_bridge_setup 
     properties
+        Lload           double {mustBePositive} % [H]
+        Rload           double {mustBePositive} % [Ohm]
         CFi             double {mustBePositive} % [F]
         RCFi            double {mustBePositive} % [Ohm]
         LFu             double {mustBePositive} % [H]
-        RLFu             double {mustBePositive} % [Ohm]
+        RLFu            double {mustBePositive} % [Ohm]
         CFu1            double {mustBePositive} % [F]
         RCFu1           double {mustBePositive} % [Ohm]
         CFu2            double {mustBePositive} % [F]
@@ -23,7 +26,7 @@ classdef hw_ps_full_bridge_setup
     
     methods
         function obj = hw_ps_full_bridge_setup(CFi, RCFi, LFu, RLFu, CFu1, RCFu1, CFu2, RCFu2, ...
-                udc_nom, udc_bez, u_nom, i_nom, u_bez, i_bez, fpwm)
+                udc_nom, udc_bez, u_nom, i_nom, u_bez, i_bez, Lload, Rload, fpwm)
             if nargin > 0
                 obj.LFu = LFu;
                 obj.RLFu = RLFu;
@@ -40,6 +43,8 @@ classdef hw_ps_full_bridge_setup
                 obj.fpwm =  fpwm;
                 obj.udc_nom =  udc_nom;
                 obj.udc_bez =  udc_bez;
+                obj.Lload =  Lload;
+                obj.Rload =  Rload;
             end
         end
         
