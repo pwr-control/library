@@ -1,0 +1,112 @@
+component crowbar_c
+% Crowbar C (gate-fired, thyristor_rr)
+% Bidirectional crowbar across the filtered node of the DIV power supply
+% (solution C, pre-filter L_Fc / C_Fc1-R_Fc1 / C_Fc2-R_Fc2 in front of it).
+%
+%   p --[I1]--> T1 (a -> k) --> n        T1 conducts p -> n
+%   n --[I2]--> T2 (a -> k) --> p        T2 conducts n -> p
+%   voltage sensor p-n -> firing unit (|v| > V_th, |v| > V_BO backup,
+%   |i_load| > I_th, ext) -> the SAME gate command G to T1 and T2.
+%
+% Both gates are driven for t_gate after the trip (default: maintained). The
+% forward-biased device fires first; when the capacitor discharge rings through
+% zero, the other device is already gated and takes the reverse lobe as soon as
+% its voltage turns positive: the crowbar never opens.
+%
+% Devices: thyristor_rr (PWL static characteristic + Lauritzen-Ma reverse
+% recovery + tq surrogate). Defaults: ABB 5STP 50Q1800 at Tvj = 125 degC
+% (datasheet 5SYA1070-03, Mar. 2020). tau and Tm fitted to the datasheet
+% recovery point (IT = 2000 A, di/dt = -1.5 A/us, VR = 200 V):
+% Qrr = 2450 uAs, IRM = 59 A -> tau = 65 us, Tm = 108 us (tau_rr = 41 us).
+%
+% Not modelled: di/dt-limited plasma spreading, gate circuit dynamics, RC snubber
+% (add it externally across p-n if needed), thermal feedback.
+%
+% Ports: p, n (electrical); i_load (coil / output current, A), ext (0/1) in;
+% trip, stop (0/1), G (gate command, V), iT1, iT2 (device currents, A) out.
+% Requires the packages thyristor_rr (foundation/semiconductors) and dtt on the path.
+
+  nodes
+    p = foundation.electrical.electrical; % p:left
+    n = foundation.electrical.electrical; % n:right
+  end
+
+  inputs
+    i_load = {0, 'A'}; % i:left
+    ext    = {0, '1'}; % ext:left
+  end
+
+  outputs
+    trip = {0, '1'}; % trip:right
+    stop = {0, '1'}; % stop:right
+    G    = {0, 'V'}; % G:right
+    iT1  = {0, 'A'}; % iT1:right
+    iT2  = {0, 'A'}; % iT2:right
+  end
+
+  parameters
+    % --- thyristors (both), ABB 5STP 50Q1800, Tvj = 125 degC ---
+    Vf   = {0.90,     'V'    }; % Threshold voltage V_T0
+    Ron  = {0.050e-3, 'Ohm'  }; % Slope resistance r_T
+    Goff = {1.67e-4,  '1/Ohm'}; % Off-state conductance (I_DRM/V_DRM, worst case)
+    Vgt  = {2.6,      'V'    }; % Gate trigger threshold (compared with G)
+    Vth  = {50,       'V'    }; % Forward voltage threshold for tq re-trigger
+    Il   = {0.35,     'A'    }; % Latching current I_L
+    Ih   = {0.075,    'A'    }; % Holding current I_H
+    tau  = {65e-6,    's'    }; % Lauritzen-Ma carrier lifetime
+    Tm   = {108e-6,   's'    }; % Lauritzen-Ma cross-over time constant
+    Qth  = {1e-6,     'C'    }; % Excess-charge re-trigger threshold
+    tq   = {500e-6,   's'    }; % Circuit-commutated turn-off time t_q
+    % --- firing unit ---
+    I_th   = {7000,  'A'}; % Overcurrent threshold |i_load| > I_th
+    V_th   = {750,   'V'}; % Voltage threshold |v| > V_th
+    V_BO   = {1100,  'V'}; % Break-over backup threshold |v| > V_BO
+    en_I   = {0,     '1'}; % Enable overcurrent trigger (1/0)
+    en_V   = {1,     '1'}; % Enable voltage trigger (1/0)
+    t_fire = {5e-6,  's'}; % Delay trip -> gate
+    t_gate = {10,    's'}; % Gate duration (10 s = maintained)
+    t_stop = {10e-6, 's'}; % Delay trip -> PWM stop
+    V_G    = {10,    'V'}; % Gate command level (> Vgt)
+  end
+
+  components(ExternalAccess = observe)
+    T1  = thyristor_rr.thyristor_rr(Vf = Vf, Ron = Ron, Goff = Goff, Vgt = Vgt, Vth = Vth, ...
+                                    Il = Il, Ih = Ih, tau = tau, Tm = Tm, Qth = Qth, tq = tq);
+    T2  = thyristor_rr.thyristor_rr(Vf = Vf, Ron = Ron, Goff = Goff, Vgt = Vgt, Vth = Vth, ...
+                                    Il = Il, Ih = Ih, tau = tau, Tm = Tm, Qth = Qth, tq = tq);
+    cs1 = foundation.electrical.sensors.current;
+    cs2 = foundation.electrical.sensors.current;
+    vs  = foundation.electrical.sensors.voltage;
+    fu  = dtt.crowbar.firing_unit_bidir(I_th = I_th, V_th = V_th, V_BO = V_BO, en_I = en_I, ...
+                                        en_V = en_V, t_fire = t_fire, t_gate = t_gate, ...
+                                        t_stop = t_stop, V_G = V_G);
+  end
+
+  connections
+    % T1: p -> n
+    connect(p, cs1.p);
+    connect(cs1.n, T1.a);
+    connect(T1.k, n);
+    % T2: n -> p
+    connect(n, cs2.p);
+    connect(cs2.n, T2.a);
+    connect(T2.k, p);
+    % sensing and firing
+    connect(p, vs.p);
+    connect(n, vs.n);
+    connect(vs.V, fu.v);
+    connect(i_load, fu.i_load);
+    connect(ext, fu.ext);
+    connect(fu.G, T1.G, T2.G, G);
+    connect(fu.trip, trip);
+    connect(fu.stop, stop);
+    connect(cs1.I, iT1);
+    connect(cs2.I, iT2);
+  end
+
+  annotations
+    UILayout = [UIGroup("Thyristors (5STP 50Q1800)", Vf, Ron, Goff, Vgt, Vth, Il, Ih, tau, Tm, Qth, tq)
+                UIGroup("Firing unit", I_th, V_th, V_BO, en_I, en_V, t_fire, t_gate, t_stop, V_G)];
+  end
+
+end

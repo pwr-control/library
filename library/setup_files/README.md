@@ -82,11 +82,15 @@ DC-link components and the normalization bases:
 
 **Devices and cooling**
 
-- `device_igbt_setting` — conduction, switching energies, thermal network, gate and parasitic
-  data; computes the ZVS snubber from the recovery current and the module stray inductance, and
-  carries a fitted parameter set for the detailed gate-charge and tail-current models.
-- `device_mosfet_setting` — the MOSFET/SiC counterpart (single-die thermal path, drain and source
-  stray inductances, full capacitance set).
+- `device_igbt_setting(p, fpwm, udc)` — conduction, switching energies, thermal network, gate
+  and parasitic data, taken by name from the dataset struct `p` (required, derived and optional
+  fields; a missing required field stops with the list of what is missing, a missing optional
+  one becomes NaN). Computes the ZVS snubber from the recovery current and the module stray
+  inductance. The `igbt_dyn` parameter set (gate-charge, Miller, output capacitance and tail
+  current) comes from the dataset's `igbt_dyn_param` struct: NaN, with `has_dyn_param = false`,
+  for devices not characterized yet. Any other dataset field is kept in `extra`.
+- `device_mosfet_setting(p, fpwm, udc)` — the MOSFET/SiC counterpart (single-die thermal path,
+  drain and source stray inductances, full capacitance set), same struct interface.
 - `liquid_cooled_plate_2kw_setup` — water-cooled aluminium plate sized for a PrimePACK2 at about
   2 kW of losses; here "ambient" is the water. A reduced mass is available to drop the thermal
   inertia in fast steady-state runs.
@@ -135,9 +139,10 @@ inductance with its HF damping branch and plots the resulting impedance.
 `psm_calculus_with_variants` (that one at 690 V, otherwise a 4-system 1 MW motor drive) and
 `im_calculus` (ABB M3BP 355MLB 6, 261 kW).
 
-**Device wrappers** — `device_igbt_setup`, `device_mosfet_setup` run the chosen dataset and pack
-the resulting variables into the corresponding class; `device_ideal_switch_setting` returns the
-plain ideal-switch struct.
+**Device wrappers** — `device_data_load(device)` runs the chosen dataset in its own workspace and
+returns its variables as a struct (a dataset written as a function returning a struct is also
+accepted). `device_igbt_setup` and `device_mosfet_setup` pass that struct to the corresponding
+class; `device_ideal_switch_setting` returns the plain ideal-switch struct.
 
 **Grid, faults and FRT**
 
@@ -160,7 +165,10 @@ The device library for loss and thermal modelling, in three layers:
 - `devices_source_dataname/` — the data itself: one script per device assigning the loose
   variables transcribed from the datasheet at 125 °C (100 °C for SiC) — thresholds, conduction
   parameters, switching energies at their reference point, thermal chain, stray inductance,
-  capacitances, gate resistance, switching times, snubber.
+  capacitances, gate resistance, switching times, snubber. IGBT datasets can add an
+  `igbt_dyn_param` struct with the parameters of the `igbt_dyn` model (so far ABB
+  5SNA1000G650300 and Infineon FF2000XTR17IE5). The scripts can still be run directly in the
+  base workspace.
 - top-level `.m` files — one-line aliases giving each device a manufacturer-and-technology name
   that an init script can pass as a string to `device_igbt_setup`.
 - `heatsinks/` — `heatsink_air_64W.m` (air-cooled aluminium) and `heatsink_liquid_2kW.m` (water
@@ -168,7 +176,7 @@ The device library for loss and thermal modelling, in three layers:
 - `device_datasheets/` — the manufacturer PDFs.
 
 Devices covered: Infineon FF450R12KT4, FF650R17IE4, FF650R17IE4D_B2, FF900R12IE4, FF1200R17IP5,
-FF1200XTR17T2P5, FF1800R12IE5, FF1800R23IE7, FF2400RB12IP7, FF1000UXTR23T2M1 and
+FF1200XTR17T2P5, FF1800R12IE5, FF1800R23IE7, FF2000XTR17IE5, FF2400RB12IP7, FF1000UXTR23T2M1 and
 FF2600UXTR33T2M1; Danfoss/Semikron SEMiX604GB17E4s, SKM1000GB17E4, SKM1400MLI12BM7,
 DP650B1700T104001 and SKM1700MB20R4S2I4; Mitsubishi CM1200DW-24T and CM1200DW-34T;
 ABB 5SNA1000G650300; Wolfspeed CAB006M12GM3, CAB450M12XM3, CAB760M12HM3 and CLB800M12HM3P; plus a

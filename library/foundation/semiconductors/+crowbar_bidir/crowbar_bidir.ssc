@@ -106,7 +106,7 @@ component crowbar_bidir
     dir     = 0;          % +1 = T1 (p -> n), -1 = T2 (n -> p)
     armed   = 0;          % 1 = triggered, waiting for tgd
     latched = 0;          % 1 = current has exceeded Il since turn-on
-    mode_op    = 0;          % trigger source code
+    mode_op    = 0;       % trigger source code
     t_trig  = {0, 's'};   % time of the last trigger
   end
 
