@@ -1,0 +1,83 @@
+component firing_unit_bidir
+% Firing Unit (bidirectional)
+% Active trigger of a bidirectional thyristor crowbar (two antiparallel devices,
+% both gates driven by the same command).
+%   Trip (latched, no reset during the pulse) when
+%     |i_load| > I_th          (if en_I = 1)
+%     |v|      > V_th          (if en_V = 1)
+%     |v|      > V_BO          (always: break-over / BOD backup)
+%     ext      > 0.5           (external command)
+%   G    = V_G inside the window [t_trip + t_fire, t_trip + t_fire + t_gate), 0 outside.
+%          Both thyristors see the same gate command: the forward-biased one fires,
+%          the other one fires as soon as the current reverses and its voltage becomes
+%          positive (no gap between the two conduction lobes).
+%          t_gate = 10 s (default) means a gate maintained for the whole simulation.
+%   stop = 1 from t_trip + t_stop on (PWM-stop request to the converter).
+%   trip = 1 from t_trip on (no delay).
+% G is a physical signal in volts, compared with Vgt inside thyristor_rr.
+% Implemented with event variables and time comparisons (no delay() operator),
+% so long gate windows do not need a delay buffer.
+
+  inputs
+    i_load = {0, 'A'}; % i:left
+    v      = {0, 'V'}; % v:left
+    ext    = {0, '1'}; % ext:left
+  end
+
+  outputs
+    trip = {0, '1'}; % trip:right
+    G    = {0, 'V'}; % G:right
+    stop = {0, '1'}; % stop:right
+  end
+
+  parameters
+    I_th   = {7000,  'A'}; % Overcurrent threshold |i_load| > I_th
+    V_th   = {750,   'V'}; % Voltage threshold |v| > V_th
+    V_BO   = {1100,  'V'}; % Break-over backup threshold |v| > V_BO (always active)
+    en_I   = {0,     '1'}; % Enable overcurrent trigger (1/0)
+    en_V   = {1,     '1'}; % Enable voltage trigger (1/0)
+    t_fire = {5e-6,  's'}; % Delay trip -> gate
+    t_gate = {10,    's'}; % Gate duration (10 s = maintained)
+    t_stop = {10e-6, 's'}; % Delay trip -> PWM stop
+    V_G    = {10,    'V'}; % Gate command level (must exceed Vgt of the thyristors)
+  end
+
+  variables (Event = true)
+    fired  = 0;           % 1 after the trip
+    t_trip = {0, 's'};    % Time of the trip
+  end
+
+  equations
+    assert(t_fire >= 0 && t_stop >= 0, 'Delays must not be negative')
+    assert(t_gate > 0, 't_gate must be positive')
+    assert(V_BO > V_th, 'V_BO must be larger than V_th')
+    trip == fired;
+    if (fired > 0.5) && (time >= t_trip + t_fire) && (time < t_trip + t_fire + t_gate)
+      G == V_G;
+    else
+      G == {0, 'V'};
+    end
+    if (fired > 0.5) && (time >= t_trip + t_stop)
+      stop == 1;
+    else
+      stop == 0;
+    end
+  end
+
+  events
+    when edge((fired < 0.5) && ( ...
+              ((en_I > 0.5) && ((i_load > I_th) || (i_load < -I_th))) || ...
+              ((en_V > 0.5) && ((v > V_th) || (v < -V_th))) || ...
+              (v > V_BO) || (v < -V_BO) || ...
+              (ext > 0.5)))
+      fired  = 1;
+      t_trip = time;
+    end
+  end
+
+  annotations
+    UILayout = [UIGroup("Trip thresholds", I_th, V_th, V_BO, en_I, en_V)
+                UIGroup("Timing and gate", t_fire, t_gate, t_stop, V_G)];
+  end
+
+end
