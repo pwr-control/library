@@ -1,0 +1,229 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component three_phase_bridge
+% Three-Phase Bridge (ideal)
+% Two-level three-phase bridge: six ideal switches with antiparallel
+% freewheeling diodes, no switching dynamics, no conduction drop (Vf = 0),
+% no losses apart from the numerical Ron. Bidirectional: inverter (DC -> AC)
+% and active front end (AC -> DC) with the same block.
+%
+% Each switch + diode pair (current i, voltage v, collector -> emitter):
+%   gate on  (G(k) > Vth)   ->  i = v/Ron   (bidirectional)
+%   gate off, v < 0         ->  i = v/Ron   (antiparallel diode conducting)
+%   gate off, v >= 0        ->  i = v*Goff  (blocking)
+%
+% Optional integrated passives (parameters on/off), so that one converter
+% is ONE Simulink block (relevant for the 1000 non-virtual block limit of
+% the Home licence):
+%   - DC-link capacitor Cdc between + and - (initial voltage Vdc0). Set it
+%     off when several bridges share one DC bus with an external capacitor,
+%     or when an ideal voltage source is connected directly across + and -
+%     (the capacitor voltage would be a dependent state).
+%   - series inductor L + RL on each AC terminal (line reactor for the AFE,
+%     output filter for the inverter). Currents i_a, i_b, i_c are the
+%     inductor currents (states).
+%
+% Gate input G: physical-signal vector [6x1] in V, order per leg
+%     G = [a+; a-; b+; b-; c+; c-]
+% (same order as the Simscape Electrical Converter (Three-Phase) block).
+% Drive it with +15 V (on) / -10 V (off) and Vth = 2.5 V, or with 0/1 and
+% Vth = 0.5 V. One Simulink-PS Converter with a 6-wide Simulink vector.
+% No dead time and no interlock inside the block: with both switches of a
+% leg on, the leg shorts the DC link through 2*Ron.
+%
+% Outputs (physical signals): I = [i_a; i_b; i_c] terminal currents,
+% positive OUT of the bridge (inverter convention, negative as AFE);
+% V = DC-link voltage (+) - (-). Leave them unconnected if not needed.
+%
+% Ports: + - (DC, left), a b c (AC, right), G (bottom), I V (top).
+% Initial conditions: Vdc0 (parameter, only with cap_dc = on); inductor
+% currents from the Variables tab of the block dialog.
+
+  nodes
+    p = foundation.electrical.electrical; % +:left
+    n = foundation.electrical.electrical; % -:left
+    a = foundation.electrical.electrical; % a:right
+    b = foundation.electrical.electrical; % b:right
+    c = foundation.electrical.electrical; % c:right
+  end
+
+  inputs
+    G = {zeros(6,1), 'V'}; % G:bottom
+  end
+
+  outputs
+    I = {zeros(3,1), 'A'}; % I:top
+    V = {0, 'V'};          % V:top
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth    = {2.5,   'V'    };            % Gate threshold voltage
+    Ron    = {1e-3,  'Ohm'  };            % On-state resistance (switch and diode)
+    Goff   = {1e-6,  '1/Ohm'};            % Off-state conductance
+    % --- DC link ---
+    cap_dc = ideal_bridges.onoff.on;      % DC-link capacitor
+    Cdc    = {2e-3,  'F'    };            % DC-link capacitance
+    Vdc0   = {0,     'V'    };            % DC-link initial voltage
+    % --- AC inductors ---
+    ind_ac = ideal_bridges.onoff.on;      % AC series inductors
+    L      = {1e-3,  'H'    };            % Inductance per AC terminal
+    RL     = {10e-3, 'Ohm'  };            % Series resistance per AC terminal
+  end
+
+  variables
+    vdc  = {0, 'V'};   % DC-link voltage, (+) - (-)
+    ic   = {0, 'A'};   % DC-link capacitor current, (+) -> (-)
+    vm_a = {0, 'V'};   % Midpoint voltage of leg a (bridge side of the inductor)
+    vm_b = {0, 'V'};   % Midpoint voltage of leg b
+    vm_c = {0, 'V'};   % Midpoint voltage of leg c
+    i_ah = {0, 'A'};   % Current of switch a+, (+) -> midpoint
+    i_al = {0, 'A'};   % Current of switch a-, midpoint -> (-)
+    i_bh = {0, 'A'};   % Current of switch b+
+    i_bl = {0, 'A'};   % Current of switch b-
+    i_ch = {0, 'A'};   % Current of switch c+
+    i_cl = {0, 'A'};   % Current of switch c-
+    i_a  = {0, 'A'};   % Terminal current a, midpoint -> a (inductor current)
+    i_b  = {0, 'A'};   % Terminal current b
+    i_c  = {0, 'A'};   % Terminal current c
+  end
+
+  intermediates (ExternalAccess = observe)
+    v_ah = p.v - vm_a; % Voltage across switch a+
+    v_al = vm_a - n.v; % Voltage across switch a-
+    v_bh = p.v - vm_b; % Voltage across switch b+
+    v_bl = vm_b - n.v; % Voltage across switch b-
+    v_ch = p.v - vm_c; % Voltage across switch c+
+    v_cl = vm_c - n.v; % Voltage across switch c-
+  end
+
+  branches
+    % The leg midpoints are internal algebraic variables, not nodes: the
+    % upper switch is declared as a branch (+) -> terminal and the lower
+    % one as terminal -> (-); the terminal current is i_ah - i_al.
+    ic   : p.i -> n.i;
+    i_ah : p.i -> a.i;
+    i_al : a.i -> n.i;
+    i_bh : p.i -> b.i;
+    i_bl : b.i -> n.i;
+    i_ch : p.i -> c.i;
+    i_cl : c.i -> n.i;
+  end
+
+  equations
+    % ---------- DC link ----------
+    vdc == p.v - n.v;
+    if cap_dc == ideal_bridges.onoff.on
+      ic == Cdc*vdc.der;
+    else
+      ic == 0;
+    end
+
+    % ---------- switch + antiparallel diode pairs ----------
+    % leg a
+    if (G(1) > Vth) || (v_ah < 0)
+      i_ah == v_ah/Ron;
+    else
+      i_ah == v_ah*Goff;
+    end
+    if (G(2) > Vth) || (v_al < 0)
+      i_al == v_al/Ron;
+    else
+      i_al == v_al*Goff;
+    end
+    % leg b
+    if (G(3) > Vth) || (v_bh < 0)
+      i_bh == v_bh/Ron;
+    else
+      i_bh == v_bh*Goff;
+    end
+    if (G(4) > Vth) || (v_bl < 0)
+      i_bl == v_bl/Ron;
+    else
+      i_bl == v_bl*Goff;
+    end
+    % leg c
+    if (G(5) > Vth) || (v_ch < 0)
+      i_ch == v_ch/Ron;
+    else
+      i_ch == v_ch*Goff;
+    end
+    if (G(6) > Vth) || (v_cl < 0)
+      i_cl == v_cl/Ron;
+    else
+      i_cl == v_cl*Goff;
+    end
+
+    % ---------- AC terminals ----------
+    i_a == i_ah - i_al;
+    i_b == i_bh - i_bl;
+    i_c == i_ch - i_cl;
+    if ind_ac == ideal_bridges.onoff.on
+      vm_a - a.v == L*i_a.der + RL*i_a;
+      vm_b - b.v == L*i_b.der + RL*i_b;
+      vm_c - c.v == L*i_c.der + RL*i_c;
+    else
+      vm_a == a.v;
+      vm_b == b.v;
+      vm_c == c.v;
+    end
+
+    % ---------- measurements ----------
+    I == [i_a; i_b; i_c];
+    V == vdc;
+  end
+
+  % DC-link initial voltage (only meaningful when the capacitor is present)
+  if cap_dc == ideal_bridges.onoff.on
+    equations (Initial = true)
+      vdc == Vdc0;
+    end
+  end
+
+  % hide the parameters of the passives that are switched off
+  if cap_dc == ideal_bridges.onoff.off
+    annotations
+      [Cdc, Vdc0] : ExternalAccess = none;
+    end
+  end
+  if ind_ac == ideal_bridges.onoff.off
+    annotations
+      [L, RL] : ExternalAccess = none;
+    end
+  end
+
+  annotations
+    p : Side = left;
+    n : Side = left;
+    a : Side = right;
+    b : Side = right;
+    c : Side = right;
+    G : Side = bottom;
+    I : Side = top;
+    V : Side = top;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff)
+                UIGroup("DC link", cap_dc, Cdc, Vdc0)
+                UIGroup("AC inductors", ind_ac, L, RL)];
+  end
+
+end
