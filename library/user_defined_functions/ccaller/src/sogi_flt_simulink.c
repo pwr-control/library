@@ -33,7 +33,6 @@ static void init_all_sogi_flt_instances(SOGI_FLT *const filter_list, const unsig
     for (i = 0; i < filter_num; ++i) {
         SOGI_FLT *const filter = &filter_list[i];
 		sogi_flt_init(filter, ts, omega, kepsilon);
-		i++;
 	}
 }
 
@@ -43,6 +42,13 @@ SOGI_FLT_OUTPUT sogi_flt_process_simulink(const float input, const float ts, con
 	if (!sogi_flt_initialized){
 	    init_all_sogi_flt_instances(sogi_flt_instances, NSOGI_FLT_INSTANCES, ts, omega, kepsilon);
 		sogi_flt_initialized = 1;
+	}
+
+	if (instance >= NSOGI_FLT_INSTANCES) {
+		const SOGI_FLT_OUTPUT empty_output = {
+			0
+		};
+		return empty_output;
 	}
 
 	const SOGI_FLT* sogi_flt_instance = &sogi_flt_instances[instance];
