@@ -38,9 +38,19 @@ void dsmavgflt_init(volatile DSMAVGFLT *f, volatile float ts) {
 
 float dsmavgflt_process(volatile DSMAVGFLT *f, float input, const float period) {
 
-    f->length_period = floorf(period / f->ts);
-    if (f->length_period < 1) f->length_period = DSMAVGFLT_SIZE_MAX;
-    if (f->length_period > DSMAVGFLT_SIZE_MAX) f->length_period = DSMAVGFLT_SIZE_MAX;
+    const float samples_requested = floorf(period / f->ts);
+    const unsigned int length_period = (samples_requested >= 1.0f && samples_requested <= DSMAVGFLT_SIZE_MAX) ?
+        (unsigned int) samples_requested : DSMAVGFLT_SIZE_MAX;
+
+    /* window length changed: move sum_value onto the new window before sliding it */
+    while (f->length_period < length_period) {
+        f->length_period++;
+        f->sum_value += f->buffer[(f->idx + DSMAVGFLT_SIZE_MAX - f->length_period) % DSMAVGFLT_SIZE_MAX];
+    }
+    while (f->length_period > length_period) {
+        f->sum_value -= f->buffer[(f->idx + DSMAVGFLT_SIZE_MAX - f->length_period) % DSMAVGFLT_SIZE_MAX];
+        f->length_period--;
+    }
 
     unsigned int old_idx = (f->idx + DSMAVGFLT_SIZE_MAX - f->length_period) % DSMAVGFLT_SIZE_MAX;
     float xn = f->buffer[old_idx];
