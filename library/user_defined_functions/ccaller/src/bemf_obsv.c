@@ -98,30 +98,21 @@ float bemf_obsv_process(volatile BEMF_OBSV *f, volatile float u_alpha, volatile 
 	const float psi_m_alpha = f->motorc_psi_m_norm * cosf(theta_hat);
 	const float psi_m_beta = f->motorc_psi_m_norm * sinf(theta_hat);
 
-	bemf_obsv_fb_p = f->bemf_obsv_fb_p_1 * (omega_hat_flt - omega_lim_top)/(omega_lim_bottom - omega_lim_top) - 
-									f->bemf_obsv_fb_p_2 * (omega_hat_flt - omega_lim_bottom)/(omega_lim_bottom - omega_lim_top);	
-	bemf_obsv_p = f->bemf_obsv_p_1 * (omega_hat_flt - omega_lim_top)/(omega_lim_bottom - omega_lim_top) - 
-									f->bemf_obsv_p_2 * (omega_hat_flt - omega_lim_bottom)/(omega_lim_bottom - omega_lim_top);
+	/* gain scheduling on |omega_hat_flt|: p_1 below omega_lim_bottom, p_2 above omega_lim_top,
+	   linear in between; valid for p_1 > p_2 and for both directions of rotation */
+	float schedule_weight = (fabsf(omega_hat_flt) - omega_lim_bottom) / (omega_lim_top - omega_lim_bottom);
+	if (schedule_weight > 1.0f)
+	{
+		schedule_weight = 1.0f;
+	}
 
-	if (bemf_obsv_fb_p > f->bemf_obsv_fb_p_2)
+	if (schedule_weight < 0.0f)
 	{
-		bemf_obsv_fb_p = f->bemf_obsv_fb_p_2;
+		schedule_weight = 0.0f;
 	}
-	
-	if (bemf_obsv_fb_p < f->bemf_obsv_fb_p_1)
-	{
-		bemf_obsv_fb_p = f->bemf_obsv_fb_p_1;
-	}
-	
-	if (bemf_obsv_p > f->bemf_obsv_p_2)
-	{
-		bemf_obsv_p = f->bemf_obsv_p_2;
-	}
-		
-	if (bemf_obsv_p < f->bemf_obsv_p_1)
-	{
-		bemf_obsv_p = f->bemf_obsv_p_1;
-	}
+
+	bemf_obsv_fb_p = f->bemf_obsv_fb_p_1 + schedule_weight * (f->bemf_obsv_fb_p_2 - f->bemf_obsv_fb_p_1);
+	bemf_obsv_p = f->bemf_obsv_p_1 + schedule_weight * (f->bemf_obsv_p_2 - f->bemf_obsv_p_1);
 
 	const float psi_s_alpha_hat_hat = (bemf_obsv_fb_p * (psi_m_alpha - f->psi_r_alpha_hat) + f->motorc_m_scale * u_dc * u_alpha - 
 	                    f->motorc_rs_norm * i_alpha - bemf_obsv_p * f->psi_s_alpha_hat) * f->motorc_omega_bez * f->ts + f->psi_s_alpha_hat;

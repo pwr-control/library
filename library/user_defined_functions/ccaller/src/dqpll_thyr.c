@@ -62,7 +62,7 @@ float dqpll_thyr_process(volatile DQPLL_THYR *dqpll_ctrl, volatile float u_phase
 	float u_thyr_alpha, u_thyr_beta, u_thyr_xi, u_thyr_eta, u_thyr_xi_n, u_thyr_eta_n;
 	float gamma_hat_unbounded;
 	float omega_i_hat_tilde;
-	float u_vector_length_inverter;
+	float u_vector_length, u_vector_length_inverter;
 	float uxi_tilde, ueta_tilde, u_square_tilde, u_tilde;
 
 		ts = dqpll_ctrl->ts;
@@ -80,7 +80,11 @@ float dqpll_thyr_process(volatile DQPLL_THYR *dqpll_ctrl, volatile float u_phase
 		u_thyr_beta = MATH_2_3 * (u_phase_r - MATH_HALF *  u_phase_s - MATH_HALF *  u_phase_t);
 		u_thyr_alpha = -MATH_1_SQRT3 * (u_phase_s - u_phase_t);
 
-		u_vector_length_inverter = 1.0f / sqrtf(u_thyr_alpha * u_thyr_alpha + u_thyr_beta * u_thyr_beta);
+		u_vector_length = sqrtf(u_thyr_alpha * u_thyr_alpha + u_thyr_beta * u_thyr_beta);
+		if (u_vector_length > 0.0f)
+			u_vector_length_inverter = 1.0f / u_vector_length;
+		else
+			u_vector_length_inverter = 1.0f;
 
 		u_thyr_xi = u_thyr_alpha * th_cos + u_thyr_beta * th_sin;
 		u_thyr_eta = u_thyr_beta * th_cos - u_thyr_alpha * th_sin;

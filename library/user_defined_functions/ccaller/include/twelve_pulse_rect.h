@@ -38,12 +38,13 @@ typedef struct twvprctrl_s {
 	int synch_dB4;
 	int synch_dB5;
 	int synch_dB6;
-	int synch_d1;
-	int synch_d2;
-	int synch_d3;
-	int synch_d4;
-	int synch_d5;
-	int synch_d6;
+	/* pulse-width thresholds [rad]: float, an int truncates alpha + PWIDTH_PU */
+	float synch_d1;
+	float synch_d2;
+	float synch_d3;
+	float synch_d4;
+	float synch_d5;
+	float synch_d6;
 	
 	int synch_yA1;
 	int synch_yA2;
@@ -57,12 +58,13 @@ typedef struct twvprctrl_s {
 	int synch_yB4;
 	int synch_yB5;
 	int synch_yB6;
-	int synch_y1;
-	int synch_y2;
-	int synch_y3;
-	int synch_y4;
-	int synch_y5;
-	int synch_y6;
+	/* pulse-width thresholds [rad]: float, an int truncates alpha + PWIDTH_PU */
+	float synch_y1;
+	float synch_y2;
+	float synch_y3;
+	float synch_y4;
+	float synch_y5;
+	float synch_y6;
 } twvprctrl_t;
 #define TWVPRCTRL twvprctrl_t
 
