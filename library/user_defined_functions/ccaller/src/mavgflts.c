@@ -95,7 +95,9 @@ float mavgflts_process(volatile MAVGFLTS *f, float input, const float period)
 			f->cbpointer = 0;
 		}
 
-		const float filter_output = f->sum_value / f->cbsample;
+		/* sum_value holds the previous cbsample - 1 inputs */
+		const float cbsample_short = f->cbsample - 1;
+		const float filter_output = cbsample_short ? f->sum_value / cbsample_short : 0.0;
 		
 		return filter_output;
 	}
