@@ -1,7 +1,7 @@
-
+function frt_data = grid_fault_generator(input, start_time_LVRT)
 
 %% LVRT grid emulator
-switch frt_data.test_index
+switch input.test_index
     case 0
         % No FRT - For testing of standard AFE control (DCLink)
         Amplitude_U = 1;
@@ -13,7 +13,7 @@ switch frt_data.test_index
         Q_load_norm = 0.1;
         k_lvrt = 2;
     case 25
-        switch frt_data.test_subindex
+        switch input.test_subindex
             case 1
                 % Test 25.1: 75% dip - three-phase - full load
                 Amplitude_U = 0.25;
@@ -38,8 +38,8 @@ switch frt_data.test_index
             case 3
             case 4
                 % Test 25.4: 75% dip - two-phase - full load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.75, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.75, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -57,8 +57,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 5
                 % Test 25.5: 75% dip - two-phase - partial load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.75, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.75, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -78,7 +78,7 @@ switch frt_data.test_index
                 error('Test-Index not known!')
         end
     case 50
-        switch frt_data.test_subindex
+        switch input.test_subindex
             case 1
                 % Test 50.1: 50% dip - three-phase - full load
                 Amplitude_U = 0.5;
@@ -101,8 +101,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 3
                 % Test 50.3: 50% dip - two-phase - full load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.5, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.5, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -119,8 +119,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 4
                 % Test 50.4: 50% dip - two-phase - partial load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.5, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.5, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -147,8 +147,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 6
                 % Test 50.6: 50% dip - two-phase - full load - Reduced dym. grid-support
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.5, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.5, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -167,7 +167,7 @@ switch frt_data.test_index
                 error('Test-Index not known!')
         end
     case 75
-        switch frt_data.test_subindex
+        switch input.test_subindex
             case 1
                 % Test 75.1: 25% dip - three-phase - full load
                 Amplitude_U = 0.75;
@@ -220,8 +220,8 @@ switch frt_data.test_index
                 k_lvrt = 4;
             case 6
                 % Test 75.6: 25% dip - two-phase - full load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.25, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.25, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -238,8 +238,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 7
                 % Test 75.7: 25% dip - two-phase - partial load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.25, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.25, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -256,8 +256,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 8
                 % Test 75.8: 25% dip - two-phase - partial load - k = 4
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.25, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.25, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -276,7 +276,7 @@ switch frt_data.test_index
                 error('Test-Index not known!')
         end
     case 80
-        switch frt_data.test_subindex
+        switch input.test_subindex
             case 1
                 % Test 80.1: 20% dip - three-phase - full load - Reduced dym. grid-support
                 Amplitude_U = 0.8;
@@ -289,8 +289,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 2
                 % Test 80.2: 20% dip - two-phase - full load - Reduced dym. grid-support
-                [Voltage_LVRT, delta_phi] = asymmetric_error(0.20, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(0.20, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -309,7 +309,7 @@ switch frt_data.test_index
                 error('Test-Index not known!')
         end
     case 85
-        switch frt_data.test_subindex
+        switch input.test_subindex
             case 1
                 % Test 85.1: 12% dip - three-phase - full load
                 Amplitude_U = 0.88;
@@ -324,11 +324,11 @@ switch frt_data.test_index
                 error('Test-Index not known!')
         end
     case 110
-        switch frt_data.test_subindex
+        switch input.test_subindex
             case 1
                 % Test 110.1: 10% rise - two-phase - full load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(-0.15, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(-0.15, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -345,8 +345,8 @@ switch frt_data.test_index
                 k_lvrt = 2;
             case 2
                 % Test 110.2: 10% rise - two-phase - partial load
-                [Voltage_LVRT, delta_phi] = asymmetric_error(-0.15, frt_data.asymmetric_error_type);
-                if frt_data.asymmetric_error_type == 0
+                [Voltage_LVRT, delta_phi] = asymmetric_error(-0.15, input.asymmetric_error_type);
+                if input.asymmetric_error_type == 0
                     Amplitude_U = 1;
                     Amplitude_V = Voltage_LVRT;
                     Amplitude_W = Amplitude_V;
@@ -375,7 +375,7 @@ switch frt_data.test_index
                 error('Test-Index not known!')
         end
     case 115
-        switch frt_data.test_subindex
+        switch input.test_subindex
             case 1
                 % Test 115.1: 15% rise - three-phase - full load
                 Amplitude_U = 1.16;
@@ -419,4 +419,6 @@ frt_data.Phase_shift = Phase_shift;
 frt_data.P_load_norm = P_load_norm;
 frt_data.Q_load_norm = Q_load_norm;
 frt_data.t_ramp = t_ramp;
+frt_data.k_lvrt = k_lvrt;
 
+end

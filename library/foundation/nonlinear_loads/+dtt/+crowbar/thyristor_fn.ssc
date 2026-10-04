@@ -1,0 +1,64 @@
+component thyristor_fn
+% Thyristor (functional)
+% Piecewise-linear thyristor with latching, holding current and break-over (BOD) self-firing.
+%   OFF : i = Goff*v
+%   ON  : v = Vf + Ron*i
+%   OFF -> ON when (G > 0.5 and v > V_on) or v > V_BO     (gate firing / break-over diode)
+%   ON -> OFF when i < 0, or when i < I_H with the gate off (latching)
+% G is a physical-signal gate command (0/1). With G held at 1 the device re-fires as soon as
+% forward voltage reappears (maintained gate). Placeholder for the model thyristor_rr.
+
+  nodes
+    A = foundation.electrical.electrical; % A:left
+    K = foundation.electrical.electrical; % K:right
+  end
+
+  inputs
+    G = {0, '1'}; % G:left
+  end
+
+  parameters
+    Vf   = {1.5, 'V'};      % On-state voltage Vf
+    Ron  = {0.15e-3, 'Ohm'}; % On resistance Ron
+    Goff = {1e-6, '1/Ohm'}; % Off conductance Goff
+    I_H  = {0.5, 'A'};      % Holding current I_H
+    V_on = {5, 'V'};        % Minimum forward voltage for gate turn-on V_on
+    V_BO = {1100, 'V'};     % Break-over (BOD) firing voltage V_BO
+  end
+
+  variables
+    i = {0, 'A'}; % Current
+    v = {0, 'V'}; % Voltage
+  end
+
+  branches
+    i : A.i -> K.i;
+  end
+
+  equations
+    assert(Ron > 0)
+    assert(V_on > Vf && V_BO > V_on)
+    v == A.v - K.v;
+  end
+
+  modecharts(ExternalAccess = observe)
+    m = modechart
+      modes
+        mode OFF
+          equations
+            i == Goff*v;
+          end
+        end
+        mode ON
+          equations
+            v == Vf + Ron*i;
+          end
+        end
+      end
+      transitions
+        OFF -> ON : ((G > 0.5) && (v > V_on)) || (v > V_BO);
+        ON -> OFF : (i < 0) || ((i < I_H) && (G < 0.5));
+      end
+    end
+  end
+end

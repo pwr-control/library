@@ -28,12 +28,10 @@ SOFTWARE.
 static void init_allht_instances(HARMONIC_TRACKER *const ht_list, const unsigned int ht_num, 
 	const float omega_base, const float delta, const float l1, const float l2)
 {
-   /* issue - instance number in simulink at step of two : 0, 2, 4, 6, 8 - double HTI_N than expected */
 	unsigned int i;
     for (i = 0; i < ht_num; ++i) {
         HARMONIC_TRACKER *const ht_i = &ht_list[i];
 		harmonic_tracker_init(ht_i, omega_base, delta,l1, l2);
-		i++;
 	}
 }
 
@@ -48,6 +46,13 @@ HARMONIC_TRACKER_OUTPUT harmonic_tracker_process_simulink(const unsigned char re
 	if (!ht_init) {
 	    init_allht_instances(ht_i, HARMONIC_TRACKER_INSTANCES, omega_base, delta, l1, l2);
 		ht_init = 1;
+	}
+
+	if (instance >= HARMONIC_TRACKER_INSTANCES) {
+		const HARMONIC_TRACKER_OUTPUT empty_output = {
+			0
+		};
+		return empty_output;
 	}
 
 	const HARMONIC_TRACKER* ht_instance = &ht_i[instance];

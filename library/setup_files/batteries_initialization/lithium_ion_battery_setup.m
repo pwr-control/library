@@ -1,4 +1,4 @@
-function data = lithium_ion_battery_setup(nominal_voltage, nominal_power, soc_init, ts)
+function data = lithium_ion_battery_setup(nominal_voltage, nominal_power, charge_capacity, soc_init, ts)
 
     data.ubattery = nominal_voltage;
     data.pnom = nominal_power;
@@ -14,7 +14,7 @@ function data = lithium_ion_battery_setup(nominal_voltage, nominal_power, soc_in
     data.R = 8.3143;
     data.F = 96487;
     data.T = 273.15+40;
-    data.Q = 50; %Hr*A
+    data.Q = charge_capacity; %Hr*A
     
     data.Vbattery_nom = data.ubattery;
     data.Pbattery_nom = data.pnom;

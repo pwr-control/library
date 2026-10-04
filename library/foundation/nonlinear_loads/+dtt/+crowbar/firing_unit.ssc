@@ -1,0 +1,61 @@
+component firing_unit
+% Firing Unit
+% Active trigger of the crowbar. Trips (latched) when |i_load| > I_th, or v_x > V_th,
+% or the external command ext > 0.5; the enables en_I, en_V select the active criteria.
+% Outputs: trip (latched 0/1 flag, no delay), G (maintained gate command to the thyristor,
+% delayed by t_fire), stop (PWM-stop request to the converter, delayed by t_stop).
+% Delays must be positive (use 1e-6 s for "immediate"). No reset: the crowbar is not
+% reopened during a pulse.
+
+  inputs
+    i_load = {0, 'A'}; % i:left
+    v_x    = {0, 'V'}; % v:left
+    ext    = {0, '1'}; % ext:left
+  end
+
+  outputs
+    trip = {0, '1'}; % trip:right
+    G    = {0, '1'}; % G:right
+    stop = {0, '1'}; % stop:right
+  end
+
+  parameters
+    I_th   = {7000, 'A'};  % Overcurrent threshold |i| > I_th
+    V_th   = {1000, 'V'};  % Voltage threshold v_x > V_th
+    en_I   = {1, '1'};     % Enable overcurrent trigger (1/0)
+    en_V   = {1, '1'};     % Enable voltage trigger (1/0)
+    t_fire = {20e-6, 's'}; % Delay trip -> gate
+    t_stop = {10e-6, 's'}; % Delay trip -> PWM stop
+  end
+
+  variables
+    f = {0, '1'}; % Fired state (0/1)
+  end
+
+  equations
+    assert(t_fire > 0 && t_stop > 0, 'Delays must be positive (use 1e-6 s for immediate)')
+    trip == f;
+    G    == delay(f, t_fire);
+    stop == delay(f, t_stop);
+  end
+
+  modecharts(ExternalAccess = observe)
+    m = modechart
+      modes
+        mode ARMED
+          equations
+            f == 0;
+          end
+        end
+        mode FIRED
+          equations
+            f == 1;
+          end
+        end
+      end
+      transitions
+        ARMED -> FIRED : ((en_I > 0.5) && ((i_load > I_th) || (i_load < -I_th))) || ((en_V > 0.5) && (v_x > V_th)) || (ext > 0.5);
+      end
+    end
+  end
+end

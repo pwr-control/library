@@ -1,0 +1,34 @@
+component diode_bridge
+% Diode Bridge (functional)
+% Single-phase full bridge of four functional diodes: AC terminals a, b; DC terminals p (+), n (-).
+% D1: a -> p, D2: b -> p, D3: n -> a, D4: n -> b. The current |i_ab| flows from p to n
+% whatever the polarity of v_ab. To use the reverse-recovery model, replace
+% dtt.crowbar.diode_fn by the diode_rr class in the components section.
+
+  nodes
+    a = foundation.electrical.electrical; % a:left
+    b = foundation.electrical.electrical; % b:left
+    p = foundation.electrical.electrical; % +:right
+    n = foundation.electrical.electrical; % -:right
+  end
+
+  parameters
+    Vf   = {1.2, 'V'};      % Forward voltage per diode
+    Ron  = {0.2e-3, 'Ohm'}; % On resistance per diode
+    Goff = {1e-6, '1/Ohm'}; % Off conductance per diode
+  end
+
+  components(ExternalAccess = observe)
+    D1 = dtt.crowbar.diode_fn(Vf = Vf, Ron = Ron, Goff = Goff);
+    D2 = dtt.crowbar.diode_fn(Vf = Vf, Ron = Ron, Goff = Goff);
+    D3 = dtt.crowbar.diode_fn(Vf = Vf, Ron = Ron, Goff = Goff);
+    D4 = dtt.crowbar.diode_fn(Vf = Vf, Ron = Ron, Goff = Goff);
+  end
+
+  connections
+    connect(a, D1.A, D3.K);
+    connect(b, D2.A, D4.K);
+    connect(p, D1.K, D2.K);
+    connect(n, D3.A, D4.A);
+  end
+end

@@ -32,7 +32,6 @@ static void init_alldsmavgflt_instances(DSMAVGFLT *const filter_list,
     for (i = 0; i < filter_num; ++i) {
         DSMAVGFLT *const filter = &filter_list[i];
 		dsmavgflt_init(filter, ts);
-		i++;
 	}
 }
 

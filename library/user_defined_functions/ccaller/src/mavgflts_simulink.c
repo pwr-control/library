@@ -32,7 +32,6 @@ static void init_allmavgflt_instances(MAVGFLTS *const filter_list,
     for (i = 0; i < filter_num; ++i) {
         MAVGFLTS *const filter = &filter_list[i];
 		mavgflts_init(filter, ts);
-		i++;
 	}
 }
 

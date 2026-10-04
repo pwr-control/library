@@ -33,7 +33,6 @@ static void init_all_linear_double_integrator_observer_instances(LINEAR_DOUBLE_I
     for (i = 0; i < observer_num; ++i) {
         LINEAR_DOUBLE_INTEGRATOR_OBSVR *const observer = &observer_list[i];
 		linear_double_integrator_observer_init(observer, ts, kx, kv);
-		i++;
 	}
 }
 
@@ -43,6 +42,13 @@ LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT linear_double_integrator_observer_process_
 	if (!observer_initialized){
 	    init_all_linear_double_integrator_observer_instances(observer_instances, NLIN_DOUBLE_INT_OBSVR_INSTANCES, ts, kx, kv);
 		observer_initialized = 1;
+	}
+
+	if (instance >= NLIN_DOUBLE_INT_OBSVR_INSTANCES) {
+		const LINEAR_DOUBLE_INTEGRATOR_OBSVR_OUTPUT empty_output = {
+			0
+		};
+		return empty_output;
 	}
 
 	const LINEAR_DOUBLE_INTEGRATOR_OBSVR* observer_instance = &observer_instances[instance];

@@ -1,0 +1,83 @@
+component crowbar_b
+% Crowbar B (functional)
+% Diode-bridge crowbar with a single thyristor (solution B), functional version:
+% bridge (4 x diode_fn) -> DC node X with: thyristor_fn T, RC snubber (R2, C2),
+% peak-holding capacitor branch (L2, Rch, Ch), bleeder Rb, shunt regulator (V_reg, R_reg),
+% firing unit (overcurrent |i_load| > I_th, voltage v_x > V_th, external command ext).
+% The AC-side reactor L_a (20 uH) is external: connect it between the PWM node and a.
+% Physical-signal ports: i_load (coil or output current, A), ext (0/1) in; G (gate, 0/1),
+% stop (PWM-stop request, 0/1), v_x (thyristor voltage, V), P_reg (regulator power, W) out.
+
+  nodes
+    a = foundation.electrical.electrical; % a:left
+    b = foundation.electrical.electrical; % b:left
+  end
+
+  inputs
+    i_load = {0, 'A'}; % i:left
+    ext    = {0, '1'}; % ext:left
+  end
+
+  outputs
+    G     = {0, '1'}; % G:right
+    stop  = {0, '1'}; % stop:right
+    v_x   = {0, 'V'}; % v_x:right
+    P_reg = {0, 'W'}; % P_reg:right
+  end
+
+  parameters
+    % diodes
+    Vf_d   = {1.2, 'V'};       % Diode forward voltage
+    Ron_d  = {0.2e-3, 'Ohm'};  % Diode on resistance
+    Goff_d = {1e-6, '1/Ohm'};  % Diode off conductance
+    % thyristor
+    Vf_t   = {1.5, 'V'};       % Thyristor on-state voltage
+    Ron_t  = {0.15e-3, 'Ohm'}; % Thyristor on resistance
+    Goff_t = {1e-6, '1/Ohm'};  % Thyristor off conductance
+    I_H    = {0.5, 'A'};       % Thyristor holding current
+    V_on   = {5, 'V'};         % Thyristor gate turn-on voltage
+    V_BO   = {1100, 'V'};      % Break-over (BOD) voltage
+    % snubber and capacitor branch
+    R2     = {3, 'Ohm'};       % Snubber resistance R2
+    C2     = {1e-6, 'F'};      % Snubber capacitance C2
+    L2     = {5e-6, 'H'};      % Capacitor-branch inductance L2 (0 allowed)
+    Rch    = {2, 'Ohm'};       % Capacitor-branch resistance Rch
+    Ch     = {20e-6, 'F'};     % Peak-holding capacitance Ch
+    v0     = {0, 'V'};         % Initial voltage of Ch and C2
+    Rb     = {100e3, 'Ohm'};   % Bleeder resistance Rb
+    % regulator
+    V_reg  = {920, 'V'};       % Shunt regulator level V_reg
+    R_reg  = {300, 'Ohm'};     % Shunt regulator resistance R_reg
+    % firing unit
+    I_th   = {7000, 'A'};      % Overcurrent threshold |i_load| > I_th
+    V_th   = {1000, 'V'};      % Voltage threshold v_x > V_th
+    en_I   = {1, '1'};         % Enable overcurrent trigger (1/0)
+    en_V   = {1, '1'};         % Enable voltage trigger (1/0)
+    t_fire = {20e-6, 's'};     % Delay trip -> gate (> 0)
+    t_stop = {10e-6, 's'};     % Delay trip -> PWM stop (> 0)
+  end
+
+  components(ExternalAccess = observe)
+    bridge = dtt.crowbar.diode_bridge(Vf = Vf_d, Ron = Ron_d, Goff = Goff_d);
+    T      = dtt.crowbar.thyristor_fn(Vf = Vf_t, Ron = Ron_t, Goff = Goff_t, I_H = I_H, V_on = V_on, V_BO = V_BO);
+    snub   = dtt.crowbar.rlc_branch(L = {0, 'H'}, R = R2, C = C2, v0 = v0);
+    chb    = dtt.crowbar.rlc_branch(L = L2, R = Rch, C = Ch, v0 = v0);
+    bleed  = foundation.electrical.elements.resistor(R = Rb);
+    reg    = dtt.crowbar.shunt_regulator(V_reg = V_reg, R_reg = R_reg);
+    vs     = foundation.electrical.sensors.voltage;
+    fu     = dtt.crowbar.firing_unit(I_th = I_th, V_th = V_th, en_I = en_I, en_V = en_V, t_fire = t_fire, t_stop = t_stop);
+  end
+
+  connections
+    connect(a, bridge.a);
+    connect(b, bridge.b);
+    connect(bridge.p, T.A, snub.p, chb.p, bleed.p, reg.p, vs.p);
+    connect(bridge.n, T.K, snub.n, chb.n, bleed.n, reg.n, vs.n);
+    connect(vs.V, fu.v_x, v_x);
+    connect(i_load, fu.i_load);
+    connect(ext, fu.ext);
+    connect(fu.G, T.G, G);
+    connect(fu.stop, stop);
+    connect(reg.P, P_reg);
+  end
+end

@@ -33,7 +33,6 @@ static void init_allphase_shift_flt_instances(PHASE_SHIFT_FLT *const filter_list
     for (i = 0; i < filter_num; ++i) {
         PHASE_SHIFT_FLT *const filter = &filter_list[i];
 		phase_shift_flt_init(filter, ts, fcut, scaling);
-		i++;
 	}
 }
 
@@ -43,6 +42,13 @@ PHASE_SHIFT_FLT_OUTPUT phase_shift_flt_process_simulink(const float input, const
 	if (!filter_initialized){
 	    init_allphase_shift_flt_instances(filter_instances, NPHASE_SHIFT_FLT_INSTANCES, ts, fcut, scaling);
 		filter_initialized = 1;
+	}
+
+	if (instance >= NPHASE_SHIFT_FLT_INSTANCES) {
+		const PHASE_SHIFT_FLT_OUTPUT empty_output = {
+			0
+		};
+		return empty_output;
 	}
 
 	const PHASE_SHIFT_FLT* filter_instance = &filter_instances[instance];

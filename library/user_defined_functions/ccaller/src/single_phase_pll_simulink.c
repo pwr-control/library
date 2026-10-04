@@ -34,7 +34,6 @@ static void init_all_single_phase_pll_instances(SINGLE_PHASE_PLL *const filter_l
     for (i = 0; i < filter_num; ++i) {
         SINGLE_PHASE_PLL *const filter = &filter_list[i];
 		single_phase_pll_init(filter, ts, kp_pll, ki1_pll, ki2_pll, omega_base, tau);
-		i++;
 	}
 }
 
@@ -46,6 +45,13 @@ SINGLE_PHASE_PLL_OUTPUT single_phase_pll_process_simulink(const float input, vol
 	    init_all_single_phase_pll_instances(single_phase_pll_instances, NSINGLE_PHASE_PLL_INSTANCES, 
 			ts, kp_pll, ki1_pll, ki2_pll, omega_base, tau);
 		single_phase_pll_initialized = 1;
+	}
+
+	if (instance >= NSINGLE_PHASE_PLL_INSTANCES) {
+		const SINGLE_PHASE_PLL_OUTPUT empty_output = {
+			0
+		};
+		return empty_output;
 	}
 
 	const SINGLE_PHASE_PLL* single_phase_pll_instance = &single_phase_pll_instances[instance];

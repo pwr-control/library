@@ -1,0 +1,40 @@
+component shunt_regulator
+% Shunt Regulator (functional)
+% Ideal clamp: conducts through R_reg only above V_reg, i = (v - V_reg)/R_reg for v > V_reg,
+% otherwise i = 0. Functional stand-in for the hysteretic IGBT + resistor chopper that holds
+% the peak-holding capacitor at V_reg; the output P is the dissipated power.
+
+  nodes
+    p = foundation.electrical.electrical; % +:left
+    n = foundation.electrical.electrical; % -:right
+  end
+
+  outputs
+    P = {0, 'W'}; % P:right
+  end
+
+  parameters
+    V_reg = {920, 'V'};   % Regulation voltage V_reg
+    R_reg = {300, 'Ohm'}; % Regulator resistance R_reg
+  end
+
+  variables
+    i = {0, 'A'}; % Current
+    v = {0, 'V'}; % Voltage
+  end
+
+  branches
+    i : p.i -> n.i;
+  end
+
+  equations
+    assert(R_reg > 0)
+    v == p.v - n.v;
+    if v > V_reg
+      i == (v - V_reg)/R_reg;
+    else
+      i == 0;
+    end
+    P == v*i;
+  end
+end
