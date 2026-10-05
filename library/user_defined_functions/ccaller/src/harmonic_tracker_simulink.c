@@ -57,9 +57,10 @@ HARMONIC_TRACKER_OUTPUT harmonic_tracker_process_simulink(const unsigned char re
 
 	const HARMONIC_TRACKER* ht_instance = &ht_i[instance];
 	
+	/* reset reloads this instance's parameters too, not only the state */
 	if (reset) {
+		harmonic_tracker_init(ht_instance, omega_base, delta, l1, l2);
 		harmonic_tracker_ts(ht_instance, ts);
-		harmonic_tracker_reset(ht_instance);
 	}
 
 	const float output_value = harmonic_tracker_process(ht_instance, u);
