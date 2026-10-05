@@ -43,7 +43,8 @@ void sv_pwm_process(SVPWM *c)
 			t0 = MATH_1 - t2 - t1;
 			/* management of the overmudulation */
 			if (t0 < 0) {
-				t1 = MATH_1 - t2;
+				/* scale t1 and t2 to t1 + t2 = 1, keeping the vector angle */
+				t1 = t1 / (t1 + t2);
 				c->da = MATH_NULL;
 				c->db = t1;
 				c->dc = MATH_1;
@@ -63,7 +64,8 @@ void sv_pwm_process(SVPWM *c)
 	        t0 = MATH_1 - t2 - t1;
 			/* management of the overmudulation */
 			if (t0 < 0) {
-				t1 = MATH_1 - t2;
+				/* scale t1 and t2 to t1 + t2 = 1, keeping the vector angle */
+				t1 = t1 / (t1 + t2);
 				c->db = MATH_NULL;
 				c->da = t1;
 				c->dc = MATH_1;
@@ -82,7 +84,8 @@ void sv_pwm_process(SVPWM *c)
 	        t0 = MATH_1 - t2 - t1;
 			/* management of the overmudulation */
 			if (t0 < 0) {
-				t1 = MATH_1 - t2;
+				/* scale t1 and t2 to t1 + t2 = 1, keeping the vector angle */
+				t1 = t1 / (t1 + t2);
 				c->db = MATH_NULL;
 				c->dc = t1;
 				c->da = MATH_1;
@@ -101,7 +104,8 @@ void sv_pwm_process(SVPWM *c)
 	        t0 = MATH_1 - t2 - t1;
 			/* management of the overmudulation */
 			if (t0 < 0) {
-				t1 = MATH_1 - t2;
+				/* scale t1 and t2 to t1 + t2 = 1, keeping the vector angle */
+				t1 = t1 / (t1 + t2);
 				c->dc = MATH_NULL;
 				c->db = t1;
 				c->da = MATH_1;
@@ -120,7 +124,8 @@ void sv_pwm_process(SVPWM *c)
 	        t0 = MATH_1 - t2 - t1;
 			/* management of the overmudulation */
 			if (t0 < 0) {
-				t1 = MATH_1 - t2;
+				/* scale t1 and t2 to t1 + t2 = 1, keeping the vector angle */
+				t1 = t1 / (t1 + t2);
 				c->dc = MATH_NULL;
 				c->da = t1;
 				c->db = MATH_1;
@@ -140,7 +145,8 @@ void sv_pwm_process(SVPWM *c)
 	        t0 = MATH_1 - t2 - t1;
 			/* management of the overmudulation */
 			if (t0 < 0) {
-				t1 = MATH_1 - t2;
+				/* scale t1 and t2 to t1 + t2 = 1, keeping the vector angle */
+				t1 = t1 / (t1 + t2);
 				c->da = MATH_NULL;
 				c->dc = t1;
 				c->db = MATH_1;
