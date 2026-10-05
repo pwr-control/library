@@ -79,8 +79,10 @@ float rpi_process(volatile RPI *rpi_ctrl, volatile float i_ref,
 	}
 
 	if (!rpi_ctrl->clip_active) {
-		rpi_ctrl->x1 = a11*x1_z + a12*x2_z;
+		/* semi-implicit Euler: x1 integrates the updated x2, so the discrete
+		   resonator keeps the damping delta (forward Euler loses omega*ts/2) */
 		rpi_ctrl->x2 = i_tilde * ki_rpi * rpi_ctrl->ts + a21*x1_z + a22*x2_z;
+		rpi_ctrl->x1 = a11*x1_z + a12*rpi_ctrl->x2;
 	}
 	else {
 		rpi_ctrl->x1 = x1_z;

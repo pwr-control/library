@@ -80,12 +80,13 @@ VECTORDQ dqvector_pi_process(volatile DQVECTOR_PI *dqvpi_ctrl, volatile float id
 	};
 
 	const float u_out = sqrtf(udq_out.d * udq_out.d + udq_out.q * udq_out.q);
-	const float u_out_reciprocal = 1/u_out;
 
 	if (u_out >= dqvpi_ctrl->u_lim) {
+		/* scale the vector down to |u| = u_lim, keeping its angle */
+		const float u_out_scale = u_out > 0.0f ? dqvpi_ctrl->u_lim / u_out : 0.0f;
 		dqvpi_ctrl->clip_active = 1;
-		udq_out.d = udq_out.d * u_out_reciprocal;
-		udq_out.q = udq_out.q * u_out_reciprocal;
+		udq_out.d = udq_out.d * u_out_scale;
+		udq_out.q = udq_out.q * u_out_scale;
 	} 
 	else {
 		dqvpi_ctrl->clip_active = 0;
