@@ -31,13 +31,10 @@ rpi_output_t rpi_process_simulink(unsigned char reset, const float i_ref, const 
 		const float u_dc, const float ts, const float kp_rpi, const float ki_rpi, 
 		const float omega, const float delta, const float u_lim) {
 
-	if (rpi_ctrl_initialized == 0) {
+	/* reset reloads the parameters too, so a new simulation does not keep the previous ones */
+	if (rpi_ctrl_initialized == 0 || reset) {
 	    rpi_init(&rpi_ctrl, ts, kp_rpi, ki_rpi, omega, delta, u_lim);
 		rpi_ctrl_initialized = 1;
-	}
-
-	if (reset) {
-		rpi_reset(&rpi_ctrl);
 	}
 
 	rpi_output_t rpi_output;

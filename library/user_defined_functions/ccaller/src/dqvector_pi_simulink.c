@@ -34,16 +34,13 @@ DQVECTOR_PI_OUTPUT dqvector_pi_process_simulink(unsigned char reset, const float
 		const float kp_id, const float ki_id, const float kp_iq, const float ki_iq, 
 		const float u_lim) {
 
-	if (dqpi_ctrl_initialized == 0) {
+	/* reset reloads the parameters too, so a new simulation does not keep the previous ones */
+	if (dqpi_ctrl_initialized == 0 || reset) {
 	    dqvector_pi_init(&dqpi_ctrl, kp_id, ki_id, kp_iq, ki_iq, u_lim);
 		dqpi_ctrl_initialized = 1;
 	}
 
 	dqvector_pi_ts(&dqpi_ctrl, ts);
-
-	if (reset) {
-		dqvector_pi_reset(&dqpi_ctrl);
-	}
 	
 	VECTORDQ udq_out = dqvector_pi_process(&dqpi_ctrl, id_ref, id, iq_ref, iq, u_dc);
 
