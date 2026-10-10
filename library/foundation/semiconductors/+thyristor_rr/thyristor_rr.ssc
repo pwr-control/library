@@ -104,8 +104,8 @@ component thyristor_rr
   events
     when edge((G > Vgt) && (v > {0,'V'}) && (on < 0.5))
       on = 1;                   % gate turn-on
-    elsewhen edge((v > Vth) && (on < 0.5) && ...
-                  ((qExc > Qth) || (time - toff < tq)))
+    elsewhen edge((v > Vth) && (on < 0.5) && (toff >= {0,'s'}) && ...
+                  ((time - toff < tq) || ((qExc > Qth) && (time - toff < 10*tau))))
       on = 1;                   % tq violation: spontaneous re-fire
     elsewhen edge((i < Ih) && (on > 0.5))
       on   = 0;                 % natural commutation below holding

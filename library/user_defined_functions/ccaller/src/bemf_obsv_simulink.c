@@ -38,17 +38,14 @@ BEMF_OBSV_OUTPUT bemf_obsv_process_simulink(unsigned char reset, const float u_a
 )
 {
 
-	if (!state_obsv_initialized) {
+	/* reset reloads the parameters too, so a new simulation does not keep the previous ones */
+	if (!state_obsv_initialized || reset) {
 	    bemf_obsv_init(&state_obsv, bemf_obsv_fb_p_1, bemf_obsv_p_1, bemf_obsv_fb_p_2, bemf_obsv_p_2, motorc_omega_bez, motorc_m_scale, motorc_rs_norm,
 		motorc_ls_norm, motorc_phi_m_norm, bemf_obsv_kalman_omega, bemf_obsv_kalman_theta, phase_compensation_omega, phase_compensation_torque, omega_flt_fcut);
 		state_obsv_initialized = 1;
 	}
 
 	bemf_obsv_ts(&state_obsv, ts);
-
-	if (reset) {
-		bemf_obsv_reset(&state_obsv);
-	}
 	
 	obsv_omega_flt_init(&state_obsv);
 

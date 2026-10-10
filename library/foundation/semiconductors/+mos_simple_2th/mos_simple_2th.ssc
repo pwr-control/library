@@ -27,6 +27,23 @@ component mos_simple_2th
 %    With two_die = 0 the port Hd carries no heat but must still be connected,
 %    e.g. to a Thermal Reference or to the same node as Ht.
 %
+% Diode
+% -----
+% Piecewise linear: Vf + Rd when forward biased, 1/Roff leakage otherwise.
+% With alpha_R = 0 the electrical part is then switched linear, which is what
+% the Partitioning local solver with fixed-cost iterations needs. The former
+% smooth hyperbola (v_eps) did not converge there: kV spikes on the blocked
+% devices and a power balance off by a factor of 3. v_eps is no longer used
+% and is kept only so that existing blocks still load.
+%
+% Gate input
+% ----------
+% G is compared with G_th and only the logic state gl (0/1) is used inside.
+% Default G_th = 0.5 works with a 0/1 logic gate and with a gate signal in
+% volts whose off level is <= 0 (e.g. +18/-3 V). Never use G itself as a
+% weight: with a negative off level the sample-and-hold of ith becomes
+% unstable and Eon is scaled by the gate voltage.
+%
 % Event logic (same scheme as the IGBT model)
 % -------------------------------------------
 % Turn-on  : detected as the terminal voltage falling below Vth_on. The energy
@@ -83,6 +100,8 @@ parameters
     Vf       = {1.0,    'V'  };  % Diode knee voltage at Tj_ref
     Rd       = {2.5e-3, 'Ohm'};  % Diode differential resistance at Tj_ref
     two_die  = {1,      '1'  };  % 1 = separate diode die (Hd), 0 = body diode (Ht)
+    % --- gate ---
+    G_th     = {0.5,    '1'  };  % Gate threshold: on if G > G_th (0/1 logic or gate in V)
     % --- switching energies ---
     Eon_ref  = {12e-3,  'J'  };  % Turn-on energy at Iref, Vref
     Eoff_ref = {8e-3,   'J'  };  % Turn-off energy at Iref, Vref
@@ -99,7 +118,7 @@ parameters
     tau_v    = {10e-6,  's'  };  % Blocking voltage estimator time constant
     tau_p    = {50e-6,  's'  };  % Energy-to-power lag time constant
     i_eps    = {1e-3,   'A'  };  % Current smoothing
-    v_eps    = {1e-3,   'V'  };  % Voltage smoothing
+    v_eps    = {1e-3,   'V'  };  % Not used (former diode smoothing), kept for compatibility
 end
 
 variables
@@ -114,6 +133,7 @@ variables
     vbl  = {600, 'V'  };  % Held blocking voltage, used for all energies
     hb   = {0,   '1'  };  % Blocking indicator, 0..1
     Gch  = {0,   'S'  };  % Channel conductance
+    gl   = {0,   '1'  };  % Gate logic state, 1 if G > G_th
     Rds  = {1e-3,'Ohm'};  % Actual on-state resistance
     xr   = {1,   '1'  };  % Rds_on temperature factor
     Eot  = {0,   'J'  };  % Lagged transistor energy
@@ -157,21 +177,27 @@ equations
     end
 
     % ---------------- channel and diode ----------------
-    if G > 0.5
+    if G > G_th
+        gl  == 1;
         Gch == 1/Rds;
     else
+        gl  == 0;
         Gch == 1/Roff;
     end
     ich  == Gch*v;
 
     vfd  == -v - Vf;
-    idio == (vfd + sqrt(vfd^2 + v_eps^2))/(2*Rd);
+    if vfd > 0
+        idio == vfd/Rd;
+    else
+        idio == vfd/Roff;
+    end
 
     i    == ich - idio;
 
     % ---------------- sample and hold ----------------
     ichp == (ich + sqrt(ich^2 + i_eps^2))/2;
-    tau_s*ith.der == G*(ichp - ith);
+    tau_s*ith.der == gl*(ichp - ith);
     tau_s*idh.der == idio - idh;
 
     hb == (1 + tanh((v - Vth_off)/V_sm))/2;
@@ -198,13 +224,16 @@ equations
 end
 
 events
+    % One when/elsewhen chain: Eqt is updated by both branches, and Simscape
+    % refuses two separate 'when' blocks that write the same event variable.
+    % The two predicates are mutually exclusive (Vth_on < Vth_off).
+
     % Turn-on: terminal voltage collapse with the gate high.
     when edge(v < Vth_on)
-        Eqt = Eqt + G*Eon_ref*(((i + abs(i))/(2*Iref))^ki)*((abs(vbl)/Vref)^kv);
-    end
+        Eqt = Eqt + gl*Eon_ref*(((i + abs(i))/(2*Iref))^ki)*((abs(vbl)/Vref)^kv);
 
     % Turn-off of the channel, or reverse recovery of the diode of this device.
-    when edge(v > Vth_off)
+    elsewhen edge(v > Vth_off)
         Eqt = Eqt + Eoff_ref*((ith/Iref)^ki)*((abs(vbl)/Vref)^kv);
         Eqd = Eqd + Err_ref*((idh/Iref)^ki)*((abs(vbl)/Vref)^kv);
     end

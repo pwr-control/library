@@ -37,17 +37,14 @@ BEMF_OBSV_LOAD_EST_OUTPUT bemf_obsv_load_est_process_simulink(unsigned char rese
 	const float phase_compensation_torque, const float omega_flt_fcut)
 {
 
-	if (!state_obsv_load_est_initialized) {
+	/* reset reloads the parameters too, so a new simulation does not keep the previous ones */
+	if (!state_obsv_load_est_initialized || reset) {
 	    bemf_obsv_load_est_init(&state_obsv_load_est, bemf_obsv_fb_p_1, bemf_obsv_p_1, bemf_obsv_fb_p_2, bemf_obsv_p_2, motorc_omega_bez, motorc_m_scale, motorc_rs_norm,
 		motorc_ls_norm, motorc_phi_m_norm, motorc_load_inertia_norm, bemf_obsv_luenberger_1, bemf_obsv_luenberger_2, bemf_obsv_luenberger_3, phase_compensation_omega, phase_compensation_torque, omega_flt_fcut);
 		state_obsv_load_est_initialized = 1;
 	}
 
 	bemf_obsv_load_est_ts(&state_obsv_load_est, ts);
-
-	if (reset) {
-		bemf_obsv_load_est_reset(&state_obsv_load_est);
-	}
 	
 	obsv_load_est_omega_flt_init(&state_obsv_load_est);
 

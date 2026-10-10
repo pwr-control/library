@@ -57,9 +57,9 @@ FIRST_HARMONIC_TRACKER_OUTPUT first_harmonic_tracker_process_simulink(const unsi
 
 	const FIRST_HARMONIC_TRACKER* fht_instance = &fht_i[instance];
 	
+	/* reset reloads this instance's parameters too, not only the state */
 	if (reset) {
-		first_harmonic_tracker_ts(fht_instance, ts);
-		first_harmonic_tracker_reset(fht_instance);
+		first_harmonic_tracker_init(fht_instance, ts, omega_base, delta, l1, l2);
 	}
 	
 	const float output_value = first_harmonic_tracker_process(fht_instance, u);
