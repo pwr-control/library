@@ -68,7 +68,7 @@ branches
 end
 
 equations
-    if z >= 1
+    if z >= 1.0
         z.der == 0;
     elseif z <= 0
         z.der == 0;
