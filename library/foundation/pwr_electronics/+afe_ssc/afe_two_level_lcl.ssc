@@ -1,0 +1,272 @@
+component afe_two_level_lcl
+% AFE Two-Level Bridge with LCL Filter
+% Three-phase two-level bridge (six ideal switch + antiparallel diode pairs),
+% DC-link capacitor and LCL filter in ONE Simscape block, so that the power
+% stage of one AFE counts as one nonvirtual block (MATLAB Home licence: at most
+% 1000 nonvirtual blocks per model, referenced models and library links
+% included).
+%
+% Same circuit as afe_dq_mod1 of grid_forming_dq.slx without the IGBT loss and
+% thermal model (igbt_simple_2th) and without the 1 MOhm measurement divider of
+% the dclink block:
+%   switch + diode pair (current i, voltage v, collector -> emitter):
+%     gate on  (G(k) > Vth)  ->  i = v/Ron   (bidirectional)
+%     gate off, v < 0        ->  i = v/Ron   (antiparallel diode conducting)
+%     gate off, v >= 0       ->  i = v*Goff  (blocking)
+%   DC link: capacitor Cdc with series resistance Rdc between + and - (optional,
+%     switch it off when several bridges share one DC bus with an external
+%     capacitor or when an ideal voltage source is connected across + and -).
+%   LCL: converter-side three-phase inductor (positive sequence L1p, zero
+%     sequence L10, series resistance R1, leakage Lls1), star capacitors Cf with
+%     series resistance Rcf and floating star point, grid-side three-phase
+%     inductor (L2p, L20, R2, Lls2). The inductors use the equations of
+%     threephase_inductor.ssc of pwr-control/library:
+%       Lm = (Lp - L0)/3,  La = (L0 + Lp + Lm)/2,
+%       u1 - R*i - (Lls + La)*i' + Lm*(i_y' + i_z') - u2 = 0
+%     (positive-sequence inductance Lp + Lls, zero-sequence L0 + Lls).
+%
+% Gate input G: physical-signal vector [6x1] in V, order per leg
+%     G = [a+; a-; b+; b-; c+; c-]   (Q1 Q2 Q3 Q4 Q5 Q6 of the PWM block)
+% Drive it with +15 V (on) / -10 V (off) and Vth = 2.5 V. No dead time and no
+% interlock inside the block: with both switches of a leg on, the leg shorts
+% the DC link through 2*Ron.
+%
+% Measurement output M: physical-signal vector [14x1], dimensionless (pu):
+%   M(1:3)   i1_abc/ibez   converter-side inductor currents, positive OUT of the bridge
+%   M(4:6)   uc_abc/ubez   filter capacitor voltages (capacitor node to star point)
+%   M(7:9)   i2_abc/ibez   grid-side inductor currents, positive towards the grid
+%   M(10:12) ug_abc/ubez   grid terminal voltages without zero sequence,
+%                          ug_a = (2*va - vb - vc)/3, as the line-to-line sensors of
+%                          afe_dq_mod1/LCL_filter/threephase_vi_measures_stack1
+%   M(13)    vdc/udc_nom   DC-link voltage (+) - (-)
+%   M(14)    ic/ibez       DC-link capacitor current, (+) -> (-)
+%
+% Ports: a b c (AC, left), + - (DC, right), G (gates, left), M (measurements, right).
+% Initial conditions: none imposed (the capacitor voltages and the inductor
+% currents have priority none, set them in the Variables tab if needed; with
+% "Start simulation from steady state" of the Solver Configuration block they
+% are computed).
+
+  nodes
+    a = foundation.electrical.electrical; % a
+    b = foundation.electrical.electrical; % b
+    c = foundation.electrical.electrical; % c
+    p = foundation.electrical.electrical; % +
+    n = foundation.electrical.electrical; % -
+  end
+
+  inputs
+    G = {zeros(6,1), 'V'}; % G
+  end
+
+  outputs
+    M = {zeros(14,1), '1'}; % M
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth    = {2.5,    'V'    };   % Gate threshold voltage
+    Ron    = {1e-3,   'Ohm'  };   % On-state resistance (switch and diode)
+    Goff   = {1e-6,   '1/Ohm'};   % Off-state conductance
+    % --- DC link ---
+    cap_dc = afe_ssc.onoff.on;    % DC-link capacitor
+    Cdc    = {7.2e-3, 'F'    };   % DC-link capacitance
+    Rdc    = {2e-3,   'Ohm'  };   % DC-link capacitor series resistance
+    % --- converter-side inductor ---
+    L1p    = {330e-6, 'H'    };   % Positive-sequence inductance
+    L10    = {330e-6, 'H'    };   % Zero-sequence inductance
+    R1     = {2.6e-3, 'Ohm'  };   % Series resistance
+    Lls1   = {6e-6,   'H'    };   % Leakage inductance
+    % --- filter capacitors (star, floating star point) ---
+    Cf     = {360e-6, 'F'    };   % Capacitance per phase
+    Rcf    = {50e-3,  'Ohm'  };   % Series resistance per phase
+    % --- grid-side inductor ---
+    L2p    = {80e-6,  'H'    };   % Positive-sequence inductance
+    L20    = {80e-6,  'H'    };   % Zero-sequence inductance
+    R2     = {0.63e-3,'Ohm'  };   % Series resistance
+    Lls2   = {5e-6,   'H'    };   % Leakage inductance
+    % --- normalization of the measurement output ---
+    ubez    = {326.6, 'V'    };   % Base voltage (peak phase voltage)
+    ibez    = {566.7, 'A'    };   % Base current (peak phase current)
+    udc_nom = {660,   'V'    };   % Base DC-link voltage
+  end
+
+  variables
+    vdc  = {0, 'V'};                                        % DC-link voltage, (+) - (-)
+    vcap = {value = {0, 'V'}, priority = priority.none};    % DC-link capacitor voltage (without Rdc)
+    ic   = {0, 'A'};                                        % DC-link capacitor current, (+) -> (-)
+    vm_a = {0, 'V'};   % Midpoint potential of leg a
+    vm_b = {0, 'V'};   % Midpoint potential of leg b
+    vm_c = {0, 'V'};   % Midpoint potential of leg c
+    i_ah = {0, 'A'};   % Current of switch a+, (+) -> midpoint
+    i_al = {0, 'A'};   % Current of switch a-, midpoint -> (-)
+    i_bh = {0, 'A'};   % Current of switch b+
+    i_bl = {0, 'A'};   % Current of switch b-
+    i_ch = {0, 'A'};   % Current of switch c+
+    i_cl = {0, 'A'};   % Current of switch c-
+    i1_a = {value = {0, 'A'}, priority = priority.none};    % Converter-side inductor current a, midpoint -> capacitor node
+    i1_b = {value = {0, 'A'}, priority = priority.none};    % Converter-side inductor current b
+    i1_c = {value = {0, 'A'}, priority = priority.none};    % Converter-side inductor current c
+    vk_a = {0, 'V'};   % Capacitor node potential a (between the two inductors)
+    vk_b = {0, 'V'};   % Capacitor node potential b
+    vk_c = {0, 'V'};   % Capacitor node potential c
+    vn   = {0, 'V'};   % Star point potential
+    vc_a = {value = {0, 'V'}, priority = priority.none};    % Filter capacitor voltage a (without Rcf)
+    vc_b = {value = {0, 'V'}, priority = priority.none};    % Filter capacitor voltage b
+    vc_c = {value = {0, 'V'}, priority = priority.none};    % Filter capacitor voltage c
+    i2_a = {value = {0, 'A'}, priority = priority.none};    % Grid-side inductor current a, capacitor node -> terminal a
+    i2_b = {value = {0, 'A'}, priority = priority.none};    % Grid-side inductor current b
+    i2_c = {value = {0, 'A'}, priority = priority.none};    % Grid-side inductor current c
+    j_ab = {0, 'A'};   % Bookkeeping branch a -> b (= capacitor current of phase a)
+    j_bc = {0, 'A'};   % Bookkeeping branch b -> c (= - capacitor current of phase c)
+  end
+
+  intermediates (ExternalAccess = observe)
+    v_ah = p.v - vm_a;             % Voltage across switch a+
+    v_al = vm_a - n.v;             % Voltage across switch a-
+    v_bh = p.v - vm_b;             % Voltage across switch b+
+    v_bl = vm_b - n.v;             % Voltage across switch b-
+    v_ch = p.v - vm_c;             % Voltage across switch c+
+    v_cl = vm_c - n.v;             % Voltage across switch c-
+    ic_a = i1_a - i2_a;            % Filter capacitor current a
+    ic_b = i1_b - i2_b;            % Filter capacitor current b
+    ic_c = i1_c - i2_c;            % Filter capacitor current c
+    uc_a = vk_a - vn;              % Filter capacitor voltage a (terminal, with Rcf)
+    uc_b = vk_b - vn;              % Filter capacitor voltage b
+    uc_c = vk_c - vn;              % Filter capacitor voltage c
+    v0   = (a.v + b.v + c.v)/3;    % Zero sequence of the grid terminal voltages
+    ug_a = a.v - v0;               % Grid terminal voltage a without zero sequence
+    ug_b = b.v - v0;               % Grid terminal voltage b without zero sequence
+    ug_c = c.v - v0;               % Grid terminal voltage c without zero sequence
+  end
+
+  branches
+    % The leg midpoints, the capacitor nodes and the star point are internal
+    % algebraic variables, not nodes: the switches are declared as branches
+    % (+) -> terminal and terminal -> (-) as in ideal_bridges.three_phase_bridge
+    % of pwr-control/library, and two circulating branches a -> b -> c carry the
+    % capacitor currents (their sum is zero, floating star point), so that the
+    % current delivered at each AC terminal is the grid-side inductor current.
+    ic   : p.i -> n.i;
+    i_ah : p.i -> a.i;
+    i_al : a.i -> n.i;
+    i_bh : p.i -> b.i;
+    i_bl : b.i -> n.i;
+    i_ch : p.i -> c.i;
+    i_cl : c.i -> n.i;
+    j_ab : a.i -> b.i;
+    j_bc : b.i -> c.i;
+  end
+
+  equations
+    % ---------- DC link ----------
+    vdc == p.v - n.v;
+    if cap_dc == afe_ssc.onoff.on
+      ic  == Cdc*vcap.der;
+      vdc == vcap + Rdc*ic;
+    else
+      ic   == 0;
+      vcap == vdc;
+    end
+
+    % ---------- switch + antiparallel diode pairs ----------
+    % leg a
+    if (G(1) > Vth) || (v_ah < 0)
+      i_ah == v_ah/Ron;
+    else
+      i_ah == v_ah*Goff;
+    end
+    if (G(2) > Vth) || (v_al < 0)
+      i_al == v_al/Ron;
+    else
+      i_al == v_al*Goff;
+    end
+    % leg b
+    if (G(3) > Vth) || (v_bh < 0)
+      i_bh == v_bh/Ron;
+    else
+      i_bh == v_bh*Goff;
+    end
+    if (G(4) > Vth) || (v_bl < 0)
+      i_bl == v_bl/Ron;
+    else
+      i_bl == v_bl*Goff;
+    end
+    % leg c
+    if (G(5) > Vth) || (v_ch < 0)
+      i_ch == v_ch/Ron;
+    else
+      i_ch == v_ch*Goff;
+    end
+    if (G(6) > Vth) || (v_cl < 0)
+      i_cl == v_cl/Ron;
+    else
+      i_cl == v_cl*Goff;
+    end
+
+    % ---------- leg currents ----------
+    i1_a == i_ah - i_al;
+    i1_b == i_bh - i_bl;
+    i1_c == i_ch - i_cl;
+
+    % ---------- LCL filter ----------
+    let
+      Lm1 = (L1p - L10)/3;
+      La1 = (L10 + L1p + Lm1)/2;
+      Lm2 = (L2p - L20)/3;
+      La2 = (L20 + L2p + Lm2)/2;
+    in
+      % converter-side inductor: midpoint -> capacitor node
+      vm_a - R1*i1_a - (Lls1 + La1)*i1_a.der + Lm1*i1_b.der + Lm1*i1_c.der - vk_a == 0;
+      vm_b - R1*i1_b - (Lls1 + La1)*i1_b.der + Lm1*i1_a.der + Lm1*i1_c.der - vk_b == 0;
+      vm_c - R1*i1_c - (Lls1 + La1)*i1_c.der + Lm1*i1_a.der + Lm1*i1_b.der - vk_c == 0;
+      % grid-side inductor: capacitor node -> terminal
+      vk_a - R2*i2_a - (Lls2 + La2)*i2_a.der + Lm2*i2_b.der + Lm2*i2_c.der - a.v == 0;
+      vk_b - R2*i2_b - (Lls2 + La2)*i2_b.der + Lm2*i2_a.der + Lm2*i2_c.der - b.v == 0;
+      vk_c - R2*i2_c - (Lls2 + La2)*i2_c.der + Lm2*i2_a.der + Lm2*i2_b.der - c.v == 0;
+    end
+    % star capacitors with series resistance, floating star point
+    uc_a == vc_a + Rcf*ic_a;
+    uc_b == vc_b + Rcf*ic_b;
+    uc_c == vc_c + Rcf*ic_c;
+    ic_a == Cf*vc_a.der;
+    ic_b == Cf*vc_b.der;
+    ic_c == Cf*vc_c.der;
+    ic_a + ic_b + ic_c == 0;
+    % bookkeeping branches of the capacitor currents
+    j_ab == ic_a;
+    j_bc == -ic_c;
+
+    % ---------- measurements (pu) ----------
+    M == [i1_a/ibez; i1_b/ibez; i1_c/ibez;
+          uc_a/ubez; uc_b/ubez; uc_c/ubez;
+          i2_a/ibez; i2_b/ibez; i2_c/ibez;
+          ug_a/ubez; ug_b/ubez; ug_c/ubez;
+          vdc/udc_nom;
+          ic/ibez];
+  end
+
+  % hide the parameters of the DC-link capacitor when it is switched off
+  if cap_dc == afe_ssc.onoff.off
+    annotations
+      [Cdc, Rdc] : ExternalAccess = none;
+    end
+  end
+
+  annotations
+    a : Side = left;
+    b : Side = left;
+    c : Side = left;
+    G : Side = left;
+    p : Side = right;
+    n : Side = right;
+    M : Side = right;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff)
+                UIGroup("DC link", cap_dc, Cdc, Rdc)
+                UIGroup("Converter-side inductor", L1p, L10, R1, Lls1)
+                UIGroup("Filter capacitors", Cf, Rcf)
+                UIGroup("Grid-side inductor", L2p, L20, R2, Lls2)
+                UIGroup("Normalization", ubez, ibez, udc_nom)];
+  end
+
+end
