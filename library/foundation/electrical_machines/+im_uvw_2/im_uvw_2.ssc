@@ -100,11 +100,6 @@ component im_uvw_2
         pp = { 3, '1' };                 % pole pairs
     end
 
-    parameters(Access = private)
-        kp = {100, 'rad/(V*s^2)'};          % kp_pll
-        ki = {3500.0,'rad/(V*s^3)'};        % ki_pll
-    end
-
     variables
         omega_m = { 0, 'rad/s' };               % rotor speed (electrical)
         isu = { 0, 'A' };                       % isu
@@ -141,15 +136,11 @@ component im_uvw_2
         tau_m = { 0, 'N*m' };                   % torque electromagnetic
         tau_l = { 0, 'N*m' };                   % torque load
         theta_m = { 0, 'rad' };                 % rotor phase (electrical)
-        theta_slip = { 0, 'rad' };              % slip phase (electrical)
-        theta_s = { 0, 'rad' };                 % stator phase (electrical)
-        omega_slip = { 0, 'rad/s' };            % slip pulsation (electrical)
-        omega_s = { 0, 'rad/s' };               % stator pulsation (electrical)
+        theta_slip = { 0, 'rad' };              % rotor flux angle in the rotor frame (electrical)
+        theta_s = { 0, 'rad' };                 % rotor flux angle in the stator frame (electrical)
     end
 
     variables(Access = private)
-        % omega_i_slip = { 0, 'rad/s' };          % integral term slip pulsation (electrical)
-        omega_i_s = { 0, 'rad/s' };             % integral term stator pulsation (electrical)
         psi_s_alpha = { 0, 'V*s' };             % psi_s_alpha
         psi_s_beta = { 0, 'V*s' };              % psi_s_beta
         psi_r_alpha = { 0, 'V*s' };             % psi_r_alpha
@@ -211,14 +202,15 @@ component im_uvw_2
             Jm * omega_m.der == pp*(tau_m + tau_l) - bm*omega_m;
             theta_m.der == omega_m; 
             
-            % PLL on flux stator
-            theta_s.der == omega_s;
-            omega_s == -psi_r_y*kp + omega_i_s;
-            omega_i_s.der == -psi_r_y*ki;
+            % Rotor-flux angle of the x,y (field) frame used by the isx/isy, irx/iry and
+            % psi_*_x/y outputs: exact algebraic angle of psi_r in the rotor frame
+            % (theta_slip) and in the stator frame (theta_s). It replaces the PLL on
+            % psi_r_y (kp 100, ki 3500) whose sign made it lock anti-parallel to the flux
+            % and whose bandwidth vanished at low flux. The x,y outputs are diagnostics
+            % only: nothing in the machine equations depends on them.
+            theta_slip == atan2(psi_r_q, psi_r_d);
+            theta_s == theta_m + theta_slip;
 
-            theta_slip.der == omega_slip;
-            omega_slip == omega_s - omega_m;
-            
 
 
             % rotor uvw quantities rotates at slip
