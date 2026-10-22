@@ -105,9 +105,6 @@ component im_uvw_2
         isu = { 0, 'A' };                       % isu
         isv = { 0, 'A' };                       % isv
         isw = { 0, 'A' };                       % isw
-        iru = { 0, 'A' };                       % iru
-        irv = { 0, 'A' };                       % irv
-        irw = { 0, 'A' };                       % irw
         ird = { 0, 'A' };                       % ird
         irq = { 0, 'A' };                       % irq
         isd = { 0, 'A' };                       % isd
@@ -151,6 +148,20 @@ component im_uvw_2
         ir_beta = { 0, 'A' };                   % ir_beta
     end
 
+    intermediates
+        % Rotor currents from the rotor fluxes (the states) and the stator currents. The rotor flux
+        % linkages are psi_r = (Lr*I - Lm/3*ones(3))*ir + mut_r, with mut_r the part linked by the
+        % stator current, so ir = (psi_r - mut_r)/Lr + Lm/(Lr - Lm)*psi_r_0/Lr (Sherman-Morrison;
+        % psi_r_0 is the zero sequence of psi_r, the stator-linked terms have none).
+        mut_r_u = 2/3*Lm*(isu*cos(theta_m) + isv*cos(theta_m - 2*pi/3) + isw*cos(theta_m + 2*pi/3));
+        mut_r_v = 2/3*Lm*(isu*cos(theta_m + 2*pi/3) + isv*cos(theta_m) + isw*cos(theta_m - 2*pi/3));
+        mut_r_w = 2/3*Lm*(isu*cos(theta_m - 2*pi/3) + isv*cos(theta_m + 2*pi/3) + isw*cos(theta_m));
+        psi_r_0 = (psi_r_u + psi_r_v + psi_r_w)/3;
+        iru = (psi_r_u - mut_r_u + Lm/(Lr - Lm)*psi_r_0)/Lr;    % iru
+        irv = (psi_r_v - mut_r_v + Lm/(Lr - Lm)*psi_r_0)/Lr;    % irv
+        irw = (psi_r_w - mut_r_w + Lm/(Lr - Lm)*psi_r_0)/Lr;    % irw
+    end
+
     branches
         isu : uu_p.i -> uu_n.i;
         isv : uv_p.i -> uv_n.i;
@@ -159,6 +170,7 @@ component im_uvw_2
     end
 
     equations
+        assert(Lr > Lm, 'Lr must be larger than Lm: the rotor leakage Lr - Lm is inverted to get the rotor currents from the rotor fluxes')
         let
 
         in
@@ -172,13 +184,21 @@ component im_uvw_2
             uv == Rs*isv + psi_s_v.der;
             uw == Rs*isw + psi_s_w.der;
         
-            0 == Rr*iru + psi_r_u.der;
-            0 == Rr*irv + psi_r_v.der;
-            0 == Rr*irw + psi_r_w.der;
+            % Rotor: the phase fluxes psi_r_uvw are the states, the rotor currents follow
+            % algebraically (intermediates). Written the other way round (psi_r as an algebraic
+            % function of the currents, der of that) Simscape takes the currents as states and
+            % expands der(Lm*is*cos(theta_m)) with the product rule at the new step: with the
+            % Backward Euler local solver this adds (omega_r^2*h/2)*Lm*is to the rotor equation,
+            % 9 % of flux and slip at rated speed with h = 1 us (sim_results_2). With psi_r as
+            % state the same solver integrates 0 = Rr*ir + der(psi_r) exactly.
+            psi_r_u.der == -Rr*iru;
+            psi_r_v.der == -Rr*irv;
+            psi_r_w.der == -Rr*irw;
 
             % Flux linkages. Only the magnetising part carries the 2/3 factor (per-phase
             % magnetising self inductance 2/3*Lm, mutual -1/3*Lm, stator-rotor 2/3*Lm): the
-            % leakage inductances Ls - Lm and Lr - Lm act on the phase current as they are.
+            % leakage inductances Ls - Lm and Lr - Lm act on the phase current as they are. The
+            % rotor inductance Lr must exceed Lm (rotor leakage), see the intermediates.
             % With the 2/3 factor applied to Ls and Lr as well, the leakage was 2/3 of the
             % identified value (sigma*Ls 0.198 mH instead of 0.295 mH for the 261 kW machine).
             psi_s_u == (Ls - Lm)*isu + 2/3*Lm*(isu - 0.5*isv - 0.5*isw + ...
@@ -188,12 +208,8 @@ component im_uvw_2
             psi_s_w == (Ls - Lm)*isw + 2/3*Lm*(-0.5*isu - 0.5*isv + isw + ...
                     iru*cos(theta_m + 2*pi/3) + irv*cos(theta_m - 2*pi/3) + irw*cos(theta_m));
 
-            psi_r_u == (Lr - Lm)*iru + 2/3*Lm*(iru - 0.5*irv - 0.5*irw + ...
-                    isu*cos(theta_m) + isv*cos(theta_m - 2*pi/3) + isw*cos(theta_m + 2*pi/3));
-            psi_r_v == (Lr - Lm)*irv + 2/3*Lm*(-0.5*iru + irv - 0.5*irw + ...
-                    isu*cos(theta_m + 2*pi/3) + isv*cos(theta_m) + isw*cos(theta_m - 2*pi/3));
-            psi_r_w == (Lr - Lm)*irw + 2/3*Lm*(-0.5*iru - 0.5*irv + irw + ...
-                    isu*cos(theta_m - 2*pi/3) + isv*cos(theta_m + 2*pi/3) + isw*cos(theta_m));
+            % The rotor flux linkages psi_r_u == (Lr - Lm)*iru + 2/3*Lm*(iru - 0.5*irv - 0.5*irw + ...)
+            % are inverted in the intermediates (rotor currents from the rotor fluxes).
 
             tau_m == -pp*2/3*Lm*((isu*(iru-0.5*irv-0.5*irw)+isv*(irv-0.5*iru-0.5*irw)+...
                 isw*(irw-0.5*irv-0.5*iru))*sin(theta_m) + ...
