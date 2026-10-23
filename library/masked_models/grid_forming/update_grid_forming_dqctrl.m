@@ -53,11 +53,12 @@ function update_grid_forming_dqctrl()
         'update_grid_forming_dqctrl: %s has %d inputs and %d outputs, 3 and 3 expected', ...
         mf, numel(ph.Inport), numel(ph.Outport));
 
-    % ---- ports of the masked subsystem (numbers after t_master and after m, ctrl_log)
-    if isempty(find_system(blk, 'SearchDepth', 1, 'BlockType', 'Inport', 'Name', 'sync'))
+    % ---- ports of the masked subsystem (numbers after t_master and after m, ctrl_log); find_system looks
+    %      under the mask only with LookUnderMasks 'all' (the mask has the parameter p)
+    if isempty(find_system(blk, 'LookUnderMasks', 'all', 'SearchDepth', 1, 'BlockType', 'Inport', 'Name', 'sync'))
         add_block('built-in/Inport', [blk '/sync'], 'Port', '2', 'Position', [-105 478 -75 492]);
     end
-    if isempty(find_system(blk, 'SearchDepth', 1, 'BlockType', 'Outport', 'Name', 'sync_out'))
+    if isempty(find_system(blk, 'LookUnderMasks', 'all', 'SearchDepth', 1, 'BlockType', 'Outport', 'Name', 'sync_out'))
         add_block('built-in/Outport', [blk '/sync_out'], 'Port', '3', 'Position', [390 478 420 492]);
     end
     connect_once(blk, 'sync/1', 'afe_dq_forming_ctrl_pwm/3');
