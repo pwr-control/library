@@ -214,4 +214,21 @@ measurements in pu) and `ctrl_log`.
   (FHT, negative frame) giving negative-sequence current references, tracked by a resonant term at
   `2*fgrid` in the current loop; master and slaves need the same value. The control code is
   `grid_forming/private/afe_dq_ctrl_pwm.m`; `grid_forming/update_grid_forming_dqctrl.m` loads it
-  into the block and adds the two ports.
+  into the block and adds the two ports. References for the compensator (full citations in the header
+  of `afe_dq_ctrl_pwm.m`):
+  1. Fortescue, symmetrical components, Trans. AIEE 37, 1918.
+  2. Rodríguez et al., positive/negative-sequence calculation from quadrature signals (DSOGI), IEEE PESC
+     2006, doi:10.1109/PESC.2006.1712059.
+  3. Song, Nam, dual current control in positive and negative synchronous frames, IEEE Trans. Ind.
+     Electron. 46(5), 1999, doi:10.1109/41.793344.
+  4. Rodríguez et al., decoupled double synchronous reference frame, IEEE Trans. Power Electron. 22(2),
+     2007.
+  5. Liserre, Teodorescu, Blaabjerg, PI plus resonant current controller in a rotating frame, IEEE Trans.
+     Power Electron. 21(3), 2006, doi:10.1109/TPEL.2006.875566.
+  6. Teodorescu et al., proportional-resonant controllers and filters, IEE Proc. Electr. Power Appl.
+     153(5), 2006, doi:10.1049/ip-epa:20060008.
+  7. Yepes et al., discretization of resonant controllers, IEEE Trans. Power Electron. 25(7), 2010.
+  8. Savaghebi et al., voltage unbalance compensation with voltage-source inverters, IEEE Trans. Smart
+     Grid 3(2), 2012, doi:10.1109/TSG.2011.2181432.
+  9. Teodorescu, Liserre, Rodríguez, *Grid Converters for Photovoltaic and Wind Power Systems*,
+     Wiley-IEEE Press, 2011.

@@ -46,20 +46,53 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %
 %   Negative-sequence compensator (p.ctrl.nsc_enable = 1; off when the field is absent or 0, and then the
 %   block computes what it computed before): an unbalanced load, e.g. a single-phase load on a
-%   transformer, draws a negative-sequence current that the current loop, whose references are DC in the
-%   positive frame, opposes with its whole PI gain, so the terminals get a large negative-sequence voltage.
-%   With the compensator the FHT also gives the negative sequence of the terminal voltage (same states,
-%   signs of the quadrature terms swapped), the master regulates it to zero with a dq vector PI in the
-%   negative frame (angle -theta) whose outputs are negative-sequence current references, these are
+%   transformer, draws a negative-sequence current (symmetrical components [1]) that the current loop,
+%   whose references are DC in the positive frame, opposes with its whole PI gain, so the terminals get a
+%   large negative-sequence voltage. With the compensator the FHT also gives the negative sequence of the
+%   terminal voltage (same states, signs of the quadrature terms swapped: the positive/negative-sequence
+%   calculation from quadrature signals of [2], with the FHT as the quadrature generator), the master
+%   regulates it to zero with a dq vector PI in the negative frame (angle -theta; positive and negative
+%   synchronous frames as in [3], [4]) whose outputs are negative-sequence current references, these are
 %   rotated into the positive frame (angle -2*theta) and added to the references of the voltage loop, and
 %   the current loop gets a resonant term at 2*fgrid on each axis (the negative sequence at fgrid seen in
-%   the positive frame) to track them without error. A slave takes the negative-sequence references of
-%   the master from sync(4:5), so master and slaves still carry the same current: they need the same
-%   nsc_enable. Fields (all needed when nsc_enable is present): nsc_enable, nsc_kp_ug [pu/pu],
-%   nsc_ki_ug [1/s] (negative-sequence voltage PI, e.g. kp_ug / ki_ug), nsc_i_lim [pu] (radius of its
-%   output limiter and clip threshold, e.g. ixi_lim), nsc_kr_i [1/s] (gain kr of kr*s/(s^2 + (4*pi*fgrid)^2);
-%   2*ki_i gives the envelope of the negative-sequence current the convergence that ki_i gives the
-%   positive-sequence one).
+%   the positive frame: PI plus resonant term in a rotating frame as in [5], resonant controllers [6],
+%   discretization [7]) to track them without error. Unbalance (negative-sequence voltage) compensation in
+%   voltage-source inverters: [8]; synchronization and control under unbalanced conditions: [9]. A slave
+%   takes the negative-sequence references of the master from sync(4:5), so master and slaves still carry
+%   the same current: they need the same nsc_enable. Fields (all needed when nsc_enable is present):
+%   nsc_enable, nsc_kp_ug [pu/pu], nsc_ki_ug [1/s] (negative-sequence voltage PI, e.g. kp_ug / ki_ug),
+%   nsc_i_lim [pu] (radius of its output limiter and clip threshold, e.g. ixi_lim), nsc_kr_i [1/s] (gain
+%   kr of kr*s/(s^2 + (4*pi*fgrid)^2); 2*ki_i gives the envelope of the negative-sequence current the
+%   convergence that ki_i gives the positive-sequence one).
+%
+%   References (negative-sequence compensator):
+%     [1] C. L. Fortescue, "Method of symmetrical co-ordinates applied to the solution of polyphase
+%         networks," Trans. AIEE, vol. 37, part II, pp. 1027-1140, 1918.
+%     [2] P. Rodriguez, R. Teodorescu, I. Candela, A. V. Timbus, M. Liserre, F. Blaabjerg, "New
+%         positive-sequence voltage detector for grid synchronization of power converters under faulty
+%         grid conditions," 37th IEEE Power Electronics Specialists Conf. (PESC), Jeju, 2006,
+%         pp. 692-698, doi:10.1109/PESC.2006.1712059.
+%     [3] H.-S. Song, K. Nam, "Dual current control scheme for PWM converter under unbalanced input
+%         voltage conditions," IEEE Trans. Ind. Electron., vol. 46, no. 5, pp. 953-959, Oct. 1999,
+%         doi:10.1109/41.793344.
+%     [4] P. Rodriguez, J. Pou, J. Bergas, J. I. Candela, R. P. Burgos, D. Boroyevich, "Decoupled double
+%         synchronous reference frame PLL for power converters control," IEEE Trans. Power Electron.,
+%         vol. 22, no. 2, pp. 584-592, Mar. 2007.
+%     [5] M. Liserre, R. Teodorescu, F. Blaabjerg, "Multiple harmonics control for three-phase grid
+%         converter systems with the use of PI-RES current controller in a rotating frame," IEEE Trans.
+%         Power Electron., vol. 21, no. 3, pp. 836-841, May 2006, doi:10.1109/TPEL.2006.875566.
+%     [6] R. Teodorescu, F. Blaabjerg, M. Liserre, P. C. Loh, "Proportional-resonant controllers and
+%         filters for grid-connected voltage-source converters," IEE Proc. Electr. Power Appl., vol. 153,
+%         no. 5, pp. 750-762, Sept. 2006, doi:10.1049/ip-epa:20060008.
+%     [7] A. G. Yepes, F. D. Freijedo, J. Doval-Gandoy, O. Lopez, J. Malvar, P. Fernandez-Comesana,
+%         "Effects of discretization methods on the performance of resonant controllers," IEEE Trans.
+%         Power Electron., vol. 25, no. 7, pp. 1692-1712, July 2010 (correction: vol. 27, no. 12,
+%         p. 4976, 2012).
+%     [8] M. Savaghebi, A. Jalilian, J. C. Vasquez, J. M. Guerrero, "Secondary control scheme for voltage
+%         unbalance compensation in an islanded droop-controlled microgrid," IEEE Trans. Smart Grid,
+%         vol. 3, no. 2, pp. 797-807, 2012, doi:10.1109/TSG.2011.2181432.
+%     [9] R. Teodorescu, M. Liserre, P. Rodriguez, "Grid Converters for Photovoltaic and Wind Power
+%         Systems," Wiley-IEEE Press, 2011, ISBN 978-0-470-05751-3.
 %
 %   Chain reproduced (names of the blocks of grid_forming_dq.slx in brackets):
 %     every step tc
@@ -405,7 +438,8 @@ function [y, x] = resonant(e, x, kr, wr, ts, rel_ts, clip_z)
 %   rel_ts   leak of the states while the current loop clips (clip_z), as the integrators of
 %            dq_vector_pi; the input is then ignored and the oscillator keeps turning
 %   Semi-implicit Euler with a = 2*sin(wr*ts/2) in place of wr*ts: eigenvalues on the unit circle at the
-%   angle wr*ts, i.e. the discrete oscillator resonates exactly at wr and keeps its amplitude.
+%   angle wr*ts, i.e. the discrete oscillator resonates exactly at wr and keeps its amplitude (how the
+%   discretization of a resonant term moves its resonance: reference [7] of the header).
     a = 2*sin(wr*ts/2);
     if clip_z > 0.5
         u = 0;
