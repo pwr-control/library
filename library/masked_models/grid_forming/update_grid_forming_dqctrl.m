@@ -9,16 +9,22 @@ function update_grid_forming_dqctrl()
 %   with grid_forming_dqctrl.slx, which this function saves. It can be run again: the ports are added
 %   and connected only when missing.
 %
-%   Interface after the update (2026-10-23, master/slave for the TELEMA VFC test bench):
+%   Interface after the update (2026-10-23, master/slave and negative-sequence compensator for the TELEMA VFC
+%   test bench):
 %     inputs    1 t_master   master time [s]
-%               2 sync       [3x1] [theta; i_xi_ref; i_eta_ref] of the master, read in slave mode only
+%               2 sync       [5x1] [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref] of the master, read in
+%                            slave mode only
 %     outputs   1 m          [14x1] measurements of the power stage (pu)
-%               2 ctrl_log   [37x1] control signals
-%               3 sync_out   [3x1] [theta; i_xi_ref; i_eta_ref] of the last control step, for the slave(s)
+%               2 ctrl_log   [43x1] control signals (38:43 negative sequence: u_xi_n, u_eta_n, i_xi_n_ref,
+%                            i_eta_n_ref, resonant terms r_d, r_q)
+%               3 sync_out   [5x1] same layout as sync, values of the last control step, for the slave(s)
 %     physical  ug_a, ug_b, ug_c (left), Udc(+), Udc(-) (right), unchanged
-%   The slave mode is selected by p.ctrl.slave = 1 in the parameter struct of the mask. The field is
-%   optional (default 0, master), so the structs of the existing models keep working; models that do not
-%   use the new ports get an unconnected-port warning (ground sync and terminate sync_out to silence it).
+%   The slave mode is selected by p.ctrl.slave = 1 in the parameter struct of the mask, the negative-sequence
+%   compensator by p.ctrl.nsc_enable = 1 (with nsc_kp_ug, nsc_ki_ug, nsc_i_lim, nsc_kr_i; see the header of
+%   private/afe_dq_ctrl_pwm.m). Both fields are optional (default master, compensator off), so the structs of
+%   the existing models keep working; models that do not use the new ports get an unconnected-port warning
+%   (ground sync and terminate sync_out to silence it). The first version of the ports (earlier on
+%   2026-10-23) carried [3x1]: a model that wires sync_out of one block to sync of another needs no change.
 
     lib  = 'grid_forming_dqctrl';
     blk  = [lib '/grid_forming_dqctrl_mod1'];
@@ -41,17 +47,18 @@ function update_grid_forming_dqctrl()
     pdata.Scope = 'Parameter';
     sdata = find(chart, '-isa', 'Stateflow.Data', 'Name', 'sync');
     assert(~isempty(sdata), 'update_grid_forming_dqctrl: input sync not found in %s (old source?)', mf);
-    sdata.Props.Array.Size = '[3 1]';           % fixed size: a grounded (unconnected) sync is 3x1 as well
+    sdata.Props.Array.Size = '[5 1]';           % fixed size: a grounded (unconnected) sync is 5x1 as well
     ph = get_param(mf, 'PortHandles');
     assert(numel(ph.Inport) == 3 && numel(ph.Outport) == 3, ...
         'update_grid_forming_dqctrl: %s has %d inputs and %d outputs, 3 and 3 expected', ...
         mf, numel(ph.Inport), numel(ph.Outport));
 
-    % ---- ports of the masked subsystem (numbers after t_master and after m, ctrl_log)
-    if isempty(find_system(blk, 'SearchDepth', 1, 'BlockType', 'Inport', 'Name', 'sync'))
+    % ---- ports of the masked subsystem (numbers after t_master and after m, ctrl_log); find_system looks
+    %      under the mask only with LookUnderMasks 'all' (the mask has the parameter p)
+    if isempty(find_system(blk, 'LookUnderMasks', 'all', 'SearchDepth', 1, 'BlockType', 'Inport', 'Name', 'sync'))
         add_block('built-in/Inport', [blk '/sync'], 'Port', '2', 'Position', [-105 478 -75 492]);
     end
-    if isempty(find_system(blk, 'SearchDepth', 1, 'BlockType', 'Outport', 'Name', 'sync_out'))
+    if isempty(find_system(blk, 'LookUnderMasks', 'all', 'SearchDepth', 1, 'BlockType', 'Outport', 'Name', 'sync_out'))
         add_block('built-in/Outport', [blk '/sync_out'], 'Port', '3', 'Position', [390 478 420 492]);
     end
     connect_once(blk, 'sync/1', 'afe_dq_forming_ctrl_pwm/3');
@@ -74,14 +81,17 @@ function update_grid_forming_dqctrl()
         'as a Simscape language component (afe_ssc.afe_two_level_lcl), control and PWM as one MATLAB Function ' ...
         '(afe_dq_ctrl_pwm, source private/afe_dq_ctrl_pwm.m of the library folder), measurements to the control ' ...
         'through a Unit Delay of one tc (no algebraic loop). Interface of afe_dq_mod1 of grid_forming_dq.slx: ' ...
-        'ug_a/b/c left, Udc(+)/Udc(-) right, t_master in, M (14x1 pu) and ctrl_log (37x1) out. ' ...
-        'Master/slave: sync in and sync_out out, [theta; i_xi_ref; i_eta_ref]; with p.ctrl.slave = 1 the block ' ...
-        'runs its current loop with the angle and the current references of the master (sync_out of the ' ...
-        'master to sync of the slave), with p.ctrl.slave = 0 or absent it is a master and ignores sync. ' ...
+        'ug_a/b/c left, Udc(+)/Udc(-) right, t_master in, M (14x1 pu) and ctrl_log (43x1) out. ' ...
+        'Master/slave: sync in and sync_out out, [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref]; with ' ...
+        'p.ctrl.slave = 1 the block runs its current loop with the angle and the current references of the ' ...
+        'master (sync_out of the master to sync of the slave), with p.ctrl.slave = 0 or absent it is a master ' ...
+        'and ignores sync. Negative-sequence compensator: p.ctrl.nsc_enable = 1 (same value in master and ' ...
+        'slaves) regulates the negative sequence of the terminal voltage to zero (PI in the negative frame, ' ...
+        'resonant term at 2*fgrid in the current loop); absent or 0, off. ' ...
         'Parameter p: struct of private/afe_module_param.m, e.g. param.afe_mod(1).']);
 
     save_system(lib);
-    fprintf('%s: control code from %s, ports sync (input 2) and sync_out (output 3), saved %s\n', ...
+    fprintf('%s: control code from %s, ports sync (input 2, 5x1) and sync_out (output 3), saved %s\n', ...
         blk, src, get_param(lib, 'FileName'));
 end
 
