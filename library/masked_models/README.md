@@ -193,3 +193,42 @@ coordinates (Simulink).
   above: PLLs, sequence extraction, current control, instantaneous power, islanding detection,
   FRT according to VDE 4110, phase acquisition and compensation, quantization and logging. Mixed
   MATLAB Function and C-Caller implementation.
+
+## `grid_following`, `grid_forming`
+
+Single-block AFEs: the two-level bridge with DC-link capacitor and LCL filter is the Simscape
+component `afe_ssc.afe_two_level_lcl` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics),
+the whole control with the PWM is one MATLAB Function, so that one converter counts as a handful
+of nonvirtual blocks. Mask parameter `p`, one numeric struct (`p.hw`, `p.pwm`, `p.ctrl`); physical
+ports `ug_a/b/c` (AC, left) and `Udc(+)/Udc(-)` (DC, right), input `t_master`, outputs `m` (14×1
+measurements in pu) and `ctrl_log`.
+
+- `grid_following_dqctrl.slx` — grid follower: FHT-PLL, DC-link voltage loop, dq current loop.
+- `grid_forming_dqctrl.slx` — grid former: free-running phase generator, voltage loop on the FHT
+  positive sequence of the terminal voltage, dq current loop. Master/slave for converters sharing one
+  load: input `sync` and output `sync_out`, both `[theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref]`;
+  with `p.ctrl.slave = 1` the block runs only its current loop, with the angle and the current
+  references of the master (`sync_out` of the master to `sync` of the slave). Optional
+  negative-sequence compensator for unbalanced loads (e.g. a single-phase load on a transformer),
+  `p.ctrl.nsc_enable = 1`, off when absent or 0: PI on the negative sequence of the terminal voltage
+  (FHT, negative frame) giving negative-sequence current references, tracked by a resonant term at
+  `2*fgrid` in the current loop; master and slaves need the same value. The control code is
+  `grid_forming/private/afe_dq_ctrl_pwm.m`; `grid_forming/update_grid_forming_dqctrl.m` loads it
+  into the block and adds the two ports. References for the compensator (full citations in the header
+  of `afe_dq_ctrl_pwm.m`):
+  1. Fortescue, symmetrical components, Trans. AIEE 37, 1918.
+  2. Rodríguez et al., positive/negative-sequence calculation from quadrature signals (DSOGI), IEEE PESC
+     2006, doi:10.1109/PESC.2006.1712059.
+  3. Song, Nam, dual current control in positive and negative synchronous frames, IEEE Trans. Ind.
+     Electron. 46(5), 1999, doi:10.1109/41.793344.
+  4. Rodríguez et al., decoupled double synchronous reference frame, IEEE Trans. Power Electron. 22(2),
+     2007.
+  5. Liserre, Teodorescu, Blaabjerg, PI plus resonant current controller in a rotating frame, IEEE Trans.
+     Power Electron. 21(3), 2006, doi:10.1109/TPEL.2006.875566.
+  6. Teodorescu et al., proportional-resonant controllers and filters, IEE Proc. Electr. Power Appl.
+     153(5), 2006, doi:10.1049/ip-epa:20060008.
+  7. Yepes et al., discretization of resonant controllers, IEEE Trans. Power Electron. 25(7), 2010.
+  8. Savaghebi et al., voltage unbalance compensation with voltage-source inverters, IEEE Trans. Smart
+     Grid 3(2), 2012, doi:10.1109/TSG.2011.2181432.
+  9. Teodorescu, Liserre, Rodríguez, *Grid Converters for Photovoltaic and Wind Power Systems*,
+     Wiley-IEEE Press, 2011.
