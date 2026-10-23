@@ -104,6 +104,18 @@ with a linear inductor.
 - **`scott_t`** — Scott-T transformer converting three-phase to a balanced two-phase system
   (main plus teaser at √3/2 turns), parameterized in per unit on the rated power and voltages.
   Secondaries are galvanically separate. Linear magnetizing branch, no saturation or hysteresis.
+- **`tri_monophase_transformer`** — Three-phase to single-phase transformer: two star-connected
+  primaries wound on the same three-limb core (Yy0, neutrals exposed) and one single-phase
+  secondary made of limb coils in series, whose turns distribution on the limbs is a parameter
+  (`[1 -1 0]` line-to-line type, `[1 -1/2 -1/2]` T type, `[1 0 0]` single limb, which needs the
+  neutral). Positive- and zero-sequence magnetizing inductances, per-limb core-loss resistance,
+  parameters in per unit on the single-phase rating; linear magnetics, no saturation. The limb
+  flux linkages are outputs. `test_tri_monophase_transformer.m` is a pure-MATLAB steady-state
+  check (no-load ratio, load, short circuit, parallel primaries, secondary distributions). The
+  block library `tri_monophase_transformer_lib.slx` is not in the repository yet: build it with
+  `ssc_build tri_monophase_transformer` from `electrical_machines`. Documented in
+  `research/electrical_machines/transformers/tri_monophase_transformer` of
+  [repositories-documentation](https://github.com/pwr-control/repositories-documentation).
 
 ## `batteries`
 
