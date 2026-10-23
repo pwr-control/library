@@ -206,8 +206,12 @@ measurements in pu) and `ctrl_log`.
 - `grid_following_dqctrl.slx` — grid follower: FHT-PLL, DC-link voltage loop, dq current loop.
 - `grid_forming_dqctrl.slx` — grid former: free-running phase generator, voltage loop on the FHT
   positive sequence of the terminal voltage, dq current loop. Master/slave for converters sharing one
-  load: input `sync` and output `sync_out`, both `[theta; i_xi_ref; i_eta_ref]`; with
-  `p.ctrl.slave = 1` the block runs only its current loop, with the angle and the current
-  references of the master (`sync_out` of the master to `sync` of the slave). The control code is
+  load: input `sync` and output `sync_out`, both `[theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref]`;
+  with `p.ctrl.slave = 1` the block runs only its current loop, with the angle and the current
+  references of the master (`sync_out` of the master to `sync` of the slave). Optional
+  negative-sequence compensator for unbalanced loads (e.g. a single-phase load on a transformer),
+  `p.ctrl.nsc_enable = 1`, off when absent or 0: PI on the negative sequence of the terminal voltage
+  (FHT, negative frame) giving negative-sequence current references, tracked by a resonant term at
+  `2*fgrid` in the current loop; master and slaves need the same value. The control code is
   `grid_forming/private/afe_dq_ctrl_pwm.m`; `grid_forming/update_grid_forming_dqctrl.m` loads it
   into the block and adds the two ports.

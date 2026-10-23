@@ -20,18 +20,19 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %              capacitor voltage, M(7:9) ig_abc grid current (positive towards the grid),
 %              M(10:12) ug_abc grid voltage without zero sequence, M(13) vdc/udc_nom, M(14) ic/ibez
 %     t_master master time [s] (Clock of "global timing"/time_afe3 with k = 1, i.e. simulation time)
-%     sync     [3x1] [theta; i_xi_ref; i_eta_ref] of the master (its output sync_out), read only in
-%              slave mode; on a master leave it unconnected or grounded
+%     sync     [5x1] [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref] of the master (its output
+%              sync_out), read only in slave mode; on a master leave it unconnected or grounded
 %     p        parameter struct, scope "Parameter" in the Symbols pane of the block, built by
 %              private/afe_module_param.m (p.pwm.*, p.ctrl.*); p.ctrl.slave (optional, default 0)
-%              selects the slave mode
+%              selects the slave mode, p.ctrl.nsc_* (optional, default off) the negative-sequence
+%              compensator
 %   Outputs
 %     G        gate commands [6x1] in V, order [a+; a-; b+; b-; c+; c-] (Q1..Q6 of the PWM library
 %              block and G of the ssc block), p.pwm.gate_on / p.pwm.gate_off (15 V / -10 V)
-%     ctrl_log control signals [37x1], indices in afe_log_index.m (held between two triggers,
-%              t_loc, ramp and trgo updated every step)
-%     sync_out [3x1] [theta; i_xi_ref; i_eta_ref] of the last control step (held between two
-%              triggers): connect it to the sync input of the slave(s)
+%     ctrl_log control signals [43x1], indices in afe_log_index.m (held between two triggers,
+%              t_loc, ramp and trgo updated every step); 38:43 are the negative-sequence signals
+%     sync_out [5x1] [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref] of the last control step
+%              (held between two triggers): connect it to the sync input of the slave(s)
 %
 %   Master/slave (p.ctrl.slave = 1): converters in parallel on one load, e.g. on separate primaries of
 %   one transformer. The master runs the whole chain below and forms the voltage; a slave runs its
@@ -42,6 +43,23 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   phase, double update): the master runs before the slave in the same tc step (data dependency), so
 %   the slave uses the values of the same trigger; with a carrier phase shift it uses those of the
 %   last trigger of the master.
+%
+%   Negative-sequence compensator (p.ctrl.nsc_enable = 1; off when the field is absent or 0, and then the
+%   block computes what it computed before): an unbalanced load, e.g. a single-phase load on a
+%   transformer, draws a negative-sequence current that the current loop, whose references are DC in the
+%   positive frame, opposes with its whole PI gain, so the terminals get a large negative-sequence voltage.
+%   With the compensator the FHT also gives the negative sequence of the terminal voltage (same states,
+%   signs of the quadrature terms swapped), the master regulates it to zero with a dq vector PI in the
+%   negative frame (angle -theta) whose outputs are negative-sequence current references, these are
+%   rotated into the positive frame (angle -2*theta) and added to the references of the voltage loop, and
+%   the current loop gets a resonant term at 2*fgrid on each axis (the negative sequence at fgrid seen in
+%   the positive frame) to track them without error. A slave takes the negative-sequence references of
+%   the master from sync(4:5), so master and slaves still carry the same current: they need the same
+%   nsc_enable. Fields (all needed when nsc_enable is present): nsc_enable, nsc_kp_ug [pu/pu],
+%   nsc_ki_ug [1/s] (negative-sequence voltage PI, e.g. kp_ug / ki_ug), nsc_i_lim [pu] (radius of its
+%   output limiter and clip threshold, e.g. ixi_lim), nsc_kr_i [1/s] (gain kr of kr*s/(s^2 + (4*pi*fgrid)^2);
+%   2*ki_i gives the envelope of the negative-sequence current the convergence that ki_i gives the
+%   positive-sequence one).
 %
 %   Chain reproduced (names of the blocks of grid_forming_dq.slx in brackets):
 %     every step tc
@@ -62,6 +80,8 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %       voltage loop   dq vector PI on (u_xi, u_eta), limiter ixi_lim, clip flag at clip_thr_ug,
 %                      integrator release while clipped                [dq_vector_pi]
 %       current loop   dq vector PI on (i_xi, i_eta), unit-circle limiter   [current_ctrl]
+%       compensator    (nsc_enable) negative-sequence voltage PI, references in the positive frame,
+%                      resonant term at 2*fgrid in the current loop         [not in the model]
 %       SVPWM          port of sv_pwm_cm.c (inputs scaled by sqrt(3)/2, k_offset = (ugamma + 1)/2)
 %                      [space_vector]
 %
@@ -73,10 +93,11 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   The code follows grid_forming_dq.slx at commit e61afe1 (PR #1): positive-sequence gains +1/2 and
 %   clip threshold of the voltage loop equal to its limiter radius (clip_thr_ug = ixi_lim).
 
-NLOG = 37;
+NLOG = 43;
 
 persistent initialized trgo_z corr_z x_align ug_z is_z ig_z udc_z ...
-           fht_s1 fht_s2 fht_out th xd_u xq_u clip_u_z xd_i xq_i clip_i_z d_abc logv sync_z
+           fht_s1 fht_s2 fht_out th xd_u xq_u clip_u_z xd_i xq_i clip_i_z d_abc logv sync_z ...
+           xd_n xq_n clip_n_z res_d res_q
 
 if isempty(initialized)
     initialized = true;
@@ -95,7 +116,10 @@ if isempty(initialized)
     xd_i = 0; xq_i = 0; clip_i_z = 0;      % current loop PI
     d_abc    = zeros(3,1);           % duties before the first trigger (Outport initial output)
     logv     = zeros(NLOG,1);
-    sync_z   = zeros(3,1);           % [theta; i_xi_ref; i_eta_ref] of the last trigger (output sync_out)
+    sync_z   = zeros(5,1);           % [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref] of the last trigger (output sync_out)
+    xd_n = 0; xq_n = 0; clip_n_z = 0;      % negative-sequence voltage PI (compensator)
+    res_d = zeros(2,1);              % resonant term of the current loop at 2*fgrid, axis xi: [output; quadrature]
+    res_q = zeros(2,1);              % axis eta
 end
 
 m = M(:);
@@ -117,6 +141,18 @@ if trgo && ~trgo_z
     slave = false;                   % p.ctrl.slave is optional: parameter structs of older models have none
     if isfield(p.ctrl, 'slave')
         slave = p.ctrl.slave ~= 0;
+    end
+    nsc   = false;                   % negative-sequence compensator, optional as well (p.ctrl.nsc_*)
+    kp_n  = 0;
+    ki_n  = 0;
+    lim_n = 0;
+    kr_i  = 0;
+    if isfield(p.ctrl, 'nsc_enable')
+        nsc   = p.ctrl.nsc_enable ~= 0;
+        kp_n  = p.ctrl.nsc_kp_ug;
+        ki_n  = p.ctrl.nsc_ki_ug;
+        lim_n = p.ctrl.nsc_i_lim;
+        kr_i  = p.ctrl.nsc_kr_i;
     end
 
     % ---- acquisitions: the control uses the samples of the previous trigger (Unit Delay after the
@@ -174,6 +210,8 @@ if trgo && ~trgo_z
     u_fhtsr_alpha = 1/2*(u_hat(1) + v_hat(2));         % Sum (++): u_fht_alpha + v_fht_beta, Gain 1/2 (was -1/2 before e61afe1)
     u_fhtsr_beta  = 1/2*(u_hat(2) - v_hat(1));         % Sum1 (-+): -v_fht_alpha + u_fht_beta, Gain 1/2
     u_grid_mag = sqrt(u_fhtsr_alpha^2 + u_fhtsr_beta^2);
+    u_n_alpha = 1/2*(u_hat(1) - v_hat(2));             % negative sequence: quadrature terms with the other sign
+    u_n_beta  = 1/2*(u_hat(2) + v_hat(1));
 
     % ---- free-running phase generator (grid_phase_gen): output of this step, then advance; a slave
     %      takes the angle of the master and keeps its own generator aligned to it
@@ -190,6 +228,10 @@ if trgo && ~trgo_z
     u_xi  =  u_fhtsr_alpha*cos(theta) + u_fhtsr_beta*sin(theta);
     u_eta = -u_fhtsr_alpha*sin(theta) + u_fhtsr_beta*cos(theta);
 
+    % ---- negative sequence in the negative frame (angle -theta): constant for a negative sequence at fgrid
+    u_xi_n  = u_n_alpha*cos(theta) - u_n_beta*sin(theta);
+    u_eta_n = u_n_alpha*sin(theta) + u_n_beta*cos(theta);
+
     % ---- voltage loop: dq vector PI -> current references (afe_control/dq_vector_pi); a slave takes
     %      the references of the master and leaves its PI at rest
     if slave
@@ -199,18 +241,50 @@ if trgo && ~trgo_z
     else
         [i_xi_ref, i_eta_ref, clip_u, xd_u, xq_u] = dq_vector_pi( ...
             p.ctrl.ug_ref - u_xi, p.ctrl.ueta_ref - u_eta, xd_u, xq_u, clip_u_z, ...
-            p.ctrl.kp_ug, p.ctrl.ki_ug*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.ixi_lim, p.ctrl.clip_thr_ug);
+            p.ctrl.kp_ug, p.ctrl.ki_ug*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.ixi_lim, p.ctrl.clip_thr_ug, 0, 0);
     end
     clip_u_z = clip_u;                                 % Unit Delay1 of pi_d/pi_q
 
-    % ---- current loop (current_ctrl): converter current in the rotating frame, dq vector PI
+    % ---- negative-sequence compensator: PI of the master on (u_xi_n, u_eta_n) with references 0 ->
+    %      negative-sequence current references (negative frame); a slave takes those of the master
+    i_xi_n_ref  = 0;
+    i_eta_n_ref = 0;
+    clip_n      = 0;
+    if nsc
+        if slave
+            i_xi_n_ref  = sync(4);
+            i_eta_n_ref = sync(5);
+        else
+            [i_xi_n_ref, i_eta_n_ref, clip_n, xd_n, xq_n] = dq_vector_pi( ...
+                -u_xi_n, -u_eta_n, xd_n, xq_n, clip_n_z, ...
+                kp_n, ki_n*ts_i, p.ctrl.clip_release*ts_i, lim_n, lim_n, 0, 0);
+        end
+    end
+    clip_n_z = clip_n;
+
+    % ---- current loop (current_ctrl): converter current in the rotating frame, dq vector PI; with the
+    %      compensator the negative-sequence references, rotated into the positive frame (angle -2*theta),
+    %      are added to those of the voltage loop and a resonant term at 2*fgrid on each axis tracks them
     i_alpha = 2/3*(isd(1) - 1/2*isd(2) - 1/2*isd(3));  % uvw2alphabeta
     i_beta  = 2/3*(sqrt(3)/2*(isd(2) - isd(3)));
     i_xi  =  i_alpha*cos(theta) + i_beta*sin(theta);   % alphabeta2xieta
     i_eta = -i_alpha*sin(theta) + i_beta*cos(theta);
+    i_xi_r  = i_xi_ref;
+    i_eta_r = i_eta_ref;
+    r_d = 0;
+    r_q = 0;
+    if nsc
+        c2 = cos(2*theta);
+        s2 = sin(2*theta);
+        i_xi_r  = i_xi_ref  + i_xi_n_ref*c2 + i_eta_n_ref*s2;
+        i_eta_r = i_eta_ref - i_xi_n_ref*s2 + i_eta_n_ref*c2;
+        w_res = 2*2*pi*p.ctrl.fgrid;
+        [r_d, res_d] = resonant(i_xi_r - i_xi, res_d, kr_i, w_res, ts, p.ctrl.clip_release*ts_i, clip_i_z);
+        [r_q, res_q] = resonant(i_eta_r - i_eta, res_q, kr_i, w_res, ts, p.ctrl.clip_release*ts_i, clip_i_z);
+    end
     [m_d, m_q, clip_i, xd_i, xq_i] = dq_vector_pi( ...
-        i_xi_ref - i_xi, i_eta_ref - i_eta, xd_i, xq_i, clip_i_z, ...
-        p.ctrl.kp_i, p.ctrl.ki_i*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.u_lim, p.ctrl.u_lim);
+        i_xi_r - i_xi, i_eta_r - i_eta, xd_i, xq_i, clip_i_z, ...
+        p.ctrl.kp_i, p.ctrl.ki_i*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.u_lim, p.ctrl.u_lim, r_d, r_q);
     clip_i_z = clip_i;
     u_alpha = m_d*cos(theta) - m_q*sin(theta);         % xi_eta_to_alpha_beta
     u_beta  = m_d*sin(theta) + m_q*cos(theta);
@@ -247,9 +321,15 @@ if trgo && ~trgo_z
     logv(35) = v_hat(1);
     logv(36) = u_hat(2);
     logv(37) = v_hat(2);
+    logv(38) = u_xi_n;
+    logv(39) = u_eta_n;
+    logv(40) = i_xi_n_ref;
+    logv(41) = i_eta_n_ref;
+    logv(42) = r_d;
+    logv(43) = r_q;
 
     % ---- references for the slave(s)
-    sync_z = [theta; i_xi_ref; i_eta_ref];
+    sync_z = [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref];
 end
 trgo_z = trgo;
 
@@ -275,7 +355,7 @@ sync_out = sync_z;
 end
 
 % ======================================================================================================
-function [md_sat, mq_sat, clip, xd, xq] = dq_vector_pi(ed, eq, xd, xq, clip_z, kp, ki_ts, rel_ts, lim, clip_thr)
+function [md_sat, mq_sat, clip, xd, xq] = dq_vector_pi(ed, eq, xd, xq, clip_z, kp, ki_ts, rel_ts, lim, clip_thr, fd, fq)
 %DQ_VECTOR_PI  dq vector PI of the model: blocks pi_d, pi_q, "vector lenght", bounder1/2, switch.
 %   ed, eq      errors (reference - measure)
 %   xd, xq      integrator states (Unit Delay2 of pi_d, pi_q)
@@ -284,6 +364,8 @@ function [md_sat, mq_sat, clip, xd, xq] = dq_vector_pi(ed, eq, xd, xq, clip_z, k
 %   rel_ts      CTRPIFF_CLIP_RELEASE*ts, leak of the integrator while clipped
 %   lim         radius of the output limiter (Switch1 threshold and gain of the bounders)
 %   clip_thr    radius at which the clip flag is raised (Switch threshold of the bounders)
+%   fd, fq      terms added to the PI outputs before the limiter (resonant part of the current loop
+%               with the negative-sequence compensator, 0 otherwise)
     if clip_z > 0.5
         xd_new = xd - rel_ts*xd;                       % Sum2: x - rel*ts*x
         md = kp*ed + xd;                               % Sum5 = P + Sum4, Sum4 = x + 0
@@ -295,6 +377,8 @@ function [md_sat, mq_sat, clip, xd, xq] = dq_vector_pi(ed, eq, xd, xq, clip_z, k
         xq_new = xq + ki_ts*eq;
         mq = kp*eq + xq_new;
     end
+    md = md + fd;
+    mq = mq + fq;
     xd = xd_new;
     xq = xq_new;
     mag = sqrt(md^2 + mq^2);                           % "vector lenght"
@@ -310,6 +394,30 @@ function [md_sat, mq_sat, clip, xd, xq] = dq_vector_pi(ed, eq, xd, xq, clip_z, k
     else
         clip = 0;
     end
+end
+
+% ======================================================================================================
+function [y, x] = resonant(e, x, kr, wr, ts, rel_ts, clip_z)
+%RESONANT  Resonant term kr*s/(s^2 + wr^2) of the current loop (negative-sequence compensator).
+%   e        error (reference - measure)
+%   x        states [output; quadrature]: x1' = kr*e - wr*x2, x2' = wr*x1
+%   ts       period of the control step
+%   rel_ts   leak of the states while the current loop clips (clip_z), as the integrators of
+%            dq_vector_pi; the input is then ignored and the oscillator keeps turning
+%   Semi-implicit Euler with a = 2*sin(wr*ts/2) in place of wr*ts: eigenvalues on the unit circle at the
+%   angle wr*ts, i.e. the discrete oscillator resonates exactly at wr and keeps its amplitude.
+    a = 2*sin(wr*ts/2);
+    if clip_z > 0.5
+        u = 0;
+        k = 1 - rel_ts;
+    else
+        u = kr*e;
+        k = 1;
+    end
+    x1 = k*x(1) + ts*u - a*x(2);
+    x2 = k*x(2) + a*x1;
+    x = [x1; x2];
+    y = x1;
 end
 
 % ======================================================================================================
