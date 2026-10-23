@@ -193,3 +193,21 @@ coordinates (Simulink).
   above: PLLs, sequence extraction, current control, instantaneous power, islanding detection,
   FRT according to VDE 4110, phase acquisition and compensation, quantization and logging. Mixed
   MATLAB Function and C-Caller implementation.
+
+## `grid_following`, `grid_forming`
+
+Single-block AFEs: the two-level bridge with DC-link capacitor and LCL filter is the Simscape
+component `afe_ssc.afe_two_level_lcl` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics),
+the whole control with the PWM is one MATLAB Function, so that one converter counts as a handful
+of nonvirtual blocks. Mask parameter `p`, one numeric struct (`p.hw`, `p.pwm`, `p.ctrl`); physical
+ports `ug_a/b/c` (AC, left) and `Udc(+)/Udc(-)` (DC, right), input `t_master`, outputs `m` (14×1
+measurements in pu) and `ctrl_log`.
+
+- `grid_following_dqctrl.slx` — grid follower: FHT-PLL, DC-link voltage loop, dq current loop.
+- `grid_forming_dqctrl.slx` — grid former: free-running phase generator, voltage loop on the FHT
+  positive sequence of the terminal voltage, dq current loop. Master/slave for converters sharing one
+  load: input `sync` and output `sync_out`, both `[theta; i_xi_ref; i_eta_ref]`; with
+  `p.ctrl.slave = 1` the block runs only its current loop, with the angle and the current
+  references of the master (`sync_out` of the master to `sync` of the slave). The control code is
+  `grid_forming/private/afe_dq_ctrl_pwm.m`; `grid_forming/update_grid_forming_dqctrl.m` loads it
+  into the block and adds the two ports.
