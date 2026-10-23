@@ -71,7 +71,7 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %     [2] P. Rodriguez, R. Teodorescu, I. Candela, A. V. Timbus, M. Liserre, F. Blaabjerg, "New
 %         positive-sequence voltage detector for grid synchronization of power converters under faulty
 %         grid conditions," 37th IEEE Power Electronics Specialists Conf. (PESC), Jeju, 2006,
-%         pp. 692-698, doi:10.1109/PESC.2006.1712059.
+%         pp. 1-7, doi:10.1109/PESC.2006.1712059.
 %     [3] H.-S. Song, K. Nam, "Dual current control scheme for PWM converter under unbalanced input
 %         voltage conditions," IEEE Trans. Ind. Electron., vol. 46, no. 5, pp. 953-959, Oct. 1999,
 %         doi:10.1109/41.793344.
