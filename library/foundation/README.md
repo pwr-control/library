@@ -72,6 +72,22 @@ with a linear inductor.
 - **`threephase_inductor_with_saturation`** — Same topology with per-phase saturation scaling the
   self and mutual inductances independently.
 
+Single-block power stages of the compact converter blocks of [`../masked_models`](../masked_models)
+(one converter = one nonvirtual block of power stage, MATLAB Home licence):
+
+- **`afe_ssc`** — `afe_two_level_lcl`: two-level bridge with DC-link capacitor and LCL filter, the power
+  stage of `grid_following_dqctrl` and `grid_forming_dqctrl`. Gate commands in as a physical-signal
+  vector, measurements out in pu.
+- **`cllc_ssc`** — `cllc_dcx_single_phase`: CLLC resonant DC/DC stage (DC transformer, DCX), the power
+  stage of `cllc_dcx`: DC choke and DC-link capacitor on each side, two full bridges of switch +
+  antiparallel-diode pairs with optional output capacitance `Coss` (ZVS transitions driven by the tank
+  current), symmetrical resonant tank `Lr1`/`Cr1` – `Lr2`/`Cr2`, transformer with magnetizing
+  inductance and core-loss resistance (reluctance model, turns `n1:n2`). Gates `G` [8×1] in,
+  measurements `M` [15×1] in pu out; the options (`coss_on`, DC-link capacitors, chokes) are
+  `cllc_ssc.onoff` enumerations. Same circuit as `sst_cllc_dcx.slx` of
+  `pwr-control/solid-state-transformers`. Build with `ssc_build cllc_ssc` from this folder
+  (`cllc_ssc_lib.slx`, committed next to the package once built).
+
 ## `electrical_machines`
 
 - **`im`** — Induction machine in stationary αβ coordinates, current/rotor-flux state form.
