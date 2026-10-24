@@ -1,0 +1,437 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component cllc_dcx_single_phase
+% CLLC-DCX Single-Phase Stage
+% Isolated DC/DC stage (CLLC resonant converter, DC transformer) in ONE
+% Simscape block, so that the power stage of one stage counts as one
+% nonvirtual block (MATLAB Home licence: at most 1000 nonvirtual blocks per
+% model, referenced models and library links included). Same circuit as
+% "dc/dc with galvanic isolation" of sst_cllc_dcx.slx of
+% pwr-control/solid-state-transformers without the loss and thermal model of
+% the switches (mos_simple_2th):
+%   side 1: DC choke Ldc1 + RLdc1 on the (+) terminal (optional), DC-link
+%     capacitor Cdc1 with series resistance Rdc1 across the bridge (optional,
+%     initial voltage Vdc10), full bridge 1;
+%   tank: Cr1 and Lr1 + Rr1 in series with the primary of the transformer
+%     (magnetizing inductance Lm and core-loss resistance Rfe on the primary,
+%     turns n1 : n2, reluctance model as single_phase_transformer of
+%     pwr-control/library; the leakages are part of Lr1 and Lr2), Lr2 + Rr2
+%     and Cr2 in series with the secondary;
+%   side 2: full bridge 2, DC-link capacitor Cdc2 + Rdc2 (optional, Vdc20),
+%     DC choke Ldc2 + RLdc2 on the (+) terminal (optional).
+%   switch + antiparallel diode pair (current i, voltage v, drain -> source):
+%     gate on  (G(k) > Vth)  ->  i = v/Ron   (bidirectional)
+%     gate off, v < 0        ->  i = v/Ron   (antiparallel diode conducting)
+%     gate off, v >= 0       ->  i = v*Goff  (blocking)
+%   optional output capacitance Coss across each switch with the series
+%     resistance tau_coss/Coss (coss_on): the dead-time transitions are then
+%     driven by the current of the tank (ZVS of the driving bridge by the
+%     magnetizing current, ringing of the rectifier nodes in the zero-current
+%     interval); with coss_on = off the transitions happen in one step.
+%
+% Gate input G: physical-signal vector [8x1] in V, order per leg
+%     G = [1a+; 1a-; 1b+; 1b-; 2a+; 2a-; 2b+; 2b-]   (Q1..Q4 bridge 1, Q5..Q8 bridge 2)
+% Drive it with +18 V (on) / -3 V (off) and Vth = 2.5 V. No dead time and no
+% interlock inside the block: with both switches of a leg on, the leg shorts
+% the DC link through 2*Ron. The bridge voltage of side k is the voltage of
+% midpoint a minus midpoint b: with ka+ and kb- on it is +udc_k.
+%
+% Sign conventions of the tank currents: i_r1 flows OUT of midpoint 1a into
+% the tank (positive when bridge 1 delivers power with 1a+ on); i_r2 flows
+% out of the secondary INTO midpoint 2a (in phase with i_r1 in a DCX, power
+% from side 1 to side 2). So the synchronous rectifier of bridge 2 turns on
+% 2a+ and 2b- for i_r2 > 0 (2a- and 2b+ for i_r2 < 0), the one of bridge 1
+% turns on 1a- and 1b+ for i_r1 > 0 (1a+ and 1b- for i_r1 < 0).
+%
+% Measurement output M: physical-signal vector [15x1], dimensionless (pu):
+%   M(1)  u_dc1/udc_nom   terminal voltage of side 1, dc1(+) - dc1(-)
+%   M(2)  i_dc1/idc_nom   terminal current of side 1, positive INTO dc1(+)
+%   M(3)  u_dc2/udc_nom   terminal voltage of side 2, dc2(+) - dc2(-)
+%   M(4)  i_dc2/idc_nom   terminal current of side 2, positive OUT of dc2(+)
+%   M(5)  i_r1/idc_nom    tank current of side 1
+%   M(6)  i_r2/idc_nom    tank current of side 2
+%   M(7)  u_b1/udc_nom    bridge 1 AC voltage, midpoint 1a - midpoint 1b
+%   M(8)  u_b2/udc_nom    bridge 2 AC voltage, midpoint 2a - midpoint 2b
+%   M(9)  u_cr1/udc_nom   resonant capacitor 1 voltage
+%   M(10) u_cr2/udc_nom   resonant capacitor 2 voltage
+%   M(11) u_bus1/udc_nom  DC bus of bridge 1 (after the choke)
+%   M(12) u_bus2/udc_nom  DC bus of bridge 2
+%   M(13) i_m/idc_nom     magnetizing current referred to the primary, i_r1 - ife - (n2/n1) i_r2
+%   M(14) i_c1/idc_nom    DC-link capacitor 1 current, (+) -> (-)
+%   M(15) i_c2/idc_nom    DC-link capacitor 2 current, (+) -> (-)
+%
+% Ports: dc1+ dc1- (left), dc2+ dc2- (right), G (gates, left), M
+% (measurements, right). Side 1 and side 2 are galvanically separate: each
+% side needs its own Electrical Reference in the model.
+% Initial conditions: Vdc10 and Vdc20 (parameters, with the capacitors on);
+% the resonant capacitor voltages, the tank currents and the choke currents
+% start at zero (priority none, set them in the Variables tab if needed).
+
+  nodes
+    dc1p = foundation.electrical.electrical; % dc1+
+    dc1n = foundation.electrical.electrical; % dc1-
+    dc2p = foundation.electrical.electrical; % dc2+
+    dc2n = foundation.electrical.electrical; % dc2-
+  end
+
+  inputs
+    G = {zeros(8,1), 'V'}; % G
+  end
+
+  outputs
+    M = {zeros(15,1), '1'}; % M
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth      = {2.5,     'V'    };   % Gate threshold voltage
+    Ron      = {1e-3,    'Ohm'  };   % On-state resistance (switch and diode)
+    Goff     = {1e-6,    '1/Ohm'};   % Off-state conductance
+    coss_on  = cllc_ssc.onoff.off;   % Output capacitance of the switches
+    Coss     = {0.79e-9, 'F'    };   % Output capacitance per switch
+    tau_coss = {10e-9,   's'    };   % Time constant of the series resistance of Coss
+    % --- side 1: DC link and choke ---
+    cap_dc1  = cllc_ssc.onoff.on;    % DC-link capacitor 1
+    Cdc1     = {500e-6,  'F'    };   % DC-link capacitance 1
+    Rdc1     = {1e-3,    'Ohm'  };   % DC-link capacitor 1 series resistance
+    Vdc10    = {800,     'V'    };   % DC-link capacitor 1 initial voltage
+    ind_dc1  = cllc_ssc.onoff.on;    % DC choke 1
+    Ldc1     = {250e-6,  'H'    };   % DC choke 1 inductance
+    RLdc1    = {2e-3,    'Ohm'  };   % DC choke 1 series resistance
+    % --- resonant tank, side 1 ---
+    Lr1      = {12e-6,   'H'    };   % Resonant inductance 1 (leakage + discrete)
+    Rr1      = {6e-3,    'Ohm'  };   % Series resistance 1 (winding + inductor)
+    Cr1      = {0.762e-6,'F'    };   % Resonant capacitance 1
+    % --- transformer ---
+    n1       = {11,      '1'    };   % Primary turns
+    n2       = {11,      '1'    };   % Secondary turns
+    Lm       = {400e-6,  'H'    };   % Magnetizing inductance (primary side)
+    Rfe      = {10.7e3,  'Ohm'  };   % Core-loss resistance (primary side)
+    % --- resonant tank, side 2 ---
+    Lr2      = {12e-6,   'H'    };   % Resonant inductance 2 (leakage + discrete)
+    Rr2      = {6e-3,    'Ohm'  };   % Series resistance 2 (winding + inductor)
+    Cr2      = {0.762e-6,'F'    };   % Resonant capacitance 2
+    % --- side 2: DC link and choke ---
+    cap_dc2  = cllc_ssc.onoff.on;    % DC-link capacitor 2
+    Cdc2     = {500e-6,  'F'    };   % DC-link capacitance 2
+    Rdc2     = {1e-3,    'Ohm'  };   % DC-link capacitor 2 series resistance
+    Vdc20    = {800,     'V'    };   % DC-link capacitor 2 initial voltage
+    ind_dc2  = cllc_ssc.onoff.on;    % DC choke 2
+    Ldc2     = {250e-6,  'H'    };   % DC choke 2 inductance
+    RLdc2    = {2e-3,    'Ohm'  };   % DC choke 2 series resistance
+    % --- normalization of the measurement output ---
+    udc_nom  = {800,     'V'    };   % Base DC voltage
+    idc_nom  = {62.5,    'A'    };   % Base DC current
+  end
+
+  variables
+    % ---- side 1 ----
+    i_dc1 = {value = {0, 'A'}, priority = priority.none};   % Terminal current of side 1, INTO dc1+ (choke current)
+    vp1   = {0, 'V'};   % Potential of the DC bus (+) of bridge 1
+    vc1   = {0, 'V'};   % DC-link capacitor 1 voltage (without Rdc1)
+    i_c1  = {0, 'A'};   % DC-link capacitor 1 current, (+) -> (-)
+    vm1a  = {0, 'V'};   % Midpoint potential of leg 1a
+    vm1b  = {0, 'V'};   % Midpoint potential of leg 1b
+    i_1ah = {0, 'A'};   % Current of switch 1a+, (+) -> midpoint
+    i_1al = {0, 'A'};   % Current of switch 1a-, midpoint -> (-)
+    i_1bh = {0, 'A'};   % Current of switch 1b+
+    i_1bl = {0, 'A'};   % Current of switch 1b-
+    v_1ah = {0, 'V'};   % Voltage across switch 1a+
+    v_1al = {0, 'V'};   % Voltage across switch 1a-
+    v_1bh = {0, 'V'};   % Voltage across switch 1b+
+    v_1bl = {0, 'V'};   % Voltage across switch 1b-
+    vq_1ah = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 1a+
+    vq_1al = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 1a-
+    vq_1bh = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 1b+
+    vq_1bl = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 1b-
+    iq_1ah = {0, 'A'};  % Coss current of switch 1a+
+    iq_1al = {0, 'A'};  % Coss current of switch 1a-
+    iq_1bh = {0, 'A'};  % Coss current of switch 1b+
+    iq_1bl = {0, 'A'};  % Coss current of switch 1b-
+    i_r1  = {value = {0, 'A'}, priority = priority.none};    % Tank current 1, out of midpoint 1a into the tank
+    ucr1  = {value = {0, 'V'}, priority = priority.none};    % Resonant capacitor 1 voltage
+    % ---- transformer ----
+    phi   = {value = {0, 'Wb'}, priority = priority.none};   % Core flux
+    ife   = {0, 'A'};   % Core-loss current (primary side)
+    % ---- side 2 ----
+    i_dc2 = {value = {0, 'A'}, priority = priority.none};   % Terminal current of side 2, INTO dc2+ (choke current)
+    vp2   = {0, 'V'};   % Potential of the DC bus (+) of bridge 2
+    vc2   = {0, 'V'};   % DC-link capacitor 2 voltage (without Rdc2)
+    i_c2  = {0, 'A'};   % DC-link capacitor 2 current, (+) -> (-)
+    vm2a  = {0, 'V'};   % Midpoint potential of leg 2a
+    vm2b  = {0, 'V'};   % Midpoint potential of leg 2b
+    i_2ah = {0, 'A'};   % Current of switch 2a+, (+) -> midpoint
+    i_2al = {0, 'A'};   % Current of switch 2a-, midpoint -> (-)
+    i_2bh = {0, 'A'};   % Current of switch 2b+
+    i_2bl = {0, 'A'};   % Current of switch 2b-
+    v_2ah = {0, 'V'};   % Voltage across switch 2a+
+    v_2al = {0, 'V'};   % Voltage across switch 2a-
+    v_2bh = {0, 'V'};   % Voltage across switch 2b+
+    v_2bl = {0, 'V'};   % Voltage across switch 2b-
+    vq_2ah = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 2a+
+    vq_2al = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 2a-
+    vq_2bh = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 2b+
+    vq_2bl = {value = {0, 'V'}, priority = priority.none};   % Coss voltage of switch 2b-
+    iq_2ah = {0, 'A'};  % Coss current of switch 2a+
+    iq_2al = {0, 'A'};  % Coss current of switch 2a-
+    iq_2bh = {0, 'A'};  % Coss current of switch 2b+
+    iq_2bl = {0, 'A'};  % Coss current of switch 2b-
+    i_r2  = {value = {0, 'A'}, priority = priority.none};    % Tank current 2, out of the secondary into midpoint 2a
+    ucr2  = {value = {0, 'V'}, priority = priority.none};    % Resonant capacitor 2 voltage
+  end
+
+  intermediates (ExternalAccess = observe)
+    u_dc1 = dc1p.v - dc1n.v;       % Terminal voltage of side 1
+    u_dc2 = dc2p.v - dc2n.v;       % Terminal voltage of side 2
+    u_b1  = vm1a - vm1b;           % Bridge 1 AC voltage
+    u_b2  = vm2a - vm2b;           % Bridge 2 AC voltage
+    i_m   = i_r1 - ife - (n2/n1)*i_r2;   % Magnetizing current referred to the primary
+  end
+
+  branches
+    % Each side is a two-terminal network: one branch carries the terminal
+    % current, everything else (bus, midpoints, tank) is internal algebra.
+    % The two sides are coupled only by the core flux.
+    i_dc1 : dc1p.i -> dc1n.i;
+    i_dc2 : dc2p.i -> dc2n.i;
+  end
+
+  equations
+    % ======================= side 1 =======================
+    % DC choke 1
+    if ind_dc1 == cllc_ssc.onoff.on
+      dc1p.v - vp1 == Ldc1*i_dc1.der + RLdc1*i_dc1;
+    else
+      vp1 == dc1p.v;
+    end
+    % DC-link capacitor 1
+    if cap_dc1 == cllc_ssc.onoff.on
+      i_c1 == Cdc1*vc1.der;
+      vp1 - dc1n.v == vc1 + Rdc1*i_c1;
+    else
+      i_c1 == 0;
+      vc1 == vp1 - dc1n.v;
+    end
+    % node (+) of bridge 1
+    i_dc1 == i_c1 + i_1ah + i_1bh;
+    % switch voltages
+    v_1ah == vp1 - vm1a;
+    v_1al == vm1a - dc1n.v;
+    v_1bh == vp1 - vm1b;
+    v_1bl == vm1b - dc1n.v;
+    % switch + antiparallel diode pairs (plus the Coss branch)
+    if (G(1) > Vth) || (v_1ah < 0)
+      i_1ah == v_1ah/Ron + iq_1ah;
+    else
+      i_1ah == v_1ah*Goff + iq_1ah;
+    end
+    if (G(2) > Vth) || (v_1al < 0)
+      i_1al == v_1al/Ron + iq_1al;
+    else
+      i_1al == v_1al*Goff + iq_1al;
+    end
+    if (G(3) > Vth) || (v_1bh < 0)
+      i_1bh == v_1bh/Ron + iq_1bh;
+    else
+      i_1bh == v_1bh*Goff + iq_1bh;
+    end
+    if (G(4) > Vth) || (v_1bl < 0)
+      i_1bl == v_1bl/Ron + iq_1bl;
+    else
+      i_1bl == v_1bl*Goff + iq_1bl;
+    end
+    % output capacitances of bridge 1
+    if coss_on == cllc_ssc.onoff.on
+      iq_1ah == Coss*vq_1ah.der;
+      iq_1al == Coss*vq_1al.der;
+      iq_1bh == Coss*vq_1bh.der;
+      iq_1bl == Coss*vq_1bl.der;
+      v_1ah == vq_1ah + (tau_coss/Coss)*iq_1ah;
+      v_1al == vq_1al + (tau_coss/Coss)*iq_1al;
+      v_1bh == vq_1bh + (tau_coss/Coss)*iq_1bh;
+      v_1bl == vq_1bl + (tau_coss/Coss)*iq_1bl;
+    else
+      iq_1ah == 0;
+      iq_1al == 0;
+      iq_1bh == 0;
+      iq_1bl == 0;
+      vq_1ah == v_1ah;
+      vq_1al == v_1al;
+      vq_1bh == v_1bh;
+      vq_1bl == v_1bl;
+    end
+    % midpoints of bridge 1: the tank current leaves 1a and returns into 1b
+    i_1ah - i_1al == i_r1;
+    i_1bh - i_1bl == -i_r1;
+    % tank 1 and primary winding: bridge voltage = Cr1 + Lr1, Rr1 + EMF n1*phi'
+    u_b1 == ucr1 + Rr1*i_r1 + Lr1*i_r1.der + n1*phi.der;
+    i_r1 == Cr1*ucr1.der;
+
+    % ======================= transformer =======================
+    (n1^2/Lm)*phi == n1*(i_r1 - ife) - n2*i_r2;
+    ife == n1*phi.der/Rfe;
+
+    % ======================= side 2 =======================
+    % secondary winding and tank 2: EMF n2*phi' = Lr2, Rr2 + Cr2 + bridge voltage
+    n2*phi.der == ucr2 + Rr2*i_r2 + Lr2*i_r2.der + u_b2;
+    i_r2 == Cr2*ucr2.der;
+    % midpoints of bridge 2: the tank current enters 2a and leaves from 2b
+    i_2ah - i_2al == -i_r2;
+    i_2bh - i_2bl == i_r2;
+    % switch voltages
+    v_2ah == vp2 - vm2a;
+    v_2al == vm2a - dc2n.v;
+    v_2bh == vp2 - vm2b;
+    v_2bl == vm2b - dc2n.v;
+    % switch + antiparallel diode pairs (plus the Coss branch)
+    if (G(5) > Vth) || (v_2ah < 0)
+      i_2ah == v_2ah/Ron + iq_2ah;
+    else
+      i_2ah == v_2ah*Goff + iq_2ah;
+    end
+    if (G(6) > Vth) || (v_2al < 0)
+      i_2al == v_2al/Ron + iq_2al;
+    else
+      i_2al == v_2al*Goff + iq_2al;
+    end
+    if (G(7) > Vth) || (v_2bh < 0)
+      i_2bh == v_2bh/Ron + iq_2bh;
+    else
+      i_2bh == v_2bh*Goff + iq_2bh;
+    end
+    if (G(8) > Vth) || (v_2bl < 0)
+      i_2bl == v_2bl/Ron + iq_2bl;
+    else
+      i_2bl == v_2bl*Goff + iq_2bl;
+    end
+    % output capacitances of bridge 2
+    if coss_on == cllc_ssc.onoff.on
+      iq_2ah == Coss*vq_2ah.der;
+      iq_2al == Coss*vq_2al.der;
+      iq_2bh == Coss*vq_2bh.der;
+      iq_2bl == Coss*vq_2bl.der;
+      v_2ah == vq_2ah + (tau_coss/Coss)*iq_2ah;
+      v_2al == vq_2al + (tau_coss/Coss)*iq_2al;
+      v_2bh == vq_2bh + (tau_coss/Coss)*iq_2bh;
+      v_2bl == vq_2bl + (tau_coss/Coss)*iq_2bl;
+    else
+      iq_2ah == 0;
+      iq_2al == 0;
+      iq_2bh == 0;
+      iq_2bl == 0;
+      vq_2ah == v_2ah;
+      vq_2al == v_2al;
+      vq_2bh == v_2bh;
+      vq_2bl == v_2bl;
+    end
+    % node (+) of bridge 2
+    i_dc2 == i_c2 + i_2ah + i_2bh;
+    % DC-link capacitor 2
+    if cap_dc2 == cllc_ssc.onoff.on
+      i_c2 == Cdc2*vc2.der;
+      vp2 - dc2n.v == vc2 + Rdc2*i_c2;
+    else
+      i_c2 == 0;
+      vc2 == vp2 - dc2n.v;
+    end
+    % DC choke 2
+    if ind_dc2 == cllc_ssc.onoff.on
+      dc2p.v - vp2 == Ldc2*i_dc2.der + RLdc2*i_dc2;
+    else
+      vp2 == dc2p.v;
+    end
+
+    % ======================= measurements (pu) =======================
+    M == [u_dc1/udc_nom;
+          i_dc1/idc_nom;
+          u_dc2/udc_nom;
+          -i_dc2/idc_nom;
+          i_r1/idc_nom;
+          i_r2/idc_nom;
+          u_b1/udc_nom;
+          u_b2/udc_nom;
+          ucr1/udc_nom;
+          ucr2/udc_nom;
+          (vp1 - dc1n.v)/udc_nom;
+          (vp2 - dc2n.v)/udc_nom;
+          i_m/idc_nom;
+          i_c1/idc_nom;
+          i_c2/idc_nom];
+  end
+
+  % DC-link initial voltages (only meaningful when the capacitors are present)
+  if cap_dc1 == cllc_ssc.onoff.on
+    equations (Initial = true)
+      vc1 == Vdc10;
+    end
+  end
+  if cap_dc2 == cllc_ssc.onoff.on
+    equations (Initial = true)
+      vc2 == Vdc20;
+    end
+  end
+
+  % hide the parameters of the options that are switched off
+  if coss_on == cllc_ssc.onoff.off
+    annotations
+      [Coss, tau_coss] : ExternalAccess = none;
+    end
+  end
+  if cap_dc1 == cllc_ssc.onoff.off
+    annotations
+      [Cdc1, Rdc1, Vdc10] : ExternalAccess = none;
+    end
+  end
+  if ind_dc1 == cllc_ssc.onoff.off
+    annotations
+      [Ldc1, RLdc1] : ExternalAccess = none;
+    end
+  end
+  if cap_dc2 == cllc_ssc.onoff.off
+    annotations
+      [Cdc2, Rdc2, Vdc20] : ExternalAccess = none;
+    end
+  end
+  if ind_dc2 == cllc_ssc.onoff.off
+    annotations
+      [Ldc2, RLdc2] : ExternalAccess = none;
+    end
+  end
+
+  annotations
+    dc1p : Side = left;
+    dc1n : Side = left;
+    G    : Side = left;
+    dc2p : Side = right;
+    dc2n : Side = right;
+    M    : Side = right;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff, coss_on, Coss, tau_coss)
+                UIGroup("Side 1: DC link and choke", cap_dc1, Cdc1, Rdc1, Vdc10, ind_dc1, Ldc1, RLdc1)
+                UIGroup("Tank, side 1", Lr1, Rr1, Cr1)
+                UIGroup("Transformer", n1, n2, Lm, Rfe)
+                UIGroup("Tank, side 2", Lr2, Rr2, Cr2)
+                UIGroup("Side 2: DC link and choke", cap_dc2, Cdc2, Rdc2, Vdc20, ind_dc2, Ldc2, RLdc2)
+                UIGroup("Normalization", udc_nom, idc_nom)];
+  end
+
+end
