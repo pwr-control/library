@@ -237,13 +237,13 @@ measurements in pu) and `ctrl_log`.
 
 Single-block CLLC-DCX (isolated resonant DC/DC stage, DC transformer), the DC/DC counterpart of the
 AFE blocks above and the compact version of `sst_cllc_dcx.slx` of `pwr-control/solid-state-transformers`
-(`theory_analysis_solid_state_transformer/sst_cllc_dcx_800V_800V_50kW`): the power stage (DC chokes,
+(`theory_analysis_solid_state_transformer/sst_cllc_dcx_790V_700V_50kW`): the power stage (DC chokes,
 DC-link capacitors, two full bridges with optional `Coss`, symmetrical resonant tank, transformer with
 magnetizing inductance and core-loss resistance) is the Simscape component
 `cllc_ssc.cllc_dcx_single_phase` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics), the
 modulator, the two synchronous rectifiers and the control are one MATLAB Function. Mask parameter `p`,
 one numeric struct (`p.hw` = parameters of the ssc block with the options as 0/1, `p.pwm`, `p.ctrl`;
-`cllc_dcx/cllc_dcx_param_example.m` builds the one of the 800 V → 800 V, 50 kW stage of the SST);
+`cllc_dcx/cllc_dcx_param_example.m` builds the one of the 790 V → 700 V, 50 kW, 35 kHz stage of the SST);
 physical ports `dc1+`/`dc1-` (left, side 1) and `dc2+`/`dc2-` (right, side 2, galvanically separate: one
 Electrical Reference per side), input `t_master`, outputs `m` (15×1 measurements in pu) and `ctrl_log`
 (24×1, indices in `cllc_dcx/cllc_dcx_log_index.m`).

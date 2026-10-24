@@ -114,34 +114,34 @@ component cllc_dcx_single_phase
     cap_dc1  = cllc_ssc.onoff.on;    % DC-link capacitor 1
     Cdc1     = {500e-6,  'F'    };   % DC-link capacitance 1
     Rdc1     = {1e-3,    'Ohm'  };   % DC-link capacitor 1 series resistance
-    Vdc10    = {800,     'V'    };   % DC-link capacitor 1 initial voltage
+    Vdc10    = {790,     'V'    };   % DC-link capacitor 1 initial voltage
     ind_dc1  = cllc_ssc.onoff.on;    % DC choke 1
     Ldc1     = {250e-6,  'H'    };   % DC choke 1 inductance
     RLdc1    = {2e-3,    'Ohm'  };   % DC choke 1 series resistance
     % --- resonant tank, side 1 ---
-    Lr1      = {12e-6,   'H'    };   % Resonant inductance 1 (leakage + discrete)
-    Rr1      = {6e-3,    'Ohm'  };   % Series resistance 1 (winding + inductor)
-    Cr1      = {0.762e-6,'F'    };   % Resonant capacitance 1
+    Lr1      = {16e-6,   'H'    };   % Resonant inductance 1 (leakage + discrete)
+    Rr1      = {7e-3,    'Ohm'  };   % Series resistance 1 (winding + inductor)
+    Cr1      = {1.166e-6,'F'    };   % Resonant capacitance 1
     % --- transformer ---
-    n1       = {11,      '1'    };   % Primary turns
-    n2       = {11,      '1'    };   % Secondary turns
-    Lm       = {400e-6,  'H'    };   % Magnetizing inductance (primary side)
-    Rfe      = {10.7e3,  'Ohm'  };   % Core-loss resistance (primary side)
+    n1       = {9,       '1'    };   % Primary turns
+    n2       = {8,       '1'    };   % Secondary turns
+    Lm       = {560e-6,  'H'    };   % Magnetizing inductance (primary side)
+    Rfe      = {9.5e3,   'Ohm'  };   % Core-loss resistance (primary side)
     % --- resonant tank, side 2 ---
-    Lr2      = {12e-6,   'H'    };   % Resonant inductance 2 (leakage + discrete)
-    Rr2      = {6e-3,    'Ohm'  };   % Series resistance 2 (winding + inductor)
-    Cr2      = {0.762e-6,'F'    };   % Resonant capacitance 2
+    Lr2      = {12.6e-6, 'H'    };   % Resonant inductance 2 (leakage + discrete)
+    Rr2      = {5.5e-3,  'Ohm'  };   % Series resistance 2 (winding + inductor)
+    Cr2      = {1.476e-6,'F'    };   % Resonant capacitance 2
     % --- side 2: DC link and choke ---
     cap_dc2  = cllc_ssc.onoff.on;    % DC-link capacitor 2
     Cdc2     = {500e-6,  'F'    };   % DC-link capacitance 2
     Rdc2     = {1e-3,    'Ohm'  };   % DC-link capacitor 2 series resistance
-    Vdc20    = {800,     'V'    };   % DC-link capacitor 2 initial voltage
+    Vdc20    = {700,     'V'    };   % DC-link capacitor 2 initial voltage
     ind_dc2  = cllc_ssc.onoff.on;    % DC choke 2
     Ldc2     = {250e-6,  'H'    };   % DC choke 2 inductance
     RLdc2    = {2e-3,    'Ohm'  };   % DC choke 2 series resistance
     % --- normalization of the measurement output ---
-    udc_nom  = {800,     'V'    };   % Base DC voltage
-    idc_nom  = {62.5,    'A'    };   % Base DC current
+    udc_nom  = {790,     'V'    };   % Base DC voltage
+    idc_nom  = {63.3,    'A'    };   % Base DC current
   end
 
   variables
