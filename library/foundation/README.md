@@ -78,6 +78,16 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
 - **`afe_ssc`** — `afe_two_level_lcl`: two-level bridge with DC-link capacitor and LCL filter, the power
   stage of `grid_following_dqctrl` and `grid_forming_dqctrl`. Gate commands in as a physical-signal
   vector, measurements out in pu.
+- **`afe_ttype_ssc`** — `afe_single_phase_ttype`: single-phase three-level T-type full bridge, the power
+  stage of `afe_single_phase_ttype`: split DC link (two capacitor banks in series with their ESR, the
+  neutral point internal, `Vdc0/2` on each bank at the start), two T-type legs of four switch +
+  antiparallel-diode pairs (outer switches between the DC rails and the midpoint, anti-series pair to
+  the neutral point), one inductor per line and the filter capacitor across the terminals. Gates `G`
+  [8×1] in, measurements `M` [13×1] in pu out (currents on `ibez`, AC voltages on `ubez`, DC voltages
+  on `udc_nom`). Same circuit as `single_phase_inverter_modA` of `sst_cllc_ttype_inv.slx` of
+  `pwr-control/solid-state-transformers` without the device and thermal model. Build with
+  `ssc_build afe_ttype_ssc` from this folder (`afe_ttype_ssc_lib.slx`, committed next to the package
+  once built).
 - **`cllc_ssc`** — `cllc_dcx_single_phase`: CLLC resonant DC/DC stage (DC transformer, DCX), the power
   stage of `cllc_dcx`: DC choke and DC-link capacitor on each side, two full bridges of switch +
   antiparallel-diode pairs with optional output capacitance `Coss` (ZVS transitions driven by the tank
