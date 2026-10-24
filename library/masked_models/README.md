@@ -232,3 +232,41 @@ measurements in pu) and `ctrl_log`.
      Grid 3(2), 2012, doi:10.1109/TSG.2011.2181432.
   9. Teodorescu, Liserre, Rodríguez, *Grid Converters for Photovoltaic and Wind Power Systems*,
      Wiley-IEEE Press, 2011.
+
+## `cllc_dcx`
+
+Single-block CLLC-DCX (isolated resonant DC/DC stage, DC transformer), the DC/DC counterpart of the
+AFE blocks above and the compact version of `sst_cllc_dcx.slx` of `pwr-control/solid-state-transformers`
+(`theory_analysis_solid_state_transformer/sst_cllc_dcx_800V_800V_50kW`, 35 kHz variant in
+`sst_cllc_dcx_790V_700V_50kW`): the power stage (DC chokes,
+DC-link capacitors, two full bridges with optional `Coss`, symmetrical resonant tank, transformer with
+magnetizing inductance and core-loss resistance) is the Simscape component
+`cllc_ssc.cllc_dcx_single_phase` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics), the
+modulator, the two synchronous rectifiers and the control are one MATLAB Function. Mask parameter `p`,
+one numeric struct (`p.hw` = parameters of the ssc block with the options as 0/1, `p.pwm`, `p.ctrl`;
+`cllc_dcx/cllc_dcx_param_example.m` builds the one of the 800 V / 800 V, 50 kW, 50 kHz stage of the SST,
+`cllc_dcx_param_example_35kHz.m` the one of the 790 V → 700 V, 35 kHz variant);
+physical ports `dc1+`/`dc1-` (left, side 1) and `dc2+`/`dc2-` (right, side 2, galvanically separate: one
+Electrical Reference per side), input `t_master`, outputs `m` (15×1 measurements in pu) and `ctrl_log`
+(24×1, indices in `cllc_dcx/cllc_dcx_log_index.m`).
+
+- `cllc_dcx.slx` — block `cllc_dcx_mod1`. Both bridges at 50 % duty, bridge 2 shifted by the angle
+  `phi`; each bridge in PWM, as synchronous rectifier on the sign of the current entering its own
+  midpoint (hysteresis `sr_i_off`..`sr_i_on`, body diodes in between) or off (diode rectifier):
+  `p.ctrl.sr_mode_1/2`. `p.ctrl.mode` 0 = open-loop DCX at fixed ratio (`phi0`; the design use: bridge 1
+  in PWM, bridge 2 synchronous rectifier, swap the two modes for power from side 2 to side 1), 1 =
+  current loop (PI on the current rectified into the DC link of the regulated side `p.ctrl.side` →
+  `phi`), 2 = voltage loop → current loop (cascade); the sign of `phi` follows the sign of the tank
+  reactance at the switching frequency (inductive above resonance, capacitive below), computed from
+  `p.hw` or given as `p.ctrl.phi_sign`. Optional frequency soft start (`p.pwm.f_start`, `p.pwm.t_soft`)
+  and enable time (`p.pwm.t_enable`). The control reads period averages of the DC quantities, quantized
+  with `adc_q`, through a Unit Delay of one `p.pwm.tc`. The control code is
+  `cllc_dcx/private/cllc_dcx_ctrl_pwm.m`; `cllc_dcx/update_cllc_dcx.m` builds the library from scratch,
+  or loads the source into the existing block, once `cllc_ssc_lib.slx` has been built:
+
+  ```matlab
+  cd library/foundation/pwr_electronics
+  ssc_build cllc_ssc
+  cd ../../masked_models/cllc_dcx
+  update_cllc_dcx
+  ```
