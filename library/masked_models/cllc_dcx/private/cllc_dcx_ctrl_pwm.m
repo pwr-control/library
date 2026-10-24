@@ -8,7 +8,8 @@ function [G, ctrl_log] = cllc_dcx_ctrl_pwm(M, t_master, p)
 %   file into the block (edit here, then run it).
 %
 %   Compact version of the control of sst_cllc_dcx.slx (pwr-control/solid-state-transformers, folder
-%   theory_analysis_solid_state_transformer/sst_cllc_dcx_790V_700V_50kW): the modulator of the two full bridges
+%   theory_analysis_solid_state_transformer/sst_cllc_dcx_800V_800V_50kW; 35 kHz variant in
+%   sst_cllc_dcx_790V_700V_50kW): the modulator of the two full bridges
 %   (both at 50 % duty, bridge 2 shifted by the angle phi), the synchronous-rectifier logic of the two bridges
 %   (sr_gate_logic and sr1_gate_logic of the model) and the DC current / voltage PI of the stage, written as one
 %   function so that the control of one DCX counts as ONE nonvirtual block (MATLAB Home licence: 1000 nonvirtual
@@ -68,12 +69,13 @@ function [G, ctrl_log] = cllc_dcx_ctrl_pwm(M, t_master, p)
 %                      loops command phi = phi_sign*pdir*phi_pi with pdir = +1 (side 2 regulated: power towards
 %                      side 2 for a positive phi_pi) or -1 (side 1), phi_sign = sign(X) from p.hw (both tanks
 %                      referred to the primary, Lm neglected) or p.ctrl.phi_sign when given. Near resonance X is
-%                      small (0.76 Ohm at fn = 0.95 for the 790 V / 700 V, 50 kW, 35 kHz stage: 50 kW at 4.3 deg), so the
+%                      small (0.81 Ohm at fn = 0.95 for the 800 V / 800 V, 50 kW, 50 kHz stage: 50 kW at 4.5 deg; 0.76 Ohm
+%                      and 4.3 deg for the 35 kHz variant), so the
 %                      gains of the current loop must be small; the loops are an option, mode 0 the normal use.
 %
 %   Parameters (all required unless marked optional)
 %     p.pwm.tc            [s]   sample time of the block = Simscape local solver step (50e-9)
-%     p.pwm.fpwm          [Hz]  switching frequency (35e3)
+%     p.pwm.fpwm          [Hz]  switching frequency (50e3; 35e3 in the 35 kHz variant)
 %     p.pwm.phase         [rad] phase of carrier 1 (0)
 %     p.pwm.double_update       0: TRGO at the carrier bottom, 1: bottom and top
 %     p.pwm.dead_time     [s]   dead time of each leg in PWM (300e-9); the SR logic adds no dead time, its
