@@ -270,3 +270,45 @@ Electrical Reference per side), input `t_master`, outputs `m` (15×1 measurement
   cd ../../masked_models/cllc_dcx
   update_cllc_dcx
   ```
+
+## `afe_single_phase_ttype`
+
+Single-block single-phase three-level T-type AFE, the single-phase counterpart of the AFE blocks
+above and the compact version of `single_phase_inverter_modA/B` of `sst_cllc_ttype_inv.slx` of
+`pwr-control/solid-state-transformers` (`theory_analysis_solid_state_transformer/sst_based_on_full_bridge_ttype_inverter/sst_single_phase_cllc_single_phase_ttype_inv`):
+the power stage (split DC link with its neutral point, two T-type legs of four switch +
+antiparallel-diode pairs, LC output filter) is the Simscape component
+`afe_ttype_ssc.afe_single_phase_ttype` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics),
+the acquisitions, the single-phase PLL, the current loop, the optional DC-link voltage loop and the
+three-level PWM are one MATLAB Function. Mask parameter `p`, one numeric struct (`p.hw` = parameters
+of the ssc block, `p.pwm`, `p.ctrl`; `afe_single_phase_ttype/afe_single_phase_ttype_param_example.m`
+builds the one of the 50 kW, 800 V, 4 kHz module of the SST bench); physical ports `a`/`b` (left, AC
+terminals after the filter) and `dc+`/`dc-` (right, DC link), inputs `t_master` and `sync`, outputs
+`m` (13×1 measurements in pu), `ctrl_log` (32×1, indices in
+`afe_single_phase_ttype/afe_single_phase_ttype_log_index.m`) and `sync_out`.
+
+- `afe_single_phase_ttype.slx` — block `afe_single_phase_ttype_mod1`. Control at 2 `fpwm` (double
+  update) on the rising edge of the TRGO of the local carrier: Park PLL on the terminal voltage with
+  the virtual quadrature component (low-passed ξ/η rotated back) and a double integrator observer
+  giving the angle of the control; first harmonic tracker on the current (fundamental and quadrature,
+  then dq); dq vector PI with clip flag and integrator release, outputs divided by the acquired DC-link
+  voltage (feed-forward) before the vector-length limiter; `m` = α component of (m_d, m_q); leg u
+  modulated with `m`, leg v with `-m`, each leg as `single_phase_three_levels_PWM_modulator` (neutral
+  switch on, outer switch at the duty, dead time around both edges). `p.ctrl.mode` 0 = current
+  references (`i_ref` from `t_ref` with the slew `i_ref_slew`, `iq_ref`; positive d current = power from
+  the DC link to the AC side), 1 = DC-link voltage loop (PI with filtered reference and measurement →
+  d current reference). `p.ctrl.slave = 1`: the block applies m_d, m_q of the master wired to `sync`
+  with its own PLL angle (`sync_out` = `[theta_hat; m_d; m_q]`), the scheme of the two modules in
+  series of the bench. Optional enable time (`p.pwm.t_enable`, PI pre-loaded with the terminal voltage
+  at the enable instant) and Gaussian noise on the current sample (`p.ctrl.i_noise_std`). The control
+  reads the measurements quantized with `adc_q` through a Unit Delay of one `p.pwm.tc`. The control
+  code is `afe_single_phase_ttype/private/afe_sp_ttype_ctrl_pwm.m`;
+  `afe_single_phase_ttype/update_afe_single_phase_ttype.m` builds the library from scratch, or loads
+  the source into the existing block, once `afe_ttype_ssc_lib.slx` has been built:
+
+  ```matlab
+  cd library/foundation/pwr_electronics
+  ssc_build afe_ttype_ssc
+  cd ../../masked_models/afe_single_phase_ttype
+  update_afe_single_phase_ttype
+  ```
