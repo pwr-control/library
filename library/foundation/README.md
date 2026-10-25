@@ -96,7 +96,8 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   measurements `M` [15×1] in pu out; the options (`coss_on`, DC-link capacitors, chokes) are
   `cllc_ssc.onoff` enumerations. Same circuit as `sst_cllc_dcx.slx` of
   `pwr-control/solid-state-transformers`. Build with `ssc_build cllc_ssc` from this folder
-  (`cllc_ssc_lib.slx`, committed next to the package once built).
+  (`cllc_ssc_lib.slx`, committed next to the package once built). Documented in
+  [`../documentation/cllc_dcx`](../documentation/cllc_dcx) (`cllc_dcx.pdf`, Section 5).
 
 ## `electrical_machines`
 

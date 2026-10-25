@@ -248,7 +248,9 @@ one numeric struct (`p.hw` = parameters of the ssc block with the options as 0/1
 `cllc_dcx_param_example_35kHz.m` the one of the 790 V → 700 V, 35 kHz variant);
 physical ports `dc1+`/`dc1-` (left, side 1) and `dc2+`/`dc2-` (right, side 2, galvanically separate: one
 Electrical Reference per side), input `t_master`, outputs `m` (15×1 measurements in pu) and `ctrl_log`
-(24×1, indices in `cllc_dcx/cllc_dcx_log_index.m`).
+(24×1, indices in `cllc_dcx/cllc_dcx_log_index.m`). Documented, with the sizing of the stage and the
+bench of `solid-state-transformers`, in [`../documentation/cllc_dcx`](../documentation/cllc_dcx)
+(`cllc_dcx.pdf`).
 
 - `cllc_dcx.slx` — block `cllc_dcx_mod1`. Both bridges at 50 % duty, bridge 2 shifted by the angle
   `phi`; each bridge in PWM, as synchronous rectifier on the sign of the current entering its own
