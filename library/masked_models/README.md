@@ -314,3 +314,41 @@ terminals after the filter) and `dc+`/`dc-` (right, DC link), inputs `t_master` 
   cd ../../masked_models/afe_single_phase_ttype
   update_afe_single_phase_ttype
   ```
+
+## `interleaved_buck_3legs`
+
+Single-block three-leg interleaved buck converter, the non-isolated DC/DC counterpart of the blocks above
+and the compact version of `interleaved_buck.slx` of `pwr-control/modelization-and-control`
+(`foundations_of_power_electronics/interleaved_buck_converter`): the power stage (DC-link capacitor, three
+buck legs of two switch + antiparallel-diode pairs with one inductor each, common output capacitor) is the
+Simscape component `buck_ssc.interleaved_buck_3legs` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics),
+the acquisitions, the output voltage loop, the three per-leg current loops and the interleaved PWM are one
+MATLAB Function. Mask parameter `p`, one numeric struct (`p.hw` = parameters of the ssc block, `p.pwm`,
+`p.ctrl`; `interleaved_buck_3legs/interleaved_buck_3legs_param_example.m` builds the one of the 750 V → 400 V,
+250 kW, 4 kHz converter of the model, whose `init_model.m` produces the same struct as `param.buck`);
+physical ports `dc+`/`dc-` (left, DC input) and `out+`/`out-` (right, output; `out-` is the negative rail),
+input `t_master`, outputs `m` (10×1 measurements in pu) and `ctrl_log` (30×1, indices in
+`interleaved_buck_3legs/interleaved_buck_3legs_log_index.m`).
+
+- `interleaved_buck_3legs.slx` — block `interleaved_buck_3legs_mod1`. Three triangle carriers shifted by
+  2π/3 (the output sees 3 `fpwm`), control at the extremes of carrier 1 (double update, 2 `fpwm`), the
+  current of each leg sampled at the extremes of its own carrier (average value of the leg current, no
+  ripple on the sample) and the duties of legs 2 and 3 loaded at their own extremes (shadow registers), so
+  that the three loops see the same plant with one extra control step on legs 2 and 3. Cascade: PI on the
+  output voltage (reference ramped with `u_ref_slew`, output the total current reference limited at
+  `i_lim`) → one PI per leg on the leg current with the reference `i_ref/3` (inherent current sharing; the
+  per-leg factors `kL`, `kRL` of the power stage give mismatched legs) → duty of the leg in
+  [`m_low`, `m_up`], upper switch on around the carrier bottom, lower switch complementary with the dead
+  time. `p.ctrl.mode` 0 = output voltage loop, 1 = total current reference (`i_ref` from `t_ref` with the
+  slew `i_ref_slew`). Optional enable time (`p.pwm.t_enable`). The control reads the measurements quantized
+  with `adc_q` through a Unit Delay of one `p.pwm.tc`. The control code is
+  `interleaved_buck_3legs/private/interleaved_buck_3legs_ctrl_pwm.m`;
+  `interleaved_buck_3legs/update_interleaved_buck_3legs.m` builds the library from scratch, or loads the
+  source into the existing block, once `buck_ssc_lib.slx` has been built:
+
+  ```matlab
+  cd library/foundation/pwr_electronics
+  ssc_build buck_ssc
+  cd ../../masked_models/interleaved_buck_3legs
+  update_interleaved_buck_3legs
+  ```

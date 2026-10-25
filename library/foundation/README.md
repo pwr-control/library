@@ -98,6 +98,15 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   `pwr-control/solid-state-transformers`. Build with `ssc_build cllc_ssc` from this folder
   (`cllc_ssc_lib.slx`, committed next to the package once built). Documented in
   [`../documentation/cllc_dcx`](../documentation/cllc_dcx) (`cllc_dcx.pdf`, Section 5).
+- **`buck_ssc`** — `interleaved_buck_3legs`: three-leg interleaved buck converter, the power stage of
+  `interleaved_buck_3legs`: DC-link capacitor with its ESR (`Vdc0` at the start), three buck legs of two
+  switch + antiparallel-diode pairs (upper switch between dc+ and the leg output, lower switch between the
+  leg output and dc-), one inductor per leg (`L`, `RL` with the per-leg factors `kL`, `kRL` for mismatched
+  legs), common output capacitor with its ESR; `out-` is the negative rail `dc-`. Gates `G` [6×1] in
+  (upper and lower switch of legs 1, 2, 3), measurements `M` [10×1] in pu out (currents on `ibez`, the
+  output voltage on `ubez`, the DC-link voltage on `udc_nom`). Same circuit as `interleaved_buck.slx` of
+  `pwr-control/modelization-and-control` without the device and thermal model. Build with
+  `ssc_build buck_ssc` from this folder (`buck_ssc_lib.slx`, committed next to the package once built).
 
 ## `electrical_machines`
 
