@@ -184,3 +184,15 @@ variant 790 V → 700 V, the Simscape bench of `pwr-control/solid-state-transfor
 numerical damping of the Backward Euler solver, and the block `cllc_dcx/cllc_dcx_mod1` of
 `../masked_models/cllc_dcx` (ports, measurement and gate vectors, control chain, control log,
 parameter structure). Analytic figures from `py/cllc_dcx_figures.py`, data under `figures/`.
+
+### `single_phase_grid_tied_inverter_analysis`
+*Single-Phase Grid-Tied T-Type Inverter: model, control design and discrete implementation*
+(Rev. 01). The controller of the block `afe_single_phase_ttype` (`afe_sp_ttype_ctrl_pwm`), the
+AC module of the SST bench: LCL plant with the line inductance (resonance at 1.4 kHz, above
+fs/6), first harmonic tracker and vector PI on the fundamental of the single-phase current with
+the exact stationary-frame equivalent, a PR controller shaped by the tracker (gain stabilization
+of the resonance, DC mode and the condition k_i/k_p < 190 rad/s, recommended gains 0.15/20),
+single-phase PLL as SOGI-QSG with a type-1 loop and an angle observer, DC-link voltage loop with
+the moving average, three-level modulator and the discrete implementation. Companion Python
+script with a sampled-data simulation of the controller as coded. Master copy in
+`repos_doc/single_phase_grid_tied_inverter_analysis/` of repositories-documentation.
