@@ -1,0 +1,267 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component interleaved_boost_3legs
+% Three-Leg Interleaved Boost Converter
+% Input capacitor across the low-voltage terminals, three boost legs (two
+% switch + antiparallel diode pairs each) with one inductor per leg from the
+% low-voltage terminal to the leg midpoint, and the DC-link capacitor in ONE
+% Simscape block, so that the power stage of one interleaved boost counts
+% as one nonvirtual block (MATLAB Home licence: at most 1000 nonvirtual
+% blocks per model, referenced models and library links included).
+%
+% Same circuit as buck_ssc.interleaved_buck_3legs (the hardware of the
+% interleaved buck of pwr-control/modelization-and-control) with the power
+% flow reversed: the battery is on the inductor side, the load on the DC
+% link. Same circuit as interleaved_boost.slx of pwr-control/modelization-
+% and-control (foundations_of_power_electronics/interleaved_boost_converter)
+% without the loss and thermal model of the switches:
+%   Input capacitor Cin + RCin between in+ and in-, Vin0 at the start.
+%   Leg k (k = 1, 2, 3), two switch + antiparallel diode pairs:
+%     Q1_k between dc+ and the leg midpoint m_k (collector on dc+): the
+%     synchronous rectifier, its diode carries the boost current,
+%     Q2_k between m_k and dc- (collector on m_k): the boost switch.
+%     Inductor L*kL(k) + RL*kRL(k) from in+ to m_k. The per-leg factors
+%     kL, kRL (default 1) give mismatched legs for the current-sharing
+%     studies.
+%   switch + antiparallel diode pair (current i, voltage v, collector -> emitter):
+%     gate on  (G(j) > Vth)  ->  i = v/Ron   (bidirectional)
+%     gate off, v < 0        ->  i = v/Ron   (antiparallel diode conducting)
+%     gate off, v >= 0       ->  i = v*Goff  (blocking)
+%   DC-link capacitor Cdc + Rdc between dc+ and dc-, Vdc0 at the start
+%   (precharged through the diodes of Q1_k to the battery voltage: use
+%   Vdc0 = Vin0). The terminal in- is the negative rail dc- (an ideal short
+%   inside the block): connect the battery between in+ and in-, the load
+%   between dc+ and dc-.
+%
+% Gate input G: physical-signal vector [6x1] in V, order
+%     G = [Q1_1; Q2_1; Q1_2; Q2_2; Q1_3; Q2_3]
+% (upper and lower switch of leg 1, 2, 3, the order of the buck block).
+% Drive it with +15 V (on) / -10 V (off) and Vth = 2.5 V. No dead time
+% and no interlock inside the block: with Q1_k and Q2_k both on, the leg
+% shorts the DC link through 2*Ron.
+% Boost modulation of leg k with the duty d_k of the lower switch in
+% [0, 1]: Q2_k on for the fraction d_k of the carrier period (the leg
+% midpoint averages (1 - d_k)*udc, so udc = u_in/(1 - d_k)), Q1_k on for
+% the rest (synchronous rectification; with Q1_k kept off its antiparallel
+% diode conducts the inductor current instead). The control block of the
+% library drives the gates with m_k = 1 - d_k in the buck convention.
+%
+% Measurement output M: physical-signal vector [10x1], dimensionless (pu):
+%   M(1)  i_L1/ibez      inductor current of leg 1, positive from in+ to
+%                        the leg midpoint (boost direction, the current
+%                        regulated by the control)
+%   M(2)  i_L2/ibez      leg 2
+%   M(3)  i_L3/ibez      leg 3
+%   M(4)  i_sum/ibez     sum of the three inductor currents
+%   M(5)  i_in/ibez      input terminal current, positive INTO in+ (i_sum + i_cin)
+%   M(6)  u_in/uin_nom   input voltage in+ - in-
+%   M(7)  udc/udc_nom    DC-link voltage dc+ - dc-
+%   M(8)  i_dc/ibez      DC terminal current, positive OUT of dc+ (load current)
+%   M(9)  i_cin/ibez     input capacitor current, in+ -> in-
+%   M(10) i_cdc/ibez     DC-link capacitor current, dc+ -> dc-
+%
+% Ports: in+ in- (low-voltage input, left), dc+ dc- (DC link, right), G
+% (gates, left), M (measurements, right). Initial conditions: Vin0 on the
+% input capacitor, Vdc0 on the DC-link capacitor; the inductor currents
+% have priority none (set them in the Variables tab if needed).
+
+  nodes
+    ip = foundation.electrical.electrical; % in+
+    in = foundation.electrical.electrical; % in-
+    p  = foundation.electrical.electrical; % dc+
+    n  = foundation.electrical.electrical; % dc-
+  end
+
+  inputs
+    G = {zeros(6,1), 'V'}; % G
+  end
+
+  outputs
+    M = {zeros(10,1), '1'}; % M
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth     = {2.5,    'V'    };   % Gate threshold voltage
+    Ron     = {7e-3,   'Ohm'  };   % On-state resistance (switch and diode)
+    Goff    = {1e-6,   '1/Ohm'};   % Off-state conductance
+    % --- input capacitor (low-voltage side) ---
+    Cin     = {7.5e-3, 'F'    };   % Input capacitance
+    RCin    = {1e-3,   'Ohm'  };   % Input capacitor series resistance
+    Vin0    = {200,    'V'    };   % Input capacitor initial voltage
+    % --- legs ---
+    L       = {0.8e-3, 'H'    };   % Inductance per leg
+    RL      = {6e-3,   'Ohm'  };   % Series resistance per leg
+    kL      = {[1 1 1], '1'   };   % Per-leg factors of L (legs 1, 2, 3)
+    kRL     = {[1 1 1], '1'   };   % Per-leg factors of RL (legs 1, 2, 3)
+    % --- DC link ---
+    Cdc     = {7.2e-3, 'F'    };   % DC-link capacitance
+    Rdc     = {1e-3,   'Ohm'  };   % DC-link capacitor series resistance
+    Vdc0    = {200,    'V'    };   % DC-link initial voltage (precharged: = Vin0)
+    % --- normalization of the measurement output ---
+    uin_nom = {200,    'V'    };   % Base input voltage
+    ibez    = {750,    'A'    };   % Base current (total input)
+    udc_nom = {660,    'V'    };   % Base DC-link voltage
+  end
+
+  variables
+    % ---- input capacitor ----
+    vcin  = {value = {0, 'V'}, priority = priority.none};   % Input capacitor voltage (without RCin)
+    icin  = {0, 'A'};   % Input capacitor current, in+ -> in-
+    % ---- leg 1 ----
+    vm_1  = {0, 'V'};   % Midpoint potential of leg 1
+    i1_1  = {0, 'A'};   % Current of Q1_1, dc+ -> leg midpoint
+    i2_1  = {0, 'A'};   % Current of Q2_1, leg midpoint -> dc-
+    iL_1  = {value = {0, 'A'}, priority = priority.none};   % Inductor current of leg 1, in+ -> leg midpoint
+    % ---- leg 2 ----
+    vm_2  = {0, 'V'};   % Midpoint potential of leg 2
+    i1_2  = {0, 'A'};   % Current of Q1_2
+    i2_2  = {0, 'A'};   % Current of Q2_2
+    iL_2  = {value = {0, 'A'}, priority = priority.none};   % Inductor current of leg 2
+    % ---- leg 3 ----
+    vm_3  = {0, 'V'};   % Midpoint potential of leg 3
+    i1_3  = {0, 'A'};   % Current of Q1_3
+    i2_3  = {0, 'A'};   % Current of Q2_3
+    iL_3  = {value = {0, 'A'}, priority = priority.none};   % Inductor current of leg 3
+    % ---- DC link ----
+    vcdc  = {value = {0, 'V'}, priority = priority.none};   % DC-link capacitor voltage (without Rdc)
+    icdc  = {0, 'A'};   % DC-link capacitor current, dc+ -> dc-
+    % ---- terminal currents (branches) ----
+    j_ip  = {0, 'A'};   % Current entering at in+
+    j_p   = {0, 'A'};   % Current leaving at dc+
+    j_in  = {0, 'A'};   % Current leaving at in- (ideal short to dc-)
+  end
+
+  intermediates (ExternalAccess = observe)
+    v1_1 = p.v - vm_1;        % Voltage across Q1_1 (collector - emitter)
+    v2_1 = vm_1 - n.v;        % Voltage across Q2_1
+    v1_2 = p.v - vm_2;        % Voltage across Q1_2
+    v2_2 = vm_2 - n.v;        % Voltage across Q2_2
+    v1_3 = p.v - vm_3;        % Voltage across Q1_3
+    v2_3 = vm_3 - n.v;        % Voltage across Q2_3
+    u_in  = ip.v - n.v;       % Input voltage
+    udc   = p.v - n.v;        % DC-link voltage
+    i_sum = iL_1 + iL_2 + iL_3;   % Sum of the inductor currents
+  end
+
+  branches
+    % The leg midpoints are internal algebraic variables, not nodes. Three
+    % branches between the four terminals carry the terminal currents (the
+    % fourth follows from KCL): the current entering at in+ leaves at dc-,
+    % the currents leaving at dc+ and at in- are taken from dc-.
+    j_ip : ip.i -> n.i;
+    j_p  : n.i -> p.i;
+    j_in : n.i -> in.i;
+  end
+
+  equations
+    % ---------- input capacitor, in+ -> dc- ----------
+    icin == Cin*vcin.der;
+    u_in == vcin + RCin*icin;
+
+    % ---------- leg 1: switch + antiparallel diode pairs ----------
+    if (G(1) > Vth) || (v1_1 < 0)
+      i1_1 == v1_1/Ron;
+    else
+      i1_1 == v1_1*Goff;
+    end
+    if (G(2) > Vth) || (v2_1 < 0)
+      i2_1 == v2_1/Ron;
+    else
+      i2_1 == v2_1*Goff;
+    end
+    i1_1 + iL_1 == i2_1;                                   % leg midpoint node
+    ip.v - vm_1 == L*kL(1)*iL_1.der + RL*kRL(1)*iL_1;     % inductor of leg 1
+
+    % ---------- leg 2 ----------
+    if (G(3) > Vth) || (v1_2 < 0)
+      i1_2 == v1_2/Ron;
+    else
+      i1_2 == v1_2*Goff;
+    end
+    if (G(4) > Vth) || (v2_2 < 0)
+      i2_2 == v2_2/Ron;
+    else
+      i2_2 == v2_2*Goff;
+    end
+    i1_2 + iL_2 == i2_2;
+    ip.v - vm_2 == L*kL(2)*iL_2.der + RL*kRL(2)*iL_2;
+
+    % ---------- leg 3 ----------
+    if (G(5) > Vth) || (v1_3 < 0)
+      i1_3 == v1_3/Ron;
+    else
+      i1_3 == v1_3*Goff;
+    end
+    if (G(6) > Vth) || (v2_3 < 0)
+      i2_3 == v2_3/Ron;
+    else
+      i2_3 == v2_3*Goff;
+    end
+    i1_3 + iL_3 == i2_3;
+    ip.v - vm_3 == L*kL(3)*iL_3.der + RL*kRL(3)*iL_3;
+
+    % ---------- DC link ----------
+    icdc == Cdc*vcdc.der;
+    udc == vcdc + Rdc*icdc;
+
+    % ---------- terminal currents ----------
+    j_ip == icin + i_sum;                   % into in+: input capacitor and the three inductors
+    j_p == -(icdc + i1_1 + i1_2 + i1_3);    % out of dc+: the upper switches deliver -i1_k into dc+, the capacitor takes icdc
+    in.v == n.v;                            % in- is the negative rail (ideal short, j_in set by the external network)
+    % (out of dc- = j_ip - j_p - j_in = icin + icdc + i1_1 + i1_2 + i1_3 + i_sum - j_in, by the KCLs above)
+
+    % ---------- measurements (pu) ----------
+    M == [iL_1/ibez;
+          iL_2/ibez;
+          iL_3/ibez;
+          i_sum/ibez;
+          j_ip/ibez;
+          u_in/uin_nom;
+          udc/udc_nom;
+          j_p/ibez;
+          icin/ibez;
+          icdc/ibez];
+  end
+
+  % initial voltages of the two capacitors
+  equations (Initial = true)
+    vcin == Vin0;
+    vcdc == Vdc0;
+  end
+
+  annotations
+    ip : Side = left;
+    in : Side = left;
+    G  : Side = left;
+    p  : Side = right;
+    n  : Side = right;
+    M  : Side = right;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff)
+                UIGroup("Input capacitor", Cin, RCin, Vin0)
+                UIGroup("Legs", L, RL, kL, kRL)
+                UIGroup("DC link", Cdc, Rdc, Vdc0)
+                UIGroup("Normalization", uin_nom, ibez, udc_nom)];
+  end
+
+end
