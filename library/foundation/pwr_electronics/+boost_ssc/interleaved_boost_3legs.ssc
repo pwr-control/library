@@ -86,8 +86,8 @@ component interleaved_boost_3legs
 % have priority none (set them in the Variables tab if needed).
 
   nodes
-    ip = foundation.electrical.electrical; % in+
-    in = foundation.electrical.electrical; % in-
+    in_p = foundation.electrical.electrical; % in+
+    in_n = foundation.electrical.electrical; % in-
     p  = foundation.electrical.electrical; % dc+
     n  = foundation.electrical.electrical; % dc-
   end
@@ -159,7 +159,7 @@ component interleaved_boost_3legs
     v2_2 = vm_2 - n.v;        % Voltage across Q2_2
     v1_3 = p.v - vm_3;        % Voltage across Q1_3
     v2_3 = vm_3 - n.v;        % Voltage across Q2_3
-    u_in  = ip.v - n.v;       % Input voltage
+    u_in  = in_p.v - n.v;       % Input voltage
     udc   = p.v - n.v;        % DC-link voltage
     i_sum = iL_1 + iL_2 + iL_3;   % Sum of the inductor currents
   end
@@ -169,9 +169,9 @@ component interleaved_boost_3legs
     % branches between the four terminals carry the terminal currents (the
     % fourth follows from KCL): the current entering at in+ leaves at dc-,
     % the currents leaving at dc+ and at in- are taken from dc-.
-    j_ip : ip.i -> n.i;
+    j_ip : in_p.i -> n.i;
     j_p  : n.i -> p.i;
-    j_in : n.i -> in.i;
+    j_in : n.i -> in_n.i;
   end
 
   equations
@@ -191,7 +191,7 @@ component interleaved_boost_3legs
       i2_1 == v2_1*Goff;
     end
     i1_1 + iL_1 == i2_1;                                   % leg midpoint node
-    ip.v - vm_1 == L*kL(1)*iL_1.der + RL*kRL(1)*iL_1;     % inductor of leg 1
+    in_p.v - vm_1 == L*kL(1)*iL_1.der + RL*kRL(1)*iL_1;     % inductor of leg 1
 
     % ---------- leg 2 ----------
     if (G(3) > Vth) || (v1_2 < 0)
@@ -205,7 +205,7 @@ component interleaved_boost_3legs
       i2_2 == v2_2*Goff;
     end
     i1_2 + iL_2 == i2_2;
-    ip.v - vm_2 == L*kL(2)*iL_2.der + RL*kRL(2)*iL_2;
+    in_p.v - vm_2 == L*kL(2)*iL_2.der + RL*kRL(2)*iL_2;
 
     % ---------- leg 3 ----------
     if (G(5) > Vth) || (v1_3 < 0)
@@ -219,7 +219,7 @@ component interleaved_boost_3legs
       i2_3 == v2_3*Goff;
     end
     i1_3 + iL_3 == i2_3;
-    ip.v - vm_3 == L*kL(3)*iL_3.der + RL*kRL(3)*iL_3;
+    in_p.v - vm_3 == L*kL(3)*iL_3.der + RL*kRL(3)*iL_3;
 
     % ---------- DC link ----------
     icdc == Cdc*vcdc.der;
@@ -228,7 +228,7 @@ component interleaved_boost_3legs
     % ---------- terminal currents ----------
     j_ip == icin + i_sum;                   % into in+: input capacitor and the three inductors
     j_p == -(icdc + i1_1 + i1_2 + i1_3);    % out of dc+: the upper switches deliver -i1_k into dc+, the capacitor takes icdc
-    in.v == n.v;                            % in- is the negative rail (ideal short, j_in set by the external network)
+    in_n.v == n.v;                          % in_n- is the negative rail (ideal short, j_in set by the external network)
     % (out of dc- = j_ip - j_p - j_in = icin + icdc + i1_1 + i1_2 + i1_3 + i_sum - j_in, by the KCLs above)
 
     % ---------- measurements (pu) ----------
@@ -251,8 +251,8 @@ component interleaved_boost_3legs
   end
 
   annotations
-    ip : Side = left;
-    in : Side = left;
+    in_p : Side = left;
+    in_n : Side = left;
     G  : Side = left;
     p  : Side = right;
     n  : Side = right;
