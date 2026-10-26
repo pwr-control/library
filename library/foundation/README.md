@@ -107,6 +107,19 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   output voltage on `ubez`, the DC-link voltage on `udc_nom`). Same circuit as `interleaved_buck.slx` of
   `pwr-control/modelization-and-control` without the device and thermal model. Build with
   `ssc_build buck_ssc` from this folder (`buck_ssc_lib.slx`, committed next to the package once built).
+- **`boost_ssc`** — `interleaved_boost_3legs`: three-leg interleaved boost converter, the power stage of
+  `interleaved_boost_3legs`: the hardware of `buck_ssc.interleaved_buck_3legs` with the power flow
+  reversed. Input capacitor with its ESR across the low-voltage terminals (`Vin0` at the start), three
+  legs of two switch + antiparallel-diode pairs (upper switch between dc+ and the leg midpoint, the
+  synchronous rectifier; lower switch between the midpoint and dc-, the boost switch), one inductor per
+  leg from `in+` to the midpoint (`L`, `RL` with the per-leg factors `kL`, `kRL`), DC-link capacitor
+  with its ESR (`Vdc0` at the start, = `Vin0` for a link precharged through the upper diodes); `in-` is
+  the negative rail `dc-`. Gates `G` [6×1] in (upper and lower switch of legs 1, 2, 3, the order of the
+  buck block), measurements `M` [10×1] in pu out (currents on `ibez`, positive from the battery into
+  the legs; the input voltage on `uin_nom`, the DC-link voltage on `udc_nom`). Same circuit as
+  `interleaved_boost.slx` of `pwr-control/modelization-and-control` without the device and thermal
+  model. Build with `ssc_build boost_ssc` from this folder (`boost_ssc_lib.slx`, committed next to the
+  package once built).
 
 ## `electrical_machines`
 
