@@ -142,7 +142,7 @@ def add_core(ckt, t, d, w, i1, f2):
     of the demagnetizing mmf of the secondary coil(s) on limb k (primary turns).
     """
     for k in 'abc':
-        # im_k == i1_k - f2_k - der(psi_k)/Rfe
+        # im_k == i1_k - f2_k - um_k/Rfe, um_k = der(psi_k)
         terms = {t + 'im' + k: 1, i1[k]: -1, t + 'psi' + k: J*w/d['Rfe']}
         for v, c in f2[k].items():
             terms[v] = terms.get(v, 0) + c
@@ -185,7 +185,7 @@ def add_Dyn(ckt, p, nodes, w, t='T.'):
     f2 = {'a': {}, 'b': {}, 'c': {}}
     for x in 'abc':
         limb, s = wiring[x]
-        # a.v - n.v == e2a - R2*i2a - L2*der(i2a), e2a = s*n21*der(psi_limb)
+        # a.v - n.v == e2a - R2*i2a - L2*der(i2a), e2a = s*n21*um_limb, um = der(psi)
         ckt.eq({'V:' + nodes[x]: 1, 'V:' + nodes['n']: -1,
                 t + 'psi' + limb: -s*n21*J*w, t + 'i2' + x: z2}, 0)
         f2[limb][t + 'i2' + x] = s*n21

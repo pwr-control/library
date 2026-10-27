@@ -186,8 +186,13 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   `lm0 = 0.5` and N floating, 99 % for a bank with `lm0 = lm`, 1.6 % with N grounded), the absence
   of neutral shift and the circulating delta current of the Dyn, and the 2/3–1/3 coil split of a
   line-to-line load on the Dd. `test_three_phase_transformer.m` is the MATLAB port of the same
-  check (not run yet). The block library `three_phase_transformer_lib.slx` is not in the repository:
-  build it with `ssc_build three_phase_transformer` from `electrical_machines`.
+  check (not run yet). Each component defines the limb voltage `um_k = dψ_k/dt` once and uses it
+  algebraically in the coil and mmf equations: Simscape counts every equation that contains `der()`
+  as a differential equation and requires as many of them as differentiated variables (9 per
+  component), otherwise the model fails to compile with "Total size of differential equations does
+  not match the total size of differential variables". The block library
+  `three_phase_transformer_lib.slx` is built with `ssc_build three_phase_transformer` from
+  `electrical_machines`: rebuild it after every change to the `.ssc` files.
 
 ## `batteries`
 
