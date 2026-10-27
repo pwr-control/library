@@ -354,7 +354,7 @@ function [ck, d] = add_Dyn(ck, p, nodes, w, t)
     f2 = f2_empty();
     for x = 'abc'
         L = limb.(x);  s = sense.(x);
-        % a.v - n.v == e2a - R2*i2a - L2*der(i2a), e2a = s*n21*der(psi_limb)
+        % a.v - n.v == e2a - R2*i2a - L2*der(i2a), e2a = s*n21*um_limb, um = der(psi)
         ck = ck_eq(ck, {['V:' nodes.(x)], ['V:' nodes.n], [t 'psi' L], [t 'i2' x]}, [1, -1, -s*n21*1j*w, z2], 0);
         f2.(L).vars{end+1} = [t 'i2' x];
         f2.(L).coeffs(end+1) = s*n21;

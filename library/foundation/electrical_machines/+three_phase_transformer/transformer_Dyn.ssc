@@ -45,12 +45,14 @@ component transformer_Dyn
 % Equations, for each limb k with flux linkage psi_k of its primary coil
 % (N1 turns) and n21 = N2/N1 the coil turns ratio:
 %
+%   limb voltage (induced in the primary coil by the flux of its limb)
+%       um_k = dpsi_k/dt
 %   primary coil (delta, terminals P -> Q, current i1k from P to Q)
-%       u_PQ = R1 i1k + L1 di1k/dt + dpsi_k/dt
+%       u_PQ = R1 i1k + L1 di1k/dt + um_k
 %   secondary coil (star, terminal x to n, current i2x out of x)
-%       u_xn = s n21 dpsi_k/dt - R2 i2x - L2 di2x/dt        (s = +1 or -1)
+%       u_xn = s n21 um_k - R2 i2x - L2 di2x/dt        (s = +1 or -1)
 %   mmf balance of the limb, in primary turns
-%       im_k = i1k - s n21 i2x - ife_k,   ife_k = (dpsi_k/dt)/Rfe
+%       im_k = i1k - s n21 i2x - ife_k,   ife_k = um_k/Rfe
 %   magnetic circuit of the three-limb core
 %       psi_k = Lm im_k - Lc (im_a + im_b + im_c),   Lc = (Lm - Lm0)/3
 %
@@ -140,6 +142,9 @@ variables(Access=private)
     psia = {0, 'V*s'};  % flux linkage of the primary coil of limb a
     psib = {0, 'V*s'};  % flux linkage of the primary coil of limb b
     psic = {0, 'V*s'};  % flux linkage of the primary coil of limb c
+    uma  = {0, 'V'};    % limb voltage dpsi_a/dt, induced in the primary coil of limb a
+    umb  = {0, 'V'};    % limb voltage of limb b
+    umc  = {0, 'V'};    % limb voltage of limb c
     ima  = {0, 'A'};    % magnetizing current of limb a, primary coil referred
     imb  = {0, 'A'};    % magnetizing current of limb b
     imc  = {0, 'A'};    % magnetizing current of limb c
@@ -171,12 +176,23 @@ equations
     assert(clock_number == 1 || clock_number == 5 || clock_number == 7 || clock_number == 11, ...
         'clock_number must be 1, 5, 7 or 11')
 
+    % Limb voltages: the voltage induced in the primary coil of each limb by
+    % its flux linkage. These are the only equations with der(psi): Simscape
+    % counts every equation that contains der() as a differential equation
+    % and requires as many of them as differentiated variables (9 here:
+    % three fluxes, three primary and three secondary coil currents), so
+    % the derivative of each flux is written once and the limb voltage is
+    % used algebraically everywhere else.
+    uma == der(psia);
+    umb == der(psib);
+    umc == der(psic);
+
     % Primary coils, delta: the coil of limb a is across A-B, of limb b
     % across B-C, of limb c across C-A. Terminal voltage = resistive and
-    % leakage drop plus the voltage induced by the limb flux linkage.
-    A.v - B.v == R1*iAB + L1*der(iAB) + der(psia);
-    B.v - C.v == R1*iBC + L1*der(iBC) + der(psib);
-    C.v - A.v == R1*iCA + L1*der(iCA) + der(psic);
+    % leakage drop plus the limb voltage.
+    A.v - B.v == R1*iAB + L1*der(iAB) + uma;
+    B.v - C.v == R1*iBC + L1*der(iBC) + umb;
+    C.v - A.v == R1*iCA + L1*der(iCA) + umc;
 
     % Secondary coils, star: emf minus the drop of the current delivered to
     % the load (generator convention).
@@ -185,48 +201,48 @@ equations
     c.v - n.v == e2c - R2*i2c - L2*der(i2c);
 
     % Vector group: limb and winding sense of each secondary coil. The emf
-    % of the coil of phase x on limb k with sense s is s*n21*dpsi_k/dt and
-    % its mmf on that limb, in primary turns, is -s*n21*i2x (f2k = s*n21*i2x
-    % is subtracted in the mmf balance below).
+    % of the coil of phase x on limb k with sense s is s*n21*um_k and its
+    % mmf on that limb, in primary turns, is -s*n21*i2x (f2k = s*n21*i2x is
+    % subtracted in the mmf balance below).
     if clock_number == 11
         % coil a on limb a (A-B), b on b (B-C), c on c (C-A), same sense
-        e2a == n21*der(psia);
-        e2b == n21*der(psib);
-        e2c == n21*der(psic);
+        e2a == n21*uma;
+        e2b == n21*umb;
+        e2c == n21*umc;
         f2a == n21*i2a;
         f2b == n21*i2b;
         f2c == n21*i2c;
     elseif clock_number == 5
         % same limbs as Dyn11, reversed sense: 180 degrees from Dyn11
-        e2a == -n21*der(psia);
-        e2b == -n21*der(psib);
-        e2c == -n21*der(psic);
+        e2a == -n21*uma;
+        e2b == -n21*umb;
+        e2c == -n21*umc;
         f2a == -n21*i2a;
         f2b == -n21*i2b;
         f2c == -n21*i2c;
     elseif clock_number == 1
         % coil a on limb c (C-A, reversed: A-C), b on limb a (B-A), c on limb b (C-B)
-        e2a == -n21*der(psic);
-        e2b == -n21*der(psia);
-        e2c == -n21*der(psib);
+        e2a == -n21*umc;
+        e2b == -n21*uma;
+        e2c == -n21*umb;
         f2c == -n21*i2a;
         f2a == -n21*i2b;
         f2b == -n21*i2c;
     else
         % clock_number == 7: same limbs as Dyn1, reversed sense: 180 degrees from Dyn1
-        e2a == n21*der(psic);
-        e2b == n21*der(psia);
-        e2c == n21*der(psib);
+        e2a == n21*umc;
+        e2b == n21*uma;
+        e2c == n21*umb;
         f2c == n21*i2a;
         f2a == n21*i2b;
         f2b == n21*i2c;
     end
 
     % Magneto-motive force balance of each limb, referred to the primary
-    % coil; the core-loss current (dpsi/dt)/Rfe is subtracted from the net mmf.
-    ima == iAB - f2a - der(psia)/Rfe;
-    imb == iBC - f2b - der(psib)/Rfe;
-    imc == iCA - f2c - der(psic)/Rfe;
+    % coil; the core-loss current um/Rfe is subtracted from the net mmf.
+    ima == iAB - f2a - uma/Rfe;
+    imb == iBC - f2b - umb/Rfe;
+    imc == iCA - f2c - umc/Rfe;
 
     % Magnetic circuit of the three-limb core: Lm for the positive and the
     % negative sequence of the magnetizing currents, Lm0 for the zero sequence.

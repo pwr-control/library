@@ -39,12 +39,14 @@ component transformer_Yyn
 % (N1 turns), n21 = N2/N1 the coil turns ratio and s = +1 (Yyn0) or -1
 % (Yyn6) the sense of the secondary coil:
 %
+%   limb voltage (induced in the primary coil by the flux of its limb)
+%       um_k = dpsi_k/dt
 %   primary coil (star, terminal X to N, current i1k into X)
-%       u_XN = R1 i1k + L1 di1k/dt + dpsi_k/dt
+%       u_XN = R1 i1k + L1 di1k/dt + um_k
 %   secondary coil (star, terminal x to n, current i2k out of x)
-%       u_xn = s n21 dpsi_k/dt - R2 i2k - L2 di2k/dt
+%       u_xn = s n21 um_k - R2 i2k - L2 di2k/dt
 %   mmf balance of the limb, in primary turns
-%       im_k = i1k - s n21 i2k - ife_k,   ife_k = (dpsi_k/dt)/Rfe
+%       im_k = i1k - s n21 i2k - ife_k,   ife_k = um_k/Rfe
 %   magnetic circuit of the three-limb core
 %       psi_k = Lm im_k - Lc (im_a + im_b + im_c),   Lc = (Lm - Lm0)/3
 %
@@ -146,6 +148,9 @@ variables(Access=private)
     psia = {0, 'V*s'};  % flux linkage of the primary coil of limb a
     psib = {0, 'V*s'};  % flux linkage of the primary coil of limb b
     psic = {0, 'V*s'};  % flux linkage of the primary coil of limb c
+    uma  = {0, 'V'};    % limb voltage dpsi_a/dt, induced in the primary coil of limb a
+    umb  = {0, 'V'};    % limb voltage of limb b
+    umc  = {0, 'V'};    % limb voltage of limb c
     ima  = {0, 'A'};    % magnetizing current of limb a, primary coil referred
     imb  = {0, 'A'};    % magnetizing current of limb b
     imc  = {0, 'A'};    % magnetizing current of limb c
@@ -170,27 +175,37 @@ equations
     assert(rfe > 0, 'Core-loss resistance must be positive')
     assert(clock_number == 0 || clock_number == 6, 'clock_number must be 0 or 6')
 
+    % Limb voltages: the voltage induced in the primary coil of each limb by
+    % its flux linkage. These are the only equations with der(psi): Simscape
+    % counts every equation that contains der() as a differential equation
+    % and requires as many of them as differentiated variables (9 here:
+    % three fluxes, three primary and three secondary coil currents), so
+    % the derivative of each flux is written once and the limb voltage is
+    % used algebraically everywhere else.
+    uma == der(psia);
+    umb == der(psib);
+    umc == der(psic);
+
     % Primary coils, star between the line terminals and N (motor
-    % convention): resistive and leakage drop plus the voltage induced by
-    % the limb flux linkage.
-    A.v - N.v == R1*i1a + L1*der(i1a) + der(psia);
-    B.v - N.v == R1*i1b + L1*der(i1b) + der(psib);
-    C.v - N.v == R1*i1c + L1*der(i1c) + der(psic);
+    % convention): resistive and leakage drop plus the limb voltage.
+    A.v - N.v == R1*i1a + L1*der(i1a) + uma;
+    B.v - N.v == R1*i1b + L1*der(i1b) + umb;
+    C.v - N.v == R1*i1c + L1*der(i1c) + umc;
 
     % Secondary coils, star between the line terminals and n (generator
-    % convention): the emf s2*n21*dpsi/dt of the coil on the same limb
-    % minus the drop of the current delivered to the load.
-    a.v - n.v == s2*n21*der(psia) - R2*i2a - L2*der(i2a);
-    b.v - n.v == s2*n21*der(psib) - R2*i2b - L2*der(i2b);
-    c.v - n.v == s2*n21*der(psic) - R2*i2c - L2*der(i2c);
+    % convention): the emf s2*n21*um of the coil on the same limb minus the
+    % drop of the current delivered to the load.
+    a.v - n.v == s2*n21*uma - R2*i2a - L2*der(i2a);
+    b.v - n.v == s2*n21*umb - R2*i2b - L2*der(i2b);
+    c.v - n.v == s2*n21*umc - R2*i2c - L2*der(i2c);
 
     % Magneto-motive force balance of each limb, referred to the primary
     % coil: the secondary current demagnetizes with s2*n21*i2 (its sense
-    % follows the vector group) and the core-loss current (dpsi/dt)/Rfe is
+    % follows the vector group) and the core-loss current um/Rfe is
     % subtracted from the net mmf.
-    ima == i1a - s2*n21*i2a - der(psia)/Rfe;
-    imb == i1b - s2*n21*i2b - der(psib)/Rfe;
-    imc == i1c - s2*n21*i2c - der(psic)/Rfe;
+    ima == i1a - s2*n21*i2a - uma/Rfe;
+    imb == i1b - s2*n21*i2b - umb/Rfe;
+    imc == i1c - s2*n21*i2c - umc/Rfe;
 
     % Magnetic circuit of the three-limb core: Lm for the positive and the
     % negative sequence of the magnetizing currents, Lm0 for the zero
