@@ -14,8 +14,13 @@ component diode_rr
 %   TM     = tau*t_tail*a/Irr
 % These formulas hold in the long-ramp limit of the model, i.e. when the
 % ramp lasts much longer than tau: (IF + Irr)/a >> tau. In that limit
-% the model gives Irr = a*(tau - t_tail) and Qrr ~ a*tau^2, independent of
-% IF: the recovered charge is recombination-limited, not IF-limited.
+% the model gives, independent of IF:
+%   t_tail = tau*TM/(tau + TM)
+%   Irr    = a*(tau - t_tail)
+%   Qrr    = a*(tau^2 - t_tail^2)/2 ~ a*tau^2/2   (t_tail << tau)
+% The stored charge at the current zero is a*tau^2: about half of it
+% recombines and the rest is the recovered charge Qrr, which is
+% recombination-limited, not IF-limited.
 % A single lifetime cannot fit a whole Qrr(di/dt) datasheet curve (the
 % extracted tau falls with di/dt): extract at the datasheet point closest
 % to the di/dt of the application, or extrapolate tau along the curve.
