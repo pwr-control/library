@@ -167,17 +167,18 @@ The device library for loss and thermal modelling, in three layers:
   parameters, switching energies at their reference point, thermal chain, stray inductance,
   capacitances, gate resistance, switching times, snubber. IGBT datasets can add an
   `igbt_dyn_param` struct with the parameters of the `igbt_dyn` model (so far ABB
-  5SNA1000G650300 and Infineon FF2000XTR17IE5). The scripts can still be run directly in the
-  base workspace.
+  5SNA1000G650300 and Infineon FF2000XTR17IE5; FF450R17ME4 carries a partial set, the
+  transfer-characteristic fit only, so its `has_dyn_param` is false). The scripts can still be
+  run directly in the base workspace.
 - top-level `.m` files — one-line aliases giving each device a manufacturer-and-technology name
   that an init script can pass as a string to `device_igbt_setup`.
 - `heatsinks/` — `heatsink_air_64W.m` (air-cooled aluminium) and `heatsink_liquid_2kW.m` (water
   plate) defining the cooler attached to the device thermal network.
 - `device_datasheets/` — the manufacturer PDFs.
 
-Devices covered: Infineon FF450R12KT4, FF650R17IE4, FF650R17IE4D_B2, FF900R12IE4, FF1200R17IP5,
-FF1200XTR17T2P5, FF1800R12IE5, FF1800R23IE7, FF2000XTR17IE5, FF2400RB12IP7, FF1000UXTR23T2M1 and
-FF2600UXTR33T2M1; Danfoss/Semikron SEMiX604GB17E4s, SKM1000GB17E4, SKM1400MLI12BM7,
+Devices covered: Infineon FF450R12KT4, FF450R17ME4, FF650R17IE4, FF650R17IE4D_B2, FF900R12IE4,
+FF1200R17IP5, FF1200XTR17T2P5, FF1800R12IE5, FF1800R23IE7, FF2000XTR17IE5, FF2400RB12IP7,
+FF1000UXTR23T2M1 and FF2600UXTR33T2M1; Danfoss/Semikron SEMiX604GB17E4s, SKM1000GB17E4, SKM1400MLI12BM7,
 DP650B1700T104001 and SKM1700MB20R4S2I4; Mitsubishi CM1200DW-24T and CM1200DW-34T;
 ABB 5SNA1000G650300; Wolfspeed CAB006M12GM3, CAB450M12XM3, CAB760M12HM3 and CLB800M12HM3P; plus a
 generic high-power ideal switch. Three datasheets have no MATLAB dataset yet (ABB 5SDF0131Z0401

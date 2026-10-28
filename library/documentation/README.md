@@ -156,3 +156,43 @@ with two independent models: an analytical chain (channel convection, fin analys
 resistance) and a 3-D finite-difference model that also gives the step response. Result: about
 0.080 K/W at 140 m³/h, falling to 0.068 K/W at 280 m³/h, with a four-cell Foster network for
 transients. Scripts under `py/`.
+
+## Power converters and control
+
+The documents of the solid-state transformer project, kept here with the same sources as in
+`repos_doc/` of [repositories-documentation](https://github.com/pwr-control/repositories-documentation)
+so that the Simulink models can link the PDFs. They compile against the copy of the document
+template in [`../AAA_template_latex_settings/`](../AAA_template_latex_settings) (two levels up
+from each folder, as in the original repository).
+
+### `solid_state_transformers`
+*Solid State Transformers: architecture, modelization and control* (Rev. 01, October 2026). The
+comparative study of 2025 (three-phase DAB, single-phase DAB and CLLC stages with NPC and T-type
+inverters at about 250 kW per phase, control loops, HF transformer design, loss comparison) and,
+in Section 7, the two-module bench of `pwr-control/solid-state-transformers`: CLLC-DCX
+800 V / 800 V, 50 kW, 50 kHz and T-type single-phase inverter per module, inverters in series on
+the line, the compact and the discrete model, the `param` structure, timing and Backward Euler
+settings. Documents the use of the blocks `cllc_dcx` and `afe_single_phase_ttype` of
+`../masked_models`. Figures as PDF under `figures/`.
+
+### `cllc_dcx`
+*CLLC-DCX isolated DC/DC stage: 800 V / 800 V, 50 kW, 50 kHz, sizing, simulation model and
+library block* (Rev. 00, October 2026). Sizing of the isolated stage as an open-loop DC
+transformer (FHA gain, tank and magnetizing inductance for ZVS, transformer, SiC modules and
+synchronous-rectifier drive, DC links, loss budget, why the stage is not regulated), the 35 kHz
+variant 790 V → 700 V, the Simscape bench of `pwr-control/solid-state-transformers` with the
+numerical damping of the Backward Euler solver, and the block `cllc_dcx/cllc_dcx_mod1` of
+`../masked_models/cllc_dcx` (ports, measurement and gate vectors, control chain, control log,
+parameter structure). Analytic figures from `py/cllc_dcx_figures.py`, data under `figures/`.
+
+### `single_phase_grid_tied_inverter_analysis`
+*Single-Phase Grid-Tied T-Type Inverter: model, control design and discrete implementation*
+(Rev. 01). The controller of the block `afe_single_phase_ttype` (`afe_sp_ttype_ctrl_pwm`), the
+AC module of the SST bench: LCL plant with the line inductance (resonance at 1.4 kHz, above
+fs/6), first harmonic tracker and vector PI on the fundamental of the single-phase current with
+the exact stationary-frame equivalent, a PR controller shaped by the tracker (gain stabilization
+of the resonance, DC mode and the condition k_i/k_p < 190 rad/s, recommended gains 0.15/20),
+single-phase PLL as SOGI-QSG with a type-1 loop and an angle observer, DC-link voltage loop with
+the moving average, three-level modulator and the discrete implementation. Companion Python
+script with a sampled-data simulation of the controller as coded. Master copy in
+`repos_doc/single_phase_grid_tied_inverter_analysis/` of repositories-documentation.

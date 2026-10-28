@@ -1,0 +1,257 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component interleaved_buck_3legs
+% Three-Leg Interleaved Buck Converter
+% DC-link capacitor, three buck legs (two switch + antiparallel diode pairs
+% each) with one inductor per leg and a common output capacitor in ONE
+% Simscape block, so that the power stage of one interleaved buck counts
+% as one nonvirtual block (MATLAB Home licence: at most 1000 nonvirtual
+% blocks per model, referenced models and library links included).
+%
+% Same circuit as interleaved_buck.slx of pwr-control/modelization-and-control
+% (foundations_of_power_electronics/interleaved_buck_converter: library blocks
+% dclink_for_two_levels, three_phase_inverter_with_igbt_simple_2th used as
+% three buck legs, the subsystem LRC_filter) without the loss and thermal
+% model of the switches:
+%   DC link: capacitor Cdc + Rdc between dc+ and dc-, Vdc0 at the start.
+%   Leg k (k = 1, 2, 3), two switch + antiparallel diode pairs:
+%     Q1_k between dc+ and the leg output m_k (collector on dc+),
+%     Q2_k between m_k and dc- (collector on m_k).
+%     Inductor L*kL(k) + RL*kRL(k) from m_k to the output terminal out+.
+%     The per-leg factors kL, kRL (default 1) give mismatched legs for the
+%     current-sharing studies.
+%   switch + antiparallel diode pair (current i, voltage v, collector -> emitter):
+%     gate on  (G(j) > Vth)  ->  i = v/Ron   (bidirectional)
+%     gate off, v < 0        ->  i = v/Ron   (antiparallel diode conducting)
+%     gate off, v >= 0       ->  i = v*Goff  (blocking)
+%   Output capacitor Cout + RCout between out+ and dc-. The terminal out- is
+%   the negative rail dc- (an ideal short inside the block): connect the load
+%   between out+ and out-, or between out+ and dc-.
+%
+% Gate input G: physical-signal vector [6x1] in V, order
+%     G = [Q1_1; Q2_1; Q1_2; Q2_2; Q1_3; Q2_3]
+% (upper and lower switch of leg 1, 2, 3: gate_cmd_Q1..Q6 of the modulator
+% tri-interleaved_legs_modulator of the model). Drive it with +15 V (on) /
+% -10 V (off) and Vth = 2.5 V. No dead time and no interlock inside the block:
+% with Q1_k and Q2_k both on, the leg shorts the DC link through 2*Ron.
+% Buck modulation of leg k with the duty d_k in [0, 1]: Q1_k on for the
+% fraction d_k of the carrier period (the leg output averages d_k*udc),
+% Q2_k on for the rest (synchronous rectification; with Q2_k kept off the
+% antiparallel diode of Q2_k conducts the inductor current instead).
+%
+% Measurement output M: physical-signal vector [10x1], dimensionless (pu):
+%   M(1)  i_L1/ibez      inductor current of leg 1, positive from the leg
+%                        output to out+ (the current regulated by the control)
+%   M(2)  i_L2/ibez      leg 2
+%   M(3)  i_L3/ibez      leg 3
+%   M(4)  i_sum/ibez     sum of the three inductor currents
+%   M(5)  i_out/ibez     output current, positive OUT of out+ (i_sum - i_cout)
+%   M(6)  u_out/ubez     output voltage out+ - dc-
+%   M(7)  udc/udc_nom    DC-link voltage dc+ - dc-
+%   M(8)  i_dc/ibez      DC terminal current, positive INTO dc+
+%   M(9)  i_cout/ibez    output capacitor current, out+ -> dc-
+%   M(10) i_cdc/ibez     DC-link capacitor current, dc+ -> dc-
+%
+% Ports: dc+ dc- (DC input, left), out+ out- (output, right), G (gates,
+% left), M (measurements, right). Initial conditions: Vdc0 on the DC-link
+% capacitor; the inductor currents and the output capacitor voltage have
+% priority none (set them in the Variables tab if needed).
+
+  nodes
+    p  = foundation.electrical.electrical; % dc+
+    n  = foundation.electrical.electrical; % dc-
+    op = foundation.electrical.electrical; % out+
+    on = foundation.electrical.electrical; % out-
+  end
+
+  inputs
+    G = {zeros(6,1), 'V'}; % G
+  end
+
+  outputs
+    M = {zeros(10,1), '1'}; % M
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth     = {2.5,    'V'    };   % Gate threshold voltage
+    Ron     = {1.5e-3, 'Ohm'  };   % On-state resistance (switch and diode)
+    Goff    = {1e-6,   '1/Ohm'};   % Off-state conductance
+    % --- DC link ---
+    Cdc     = {7.2e-3, 'F'    };   % DC-link capacitance
+    Rdc     = {1e-3,   'Ohm'  };   % DC-link capacitor series resistance
+    Vdc0    = {750,    'V'    };   % DC-link initial voltage
+    % --- legs ---
+    L       = {1e-3,   'H'    };   % Inductance per leg
+    RL      = {8e-3,   'Ohm'  };   % Series resistance per leg
+    kL      = {[1 1 1], '1'   };   % Per-leg factors of L (legs 1, 2, 3)
+    kRL     = {[1 1 1], '1'   };   % Per-leg factors of RL (legs 1, 2, 3)
+    % --- output capacitor ---
+    Cout    = {3.6e-3, 'F'    };   % Output capacitance
+    RCout   = {0.67e-3, 'Ohm' };   % Output capacitor series resistance
+    % --- normalization of the measurement output ---
+    ubez    = {400,    'V'    };   % Base voltage (output)
+    ibez    = {625,    'A'    };   % Base current (total)
+    udc_nom = {750,    'V'    };   % Base DC-link voltage
+  end
+
+  variables
+    % ---- DC link ----
+    vcdc  = {value = {0, 'V'}, priority = priority.none};   % DC-link capacitor voltage (without Rdc)
+    icdc  = {0, 'A'};   % DC-link capacitor current, dc+ -> dc-
+    % ---- leg 1 ----
+    vm_1  = {0, 'V'};   % Output potential of leg 1
+    i1_1  = {0, 'A'};   % Current of Q1_1, dc+ -> leg output
+    i2_1  = {0, 'A'};   % Current of Q2_1, leg output -> dc-
+    iL_1  = {value = {0, 'A'}, priority = priority.none};   % Inductor current of leg 1, leg output -> out+
+    % ---- leg 2 ----
+    vm_2  = {0, 'V'};   % Output potential of leg 2
+    i1_2  = {0, 'A'};   % Current of Q1_2
+    i2_2  = {0, 'A'};   % Current of Q2_2
+    iL_2  = {value = {0, 'A'}, priority = priority.none};   % Inductor current of leg 2
+    % ---- leg 3 ----
+    vm_3  = {0, 'V'};   % Output potential of leg 3
+    i1_3  = {0, 'A'};   % Current of Q1_3
+    i2_3  = {0, 'A'};   % Current of Q2_3
+    iL_3  = {value = {0, 'A'}, priority = priority.none};   % Inductor current of leg 3
+    % ---- output capacitor ----
+    vcout = {value = {0, 'V'}, priority = priority.none};   % Output capacitor voltage (without RCout)
+    icout = {0, 'A'};   % Output capacitor current, out+ -> dc-
+    % ---- terminal currents (branches) ----
+    j_p   = {0, 'A'};   % Current entering at dc+
+    j_o   = {0, 'A'};   % Current leaving at out+
+    j_on  = {0, 'A'};   % Current leaving at out- (ideal short to dc-)
+  end
+
+  intermediates (ExternalAccess = observe)
+    v1_1 = p.v - vm_1;        % Voltage across Q1_1 (collector - emitter)
+    v2_1 = vm_1 - n.v;        % Voltage across Q2_1
+    v1_2 = p.v - vm_2;        % Voltage across Q1_2
+    v2_2 = vm_2 - n.v;        % Voltage across Q2_2
+    v1_3 = p.v - vm_3;        % Voltage across Q1_3
+    v2_3 = vm_3 - n.v;        % Voltage across Q2_3
+    u_out = op.v - n.v;       % Output voltage
+    udc   = p.v - n.v;        % DC-link voltage
+    i_sum = iL_1 + iL_2 + iL_3;   % Sum of the inductor currents
+  end
+
+  branches
+    % The leg outputs are internal algebraic variables, not nodes. Three
+    % branches between the four terminals carry the terminal currents (the
+    % fourth follows from KCL): the current entering at dc+ leaves at dc-,
+    % the currents leaving at out+ and at out- are taken from dc-.
+    j_p  : p.i -> n.i;
+    j_o  : n.i -> op.i;
+    j_on : n.i -> on.i;
+  end
+
+  equations
+    % ---------- DC link ----------
+    icdc == Cdc*vcdc.der;
+    udc == vcdc + Rdc*icdc;
+
+    % ---------- leg 1: switch + antiparallel diode pairs ----------
+    if (G(1) > Vth) || (v1_1 < 0)
+      i1_1 == v1_1/Ron;
+    else
+      i1_1 == v1_1*Goff;
+    end
+    if (G(2) > Vth) || (v2_1 < 0)
+      i2_1 == v2_1/Ron;
+    else
+      i2_1 == v2_1*Goff;
+    end
+    i1_1 == i2_1 + iL_1;                                   % leg output node
+    vm_1 - op.v == L*kL(1)*iL_1.der + RL*kRL(1)*iL_1;     % inductor of leg 1
+
+    % ---------- leg 2 ----------
+    if (G(3) > Vth) || (v1_2 < 0)
+      i1_2 == v1_2/Ron;
+    else
+      i1_2 == v1_2*Goff;
+    end
+    if (G(4) > Vth) || (v2_2 < 0)
+      i2_2 == v2_2/Ron;
+    else
+      i2_2 == v2_2*Goff;
+    end
+    i1_2 == i2_2 + iL_2;
+    vm_2 - op.v == L*kL(2)*iL_2.der + RL*kRL(2)*iL_2;
+
+    % ---------- leg 3 ----------
+    if (G(5) > Vth) || (v1_3 < 0)
+      i1_3 == v1_3/Ron;
+    else
+      i1_3 == v1_3*Goff;
+    end
+    if (G(6) > Vth) || (v2_3 < 0)
+      i2_3 == v2_3/Ron;
+    else
+      i2_3 == v2_3*Goff;
+    end
+    i1_3 == i2_3 + iL_3;
+    vm_3 - op.v == L*kL(3)*iL_3.der + RL*kRL(3)*iL_3;
+
+    % ---------- output capacitor, out+ -> dc- ----------
+    icout == Cout*vcout.der;
+    u_out == vcout + RCout*icout;
+
+    % ---------- terminal currents ----------
+    j_p == icdc + i1_1 + i1_2 + i1_3;    % into dc+: DC-link capacitor and the three upper switches
+    j_o == i_sum - icout;                % out of out+
+    on.v == n.v;                         % out- is the negative rail (ideal short, j_on set by the external network)
+    % (out of dc- = j_p - j_o - j_on = icdc + i2_1 + i2_2 + i2_3 + icout - j_on, by the KCLs above)
+
+    % ---------- measurements (pu) ----------
+    M == [iL_1/ibez;
+          iL_2/ibez;
+          iL_3/ibez;
+          i_sum/ibez;
+          j_o/ibez;
+          u_out/ubez;
+          udc/udc_nom;
+          j_p/ibez;
+          icout/ibez;
+          icdc/ibez];
+  end
+
+  % DC-link initial voltage
+  equations (Initial = true)
+    vcdc == Vdc0;
+  end
+
+  annotations
+    p  : Side = left;
+    n  : Side = left;
+    G  : Side = left;
+    op : Side = right;
+    on : Side = right;
+    M  : Side = right;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff)
+                UIGroup("DC link", Cdc, Rdc, Vdc0)
+                UIGroup("Legs", L, RL, kL, kRL)
+                UIGroup("Output capacitor", Cout, RCout)
+                UIGroup("Normalization", ubez, ibez, udc_nom)];
+  end
+
+end

@@ -96,7 +96,30 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   measurements `M` [15×1] in pu out; the options (`coss_on`, DC-link capacitors, chokes) are
   `cllc_ssc.onoff` enumerations. Same circuit as `sst_cllc_dcx.slx` of
   `pwr-control/solid-state-transformers`. Build with `ssc_build cllc_ssc` from this folder
-  (`cllc_ssc_lib.slx`, committed next to the package once built).
+  (`cllc_ssc_lib.slx`, committed next to the package once built). Documented in
+  [`../documentation/cllc_dcx`](../documentation/cllc_dcx) (`cllc_dcx.pdf`, Section 5).
+- **`buck_ssc`** — `interleaved_buck_3legs`: three-leg interleaved buck converter, the power stage of
+  `interleaved_buck_3legs`: DC-link capacitor with its ESR (`Vdc0` at the start), three buck legs of two
+  switch + antiparallel-diode pairs (upper switch between dc+ and the leg output, lower switch between the
+  leg output and dc-), one inductor per leg (`L`, `RL` with the per-leg factors `kL`, `kRL` for mismatched
+  legs), common output capacitor with its ESR; `out-` is the negative rail `dc-`. Gates `G` [6×1] in
+  (upper and lower switch of legs 1, 2, 3), measurements `M` [10×1] in pu out (currents on `ibez`, the
+  output voltage on `ubez`, the DC-link voltage on `udc_nom`). Same circuit as `interleaved_buck.slx` of
+  `pwr-control/modelization-and-control` without the device and thermal model. Build with
+  `ssc_build buck_ssc` from this folder (`buck_ssc_lib.slx`, committed next to the package once built).
+- **`boost_ssc`** — `interleaved_boost_3legs`: three-leg interleaved boost converter, the power stage of
+  `interleaved_boost_3legs`: the hardware of `buck_ssc.interleaved_buck_3legs` with the power flow
+  reversed. Input capacitor with its ESR across the low-voltage terminals (`Vin0` at the start), three
+  legs of two switch + antiparallel-diode pairs (upper switch between dc+ and the leg midpoint, the
+  synchronous rectifier; lower switch between the midpoint and dc-, the boost switch), one inductor per
+  leg from `in+` to the midpoint (`L`, `RL` with the per-leg factors `kL`, `kRL`), DC-link capacitor
+  with its ESR (`Vdc0` at the start, = `Vin0` for a link precharged through the upper diodes); `in-` is
+  the negative rail `dc-`. Gates `G` [6×1] in (upper and lower switch of legs 1, 2, 3, the order of the
+  buck block), measurements `M` [10×1] in pu out (currents on `ibez`, positive from the battery into
+  the legs; the input voltage on `uin_nom`, the DC-link voltage on `udc_nom`). Same circuit as
+  `interleaved_boost.slx` of `pwr-control/modelization-and-control` without the device and thermal
+  model. Build with `ssc_build boost_ssc` from this folder (`boost_ssc_lib.slx`, committed next to the
+  package once built).
 
 ## `electrical_machines`
 
@@ -142,6 +165,34 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   `ssc_build tri_monophase_transformer` from `electrical_machines`. Documented in
   `research/electrical_machines/transformers/tri_monophase_transformer` of
   [repositories-documentation](https://github.com/pwr-control/repositories-documentation).
+- **`three_phase_transformer`** — Package with three two-winding three-phase transformers written
+  from scratch in Simscape language on a common three-limb core model, one component per connection:
+  **`transformer_Dd`** (Dd0/Dd6), **`transformer_Yyn`** (Yyn0/Yyn6, both neutrals N and n exposed)
+  and **`transformer_Dyn`** (Dyn11 default, Dyn1/5/7 by `clock_number`, secondary neutral n exposed).
+  Each component writes the coil equations explicitly: terminal voltage = R and leakage drop plus
+  dψ/dt of the limb, secondary emf `s·n21·dψ/dt` with the limb and the sense of each secondary coil
+  fixed by the vector group (this is where the 30° of the Dyn comes from), mmf balance per limb with
+  the core-loss current, and the magnetizing matrix `ψ = Lm·im − Lc·Σim`, `Lc = (Lm − Lm0)/3`, i.e.
+  `lm` for the positive/negative sequence and `lm0` for the zero sequence (a fraction of a pu for a
+  three-limb core, `lm0 = lm` for a bank of single-phase units). Per-unit parameters on `Sr`, `V1`,
+  `V2`: the base of a delta coil is `3·V²/Sr`, so the same pu numbers give the same line-side
+  behaviour for every connection; `l1 + l2 = ucc/100`, `r1 + r2` = copper losses/Sr, `lm` = rated
+  over magnetizing current, `rfe = Sr`/iron losses. Flux linkages of the primary coils are outputs.
+  Linear magnetics, no saturation. `check_three_phase_transformer.py` (python3 + numpy, output in
+  `check_three_phase_transformer_output.txt`) rebuilds the same equations in the phasor domain and
+  checks, against closed-form expectations, the ratio and phase shift of every clock number, the
+  no-load and short-circuit quantities, the regulation and the power balance at rated load, the
+  neutral shift of the Yyn with a single-phase load (17 % of the phase voltage at 1 pu with
+  `lm0 = 0.5` and N floating, 99 % for a bank with `lm0 = lm`, 1.6 % with N grounded), the absence
+  of neutral shift and the circulating delta current of the Dyn, and the 2/3–1/3 coil split of a
+  line-to-line load on the Dd. `test_three_phase_transformer.m` is the MATLAB port of the same
+  check (not run yet). Each component defines the limb voltage `um_k = dψ_k/dt` once and uses it
+  algebraically in the coil and mmf equations: Simscape counts every equation that contains `der()`
+  as a differential equation and requires as many of them as differentiated variables (9 per
+  component), otherwise the model fails to compile with "Total size of differential equations does
+  not match the total size of differential variables". The block library
+  `three_phase_transformer_lib.slx` is built with `ssc_build three_phase_transformer` from
+  `electrical_machines`: rebuild it after every change to the `.ssc` files.
 
 ## `batteries`
 
