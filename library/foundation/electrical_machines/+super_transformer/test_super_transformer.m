@@ -101,7 +101,7 @@ function c = three_phase_case(comp, conn1, sec, clock, p)
     c.V1 = p.V1;
     c.V2 = [];                                      % no second source
     c.load = 'star';                                % unbalanced RL star on a, b, c
-    c.Zload = Zb*[1 + 0.2i, 0.6 + 0.5i, 2.0];       % per phase, Ohm (R + j X at fr)
+    c.Zload = Zb*[1 + 0.2i, 0.6 + 0.5i, 2.0 + 0.02i];   % per phase, Ohm (R + j X at fr; X > 0 for the Inductor block)
     c.star_to_n = strcmp(sec, 'star');
 end
 
@@ -147,9 +147,11 @@ function [err, ipk] = run_case(c)
     new_system(mdl);
     cleanup = onCleanup(@() close_system(mdl, 0));
     set_param(mdl, 'StopTime', num2str(3/c.fr), 'Solver', 'ode23t', 'RelTol', '1e-7', ...
-        'MaxStep', num2str(1/(c.fr*500)), 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog');
+        'MaxStep', num2str(1/(c.fr*500)));
     build_copy(mdl, c, 'ref', 0);
     build_copy(mdl, c, 'sup', 600);
+    % the Simscape logging parameters exist only once the model has a Simscape block
+    set_param(mdl, 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog');
     out = sim(mdl, 'ReturnWorkspaceOutputs', 'on');
     log = out.simlog;
     names = current_blocks(c);
