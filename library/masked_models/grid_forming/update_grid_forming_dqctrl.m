@@ -7,7 +7,10 @@ function update_grid_forming_dqctrl()
 %   private/afe_dq_ctrl_pwm.m is the source of the MATLAB Function afe_dq_forming_ctrl_pwm of the block:
 %   edit it there, run this function (library on the path, any folder) and commit the source together
 %   with grid_forming_dqctrl.slx, which this function saves. It can be run again: the ports are added
-%   and connected only when missing.
+%   and connected only when missing. The function also sets the sample time of the measurement delay
+%   (p.pwm.tc of the mask) and the mask: type, Help (the note library/documentation/
+%   grid_forming_following_afe, description and user guide of the block, opened by the Help button of
+%   the mask: the PDF found on the MATLAB path, otherwise the copy on GitHub), port labels, description.
 %
 %   Interface after the update (2026-10-23, master/slave and negative-sequence compensator for the TELEMA VFC
 %   test bench):
@@ -64,8 +67,19 @@ function update_grid_forming_dqctrl()
     connect_once(blk, 'sync/1', 'afe_dq_forming_ctrl_pwm/3');
     connect_once(blk, 'afe_dq_forming_ctrl_pwm/3', 'sync_out/1');
 
-    % ---- mask: port labels and description
+    % ---- measurement delay: sample time from the mask (the first version read param.glb_time.tc of the
+    %      base workspace, a hidden dependency on the study model)
+    set_param([blk '/meas_delay'], 'SampleTime', 'p.pwm.tc');
+
+    % ---- mask: type, Help, port labels and description. Help: the PDF of the note found on the path
+    %      (library/documentation/grid_forming_following_afe), otherwise the copy on GitHub
+    doc_pdf = 'grid_forming_following_afe.pdf';
+    doc_url = ['https://github.com/pwr-control/library/blob/main/library/documentation/' ...
+               'grid_forming_following_afe/grid_forming_following_afe.pdf'];
     mk = Simulink.Mask.get(blk);
+    mk.Type = 'Grid-forming AFE (two-level bridge, LCL filter)';
+    mk.Help = sprintf(['eval(''pwrdoc = which(''''%s''''); if isempty(pwrdoc), pwrdoc = ''''%s''''; end; ' ...
+                       'web(pwrdoc, ''''-browser''''); clear pwrdoc'')'], doc_pdf, doc_url);
     mk.Display = sprintf([ ...
         'port_label(''LConn'', 1, ''ug_a'');\n' ...
         'port_label(''LConn'', 2, ''ug_b'');\n' ...
@@ -88,11 +102,13 @@ function update_grid_forming_dqctrl()
         'and ignores sync. Negative-sequence compensator: p.ctrl.nsc_enable = 1 (same value in master and ' ...
         'slaves) regulates the negative sequence of the terminal voltage to zero (PI in the negative frame, ' ...
         'resonant term at 2*fgrid in the current loop); absent or 0, off. ' ...
-        'Parameter p: struct of private/afe_module_param.m, e.g. param.afe_mod(1).']);
+        'Parameter p: struct with the fields hw, pwm, ctrl, e.g. grid_forming_param_example.m of this folder ' ...
+        '(400 V, 250 kW, 50 Hz, 4 kHz) or param.afe_mod(1) of the study model. Description and user guide: ' ...
+        'the Help of this block (note library/documentation/grid_forming_following_afe).']);
 
     save_system(lib);
-    fprintf('%s: control code from %s, ports sync (input 2, 5x1) and sync_out (output 3), saved %s\n', ...
-        blk, src, get_param(lib, 'FileName'));
+    fprintf(['%s: control code from %s, ports sync (input 2, 5x1) and sync_out (output 3), meas_delay at ' ...
+        'p.pwm.tc, mask type and Help (%s), saved %s\n'], blk, src, doc_pdf, get_param(lib, 'FileName'));
 end
 
 % ------------------------------------------------------------------------------------------------------

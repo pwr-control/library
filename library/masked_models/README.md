@@ -201,7 +201,14 @@ component `afe_ssc.afe_two_level_lcl` of [`../foundation/pwr_electronics`](../fo
 the whole control with the PWM is one MATLAB Function, so that one converter counts as a handful
 of nonvirtual blocks. Mask parameter `p`, one numeric struct (`p.hw`, `p.pwm`, `p.ctrl`); physical
 ports `ug_a/b/c` (AC, left) and `Udc(+)/Udc(-)` (DC, right), input `t_master`, outputs `m` (14×1
-measurements in pu) and `ctrl_log`.
+measurements in pu) and `ctrl_log`. Description and user guide: the note
+[`../documentation/grid_forming_following_afe`](../documentation/grid_forming_following_afe), also the
+Help of the two masks (the Help button opens `grid_forming_following_afe.pdf` if it is on the MATLAB path,
+otherwise the copy on GitHub). Example parameter structures, 400 V, 250 kW, 50 Hz, 4 kHz with double
+update: `grid_forming/grid_forming_param_example.m` and `grid_following/grid_following_param_example.m`,
+`p = grid_forming_param_example(tc)` with `tc` the step of the Simscape local solver of the model (copy
+the file next to the model, change the numbers, keep the field names). The Unit Delay of the measurements
+runs at `p.pwm.tc` of the mask (until October 2026 it read `param.glb_time.tc` from the base workspace).
 
 - `grid_following_dqctrl.slx` — grid follower: FHT-PLL, DC-link voltage loop, dq current loop.
 - `grid_forming_dqctrl.slx` — grid former: free-running phase generator, voltage loop on the FHT
