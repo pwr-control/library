@@ -6,9 +6,18 @@ function nfail = test_super_transformer(tol)
 %
 %   For each case a model is built in memory with two copies of the same circuit, one with a library
 %   transformer and one with super_transformer set up as that transformer (Simscape Component blocks on the
-%   source files, so no ssc_build is needed), and simulated for three periods from rest with Simscape
-%   logging. The two copies run in the same model, on the same time steps; the currents of their sources and
-%   loads are compared sample by sample, magnetizing inrush included:
+%   source files, so no ssc_build is needed), and simulated with Simscape logging. The two copies run in the
+%   same model, on the same time steps; the currents of their sources and loads are compared sample by
+%   sample. The three-phase cases run three periods and are compared from t = 0, magnetizing inrush
+%   included. The cases with two primaries run 20 periods and are compared over the last one: the current
+%   that circulates between primary 1 and primary 2 (i1 = -n2*i2, no net mmf) is free when the simulation
+%   starts, because the coil currents have no initial target (priority none), and the consistent initial
+%   state computed by Simscape gives it different values in the two copies (R2026b, cases 9, 10 and 12: up
+%   to about 3 kA at t = 0; about zero in the super copy of case 12). This difference decays with
+%   tau = (L1 + L2')/(R1 + R2'), 56 ms here, still 4 % of it after three periods. After 20 periods what is
+%   left is a constant offset of about 1e-4 of the peak: the two primaries have different X/R, so the
+%   decaying circulating current leaves a flux offset on the core, about 2.6e-5 V*s per ampere at t = 0,
+%   which decays with the magnetizing time constant Lm/(R1 || R2'), about 8 minutes:
 %
 %     case   library transformer                        super_transformer
 %     1-4    transformer_Dyn, clock 11, 1, 5, 7          one primary, delta; secondary star, clock3 = clock
@@ -23,8 +32,9 @@ function nfail = test_super_transformer(tol)
 %   Circuits: ideal three-phase source on the primary (a second one at 98.5 % and -2 deg on primary 2: two
 %   grid formers that do not match), primary neutrals open, unbalanced RL load in star on a, b, c with the
 %   star point on n and earthed (the delta secondary: star point earthed), single-phase RL load on s1-s2
-%   (a-b) with s2 (b) earthed. The case passes when the largest difference of the currents is below tol
-%   times their peak; the function prints one line per case and returns the number of failed cases.
+%   (a-b) with s2 (b) earthed. The case passes when the largest difference of the currents in the compared
+%   periods is below tol times their peak in the same periods; the function prints one line per case and
+%   returns the number of failed cases.
 %   The phasor check of the same equations, with closed-form expectations for the configurations no library
 %   block has, is check_super_transformer.py in this folder.
 
@@ -58,8 +68,8 @@ function nfail = test_super_transformer(tol)
         try
             [err, ipk] = run_case(c);
             ok = err <= tol;
-            fprintf('  %2d  %-62s  max |diff| %.2e of %.4g A peak  %s\n', k, c.title, err, ipk, ...
-                pass_text(ok));
+            fprintf('  %2d  %-62s  %-11s  max |diff| %.2e of %.4g A peak  %s\n', k, c.title, ...
+                window_text(c), err, ipk, pass_text(ok));
         catch ME
             ok = false;
             fprintf('  %2d  %-62s  ERROR: %s\n', k, c.title, ME.message);
@@ -77,6 +87,8 @@ end
 function c = three_phase_case(comp, conn1, sec, clock, p)
     c.title = sprintf('%s clock %d = super %s / %s, clock3 %d', comp, clock, conn1, sec, clock);
     c.fr = p.fr;
+    c.periods = 3;                                  % simulated periods
+    c.last = 3;                                     % last periods compared: all, inrush included
     c.ref.comp = ['three_phase_transformer.' comp];
     c.ref.par = {'Sr', p.Sr, 'V1', p.V1, 'V2', p.V2, 'fr', p.fr, 'clock_number', clock, 'r1', p.r1, ...
                  'l1', p.l1, 'r2', p.r2, 'l2', p.l2, 'lm', p.lm, 'lm0', p.lm0, 'rfe', p.rfe};
@@ -107,6 +119,8 @@ end
 
 function c = tri_mono_case(p, ws, star_secondary)
     c.fr = p.fr;
+    c.periods = 20;                                 % the circulating current of the start decays (tau 56 ms)
+    c.last = 1;
     c.ref.comp = 'tri_monophase_transformer.tri_monophase_transformer';
     names = {'Sr', 'V1', 'V2', 'V3', 'fr', 'r1', 'l1', 'r2', 'l2', 'r3', 'l3', 'lm', 'lm0', 'rfe'};
     vals = cellfun(@(f) p.(f), names, 'UniformOutput', false);
@@ -146,22 +160,29 @@ function [err, ipk] = run_case(c)
     end
     new_system(mdl);
     cleanup = onCleanup(@() close_system(mdl, 0));
-    set_param(mdl, 'StopTime', num2str(3/c.fr), 'Solver', 'ode23t', 'RelTol', '1e-7', ...
+    set_param(mdl, 'StopTime', num2str(c.periods/c.fr, 17), 'Solver', 'ode23t', 'RelTol', '1e-7', ...
         'MaxStep', num2str(1/(c.fr*500)));
     build_copy(mdl, c, 'ref', 0);
     build_copy(mdl, c, 'sup', 600);
-    % the Simscape logging parameters exist only once the model has a Simscape block
-    set_param(mdl, 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog');
+    % the Simscape logging parameters exist only once the model has a Simscape block; the whole run is
+    % logged (no limit on the number of points)
+    set_param(mdl, 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog', 'SimscapeLogLimitData', 'off');
     out = sim(mdl, 'ReturnWorkspaceOutputs', 'on');
     log = out.simlog;
     names = current_blocks(c);
+    t0 = (c.periods - c.last)/c.fr;                 % start of the compared periods
     err = 0;
     ipk = 0;
     for k = 1:numel(names)
-        iref = log.([names{k} '_ref']).i.series.values('A');
+        sref = log.([names{k} '_ref']).i.series;
+        t = sref.time;
+        assert(t(1) <= t0 + 1e-9/c.fr, 'test_super_transformer: the log of %s starts at %g s, after %g s', ...
+            names{k}, t(1), t0);
+        w = t >= t0 - 1e-9/c.fr;
+        iref = sref.values('A');
         isup = log.([names{k} '_sup']).i.series.values('A');
-        ipk = max(ipk, max(abs(iref)));
-        err = max(err, max(abs(iref - isup)));
+        ipk = max(ipk, max(abs(iref(w))));
+        err = max(err, max(abs(iref(w) - isup(w))));
     end
     err = err/ipk;
     clear cleanup
@@ -311,6 +332,16 @@ function src = library_block(lib, name_regexp)
     b = b(~strcmp(b, lib));
     assert(~isempty(b), 'test_super_transformer: no block matching %s in %s', name_regexp, lib);
     src = b{1};
+end
+
+function s = window_text(c)
+%WINDOW_TEXT  Periods compared, e.g. 'periods 1-3' or 'period 20'.
+    p1 = c.periods - c.last + 1;
+    if p1 == c.periods
+        s = sprintf('period %d', p1);
+    else
+        s = sprintf('periods %d-%d', p1, c.periods);
+    end
 end
 
 function s = pass_text(ok)
