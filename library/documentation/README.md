@@ -159,8 +159,9 @@ transients. Scripts under `py/`.
 
 ## Power converters and control
 
-The documents of the solid-state transformer project, kept here with the same sources as in
-`repos_doc/` of [repositories-documentation](https://github.com/pwr-control/repositories-documentation)
+The documents of the solid-state transformer project and the note on the grid-forming and
+grid-following AFE blocks, kept here with the same sources as in `repos_doc/` of
+[repositories-documentation](https://github.com/pwr-control/repositories-documentation)
 so that the Simulink models can link the PDFs. They compile against the copy of the document
 template in [`../AAA_template_latex_settings/`](../AAA_template_latex_settings) (two levels up
 from each folder, as in the original repository).
@@ -196,3 +197,18 @@ single-phase PLL as SOGI-QSG with a type-1 loop and an angle observer, DC-link v
 the moving average, three-level modulator and the discrete implementation. Companion Python
 script with a sampled-data simulation of the controller as coded. Master copy in
 `repos_doc/single_phase_grid_tied_inverter_analysis/` of repositories-documentation.
+
+### `grid_forming_following_afe`
+*Grid-forming and grid-following AFE blocks: two-level bridge with LCL filter, description and user
+guide* (Rev. 00, October 2026). The two single-block AFEs of `../masked_models/grid_forming` and
+`../masked_models/grid_following` in simple English: quick start (what you need, eight steps to a
+running model, checks before the first run, how to read `m` and `ctrl_log`), the power stage
+`afe_ssc.afe_two_level_lcl` (bridge, DC link, LCL filter, switch model, measurement and gate
+vectors), the control parts common to both blocks (clock and carrier, acquisitions, Clarke and Park,
+first harmonic tracker, vector PI, SVPWM and dead time), the grid-forming chain (phase generator,
+voltage and current loops, master/slave `sync` ports, negative-sequence compensator, 43-entry log),
+the grid-following chain (PLL, DC-link loop, current and zero-sequence loops, 45-entry log), the
+parameter structure `p` with the values of `grid_forming_param_example.m` and
+`grid_following_param_example.m`, what the blocks do not model. All figures are TikZ. The PDF is the
+Help of the two block masks (the Help button opens the copy found on the MATLAB path, otherwise the
+copy on GitHub). Master copy in `repos_doc/grid_forming_following_afe/` of repositories-documentation.
