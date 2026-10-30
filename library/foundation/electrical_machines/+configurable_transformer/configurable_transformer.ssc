@@ -20,8 +20,8 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 % SOFTWARE.
 
-component super_transformer
-% Super Transformer: One or Two Three-Phase Primaries, Three-Phase or Single-Phase Secondary
+component configurable_transformer
+% Configurable Transformer: One or Two Three-Phase Primaries, Three-Phase or Single-Phase Secondary
 %
 % Transformer on a three-limb core whose windings are chosen in the block
 % dialog: one or two three-phase primaries, each in star (neutral brought
@@ -122,11 +122,11 @@ outputs
 end
 
 parameters
-    primaries = super_transformer.n_primaries.two;                % Primaries
-    conn1     = super_transformer.connection.star;                % Primary 1 connection
-    conn2     = super_transformer.connection.star;                % Primary 2 connection
+    primaries = configurable_transformer.n_primaries.two;                % Primaries
+    conn1     = configurable_transformer.connection.star;                % Primary 1 connection
+    conn2     = configurable_transformer.connection.star;                % Primary 2 connection
     clock2    = {0, '1'};                                         % Primary 2 clock number against primary 1 (0 ... 11)
-    secondary = super_transformer.secondary_winding.single_phase; % Secondary
+    secondary = configurable_transformer.secondary_winding.single_phase; % Secondary
     clock3    = {0, '1'};                                         % Secondary clock number against primary 1 (0 ... 11)
     ws        = {[1 -1 0], '1'};                                  % Single-phase turns distribution on limbs a, b, c [wa wb wc]
     Sr  = {100e3, 'V*A'};   % Rated apparent power of the secondary (three-phase or single-phase)
@@ -186,7 +186,7 @@ end
 % the der() of a limb flux only in um == der(psi): Simscape counts every
 % equation with der() as a differential equation and wants as many as the
 % differentiated variables (see +three_phase_transformer).
-if conn1 == super_transformer.connection.star
+if conn1 == configurable_transformer.connection.star
     branches
         i1a : A1.i -> N1.i;
         i1b : B1.i -> N1.i;
@@ -227,7 +227,7 @@ else
 end
 
 % ---------------------------------------------------------------- primary 2
-if primaries == super_transformer.n_primaries.one
+if primaries == configurable_transformer.n_primaries.one
     annotations
         [A2, B2, C2, N2, conn2, clock2, V2, r2, l2, i2a, i2b, i2c] : ExternalAccess=none;
     end
@@ -249,8 +249,8 @@ else
     equations
         assert(abs(clock2 - round(clock2)) < 1e-9, 'Primary 2 clock number must be an integer')
     end
-    if conn2 == super_transformer.connection.star
-        if conn1 == super_transformer.connection.star
+    if conn2 == configurable_transformer.connection.star
+        if conn1 == configurable_transformer.connection.star
             equations
                 assert(cos(pi*clock2) > 0.5, 'Primaries star and star: the clock number of primary 2 must be even')
             end
@@ -266,8 +266,8 @@ else
         end
         equations
             let
-                d1  = if conn1 == super_transformer.connection.delta, 1 else 0 end;
-                V1c = if conn1 == super_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
                 n2  = V2/sqrt(3)/V1c;       % N2/N1 of the coils
                 R2  = r2*V2^2/Sr;
                 L2  = l2*V2^2/Sr/wb;
@@ -286,7 +286,7 @@ else
             end
         end
     else
-        if conn1 == super_transformer.connection.star
+        if conn1 == configurable_transformer.connection.star
             equations
                 assert(cos(pi*clock2) < -0.5, 'Primaries star and delta: the clock number of primary 2 must be odd')
             end
@@ -308,8 +308,8 @@ else
         end
         equations
             let
-                d1  = if conn1 == super_transformer.connection.delta, 1 else 0 end;
-                V1c = if conn1 == super_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
                 n2  = V2/V1c;               % N2/N1 of the coils
                 R2  = r2*3*V2^2/Sr;
                 L2  = l2*3*V2^2/Sr/wb;
@@ -331,7 +331,7 @@ else
 end
 
 % ---------------------------------------------------------------- secondary
-if secondary == super_transformer.secondary_winding.single_phase
+if secondary == configurable_transformer.secondary_winding.single_phase
     annotations
         [a, b, c, n, clock3, i3a, i3b, i3c] : ExternalAccess=none;
     end
@@ -347,7 +347,7 @@ if secondary == super_transformer.secondary_winding.single_phase
     equations
         assert(gw > 0, 'ws must have a non-zero positive-sequence component')
         let
-            V1c = if conn1 == super_transformer.connection.delta, V1 else V1/sqrt(3) end;
+            V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
             n3  = V3/(gw*V1c);              % N3/N1
             R3  = r3*V3^2/Sr;               % the whole single-phase winding
             L3  = l3*V3^2/Sr/wb;
@@ -373,8 +373,8 @@ else
         assert(abs(clock3 - round(clock3)) < 1e-9, 'Secondary clock number must be an integer')
         i3 == 0;
     end
-    if secondary == super_transformer.secondary_winding.star
-        if conn1 == super_transformer.connection.star
+    if secondary == configurable_transformer.secondary_winding.star
+        if conn1 == configurable_transformer.connection.star
             equations
                 assert(cos(pi*clock3) > 0.5, 'Primary 1 star, secondary star: the clock number must be even')
             end
@@ -390,8 +390,8 @@ else
         end
         equations
             let
-                d1  = if conn1 == super_transformer.connection.delta, 1 else 0 end;
-                V1c = if conn1 == super_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
                 n3  = V3/sqrt(3)/V1c;       % N3/N1 of the coils
                 R3  = r3*V3^2/Sr;
                 L3  = l3*V3^2/Sr/wb;
@@ -410,7 +410,7 @@ else
             end
         end
     else
-        if conn1 == super_transformer.connection.star
+        if conn1 == configurable_transformer.connection.star
             equations
                 assert(cos(pi*clock3) < -0.5, 'Primary 1 star, secondary delta: the clock number must be odd')
             end
@@ -432,8 +432,8 @@ else
         end
         equations
             let
-                d1  = if conn1 == super_transformer.connection.delta, 1 else 0 end;
-                V1c = if conn1 == super_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
                 n3  = V3/V1c;               % N3/N1 of the coils
                 R3  = r3*3*V3^2/Sr;
                 L3  = l3*3*V3^2/Sr/wb;
@@ -464,7 +464,7 @@ equations
     assert(lm > 0 && lm0 > 0, 'Magnetizing inductances must be positive')
     assert(rfe > 0, 'Core-loss resistance must be positive')
     let
-        Zm  = if conn1 == super_transformer.connection.delta, 3*V1^2/Sr else V1^2/Sr end;   % base of the primary-1 coil
+        Zm  = if conn1 == configurable_transformer.connection.delta, 3*V1^2/Sr else V1^2/Sr end;   % base of the primary-1 coil
         Lm  = lm*Zm/wb;            % positive-sequence magnetizing inductance, primary-1 coil referred
         Lm0 = lm0*Zm/wb;           % zero-sequence magnetizing inductance
         Lc  = (Lm - Lm0)/3;        % limb-to-limb term of the magnetizing inductance matrix

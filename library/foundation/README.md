@@ -193,31 +193,32 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   not match the total size of differential variables". The block library
   `three_phase_transformer_lib.slx` is built with `ssc_build three_phase_transformer` from
   `electrical_machines`: rebuild it after every change to the `.ssc` files.
-- **`super_transformer`** — The configurable transformer ("super trafo") on the three-limb core of
+- **`configurable_transformer`** — The configurable transformer on the three-limb core of
   `three_phase_transformer`: one or two three-phase primaries, each in star (neutral brought out) or
   delta, and one secondary, three-phase in star or delta or single-phase (limb coils in series with the
   turns distribution `ws` of `tri_monophase_transformer`). The configuration is chosen in dropdowns
-  (enumerations `n_primaries`, `connection`, `secondary_winding` inside the package, as
-  `afe_ssc.onoff`) and the block shows only the ports and parameters it uses. Primary 2 and a
-  three-phase secondary are placed by their clock number against primary 1 (`clock2`, `clock3`,
-  0 to 11; even between equal connections and odd otherwise, enforced by asserts): the phase-a coil
-  (a-b coil of a delta) sits on limb `-q mod 3` with sense `(-1)^q`, `q = (h + d1 - dw)/2`, `d = 1` for
-  a delta. Coil, mmf and core equations, the `um = dψ/dt` rule and the per-unit conventions are those
-  of `three_phase_transformer` and `tri_monophase_transformer` (on the rating `Sr` of the secondary;
-  base `V²/Sr` of a star coil, `3·V²/Sr` of a delta coil, `V3²/Sr` of the single-phase winding), and each
-  of those components is a configuration of this one. `check_super_transformer.py` (python3 + numpy,
-  reuses the solver of `check_three_phase_transformer.py`; output in
-  `check_super_transformer_output.txt`, 622 checks) rebuilds the equations in the phasor domain and
-  finds the same node voltages, currents and fluxes as `transformer_Dyn` 1/5/7/11, `transformer_Yyn`
-  0/6, `transformer_Dd` 0/6 and `tri_monophase_transformer` (`ws` [1 -1 0], [1 -1/2 -1/2], [1 0 0])
-  with balanced, unbalanced and single-phase loads and in short circuit; against closed forms it checks
-  the ratio and the phase shift of every clock number of primary 2 and of the secondary, the
-  short-circuit impedance between each pair of windings, two primaries sharing a load, and that a
-  single-phase load on a star secondary equals the single-phase secondary (across a-b: `ws` [1 -1 0]
-  with coils of half the r3, l3; across a-n: `ws` [1 0 0] at V3/√3, coil of a third of r3, l3).
-  `test_super_transformer.m` makes the same comparison with the library components in Simscape (time
-  domain, 12 cases; not run yet). Masked block: `super_trafo.slx` in
-  `masked_models/electrical_machines`.
+  (enumerations `n_primaries`, `connection`, `secondary_winding` inside the package, as `afe_ssc.onoff`)
+  and the block shows only the ports and parameters it uses. Primary 2 and a three-phase secondary are
+  placed by their clock number against primary 1 (`clock2`, `clock3`, 0 to 11; even between equal
+  connections and odd otherwise, enforced by asserts): the phase-a coil (a-b coil of a delta) sits on
+  limb `-q mod 3` with sense `(-1)^q`, `q = (h + d1 - dw)/2`, `d = 1` for a delta. Coil, mmf and core
+  equations, the `um = dψ/dt` rule and the per-unit conventions are those of `three_phase_transformer`
+  and `tri_monophase_transformer` (on the rating `Sr` of the secondary; base `V²/Sr` of a star coil,
+  `3·V²/Sr` of a delta coil, `V3²/Sr` of the single-phase winding), and each of those components is a
+  configuration of this one. `check_configurable_transformer.py` (python3 + numpy, reuses the solver of
+  `check_three_phase_transformer.py`; output in `check_configurable_transformer_output.txt`, 622 checks)
+  rebuilds the equations in the phasor domain and finds the same node voltages, currents and fluxes as
+  `transformer_Dyn` 1/5/7/11, `transformer_Yyn` 0/6, `transformer_Dd` 0/6 and
+  `tri_monophase_transformer` (`ws` [1 -1 0], [1 -1/2 -1/2], [1 0 0]) with balanced, unbalanced and
+  single-phase loads and in short circuit; against closed forms it checks the ratio and the phase shift
+  of every clock number of primary 2 and of the secondary, the short-circuit impedance between each pair
+  of windings, two primaries sharing a load, and that a single-phase load on a star secondary equals the
+  single-phase secondary (across a-b: `ws` [1 -1 0] with coils of half the r3, l3; across a-n: `ws`
+  [1 0 0] at V3/√3, coil of a third of r3, l3). `test_configurable_transformer.m` makes the same comparison
+  with the library components in Simscape (time domain, 12 cases, all passing on MATLAB R2026b; the
+  cases with two primaries are compared over the last of 20 periods, after the circulating current that
+  Simscape puts between the primaries at the start has decayed). Masked block: `configurable_trafo.slx`
+  in `masked_models/electrical_machines`.
 
 ## `batteries`
 

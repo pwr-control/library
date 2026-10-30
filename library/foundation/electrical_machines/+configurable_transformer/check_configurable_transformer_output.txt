@@ -1,378 +1,378 @@
-check_super_transformer.py: super_transformer.ssc rebuilt in the phasor domain
+check_configurable_transformer.py: configurable_transformer.ssc rebuilt in the phasor domain
 
-=== transformer_Dyn clock 11 = super_transformer: one primary delta, secondary star, clock3 11 ===
+=== transformer_Dyn clock 11 = configurable_transformer: one primary delta, secondary star, clock3 11 ===
 no load
    node voltages (8 nodes), max |difference| / max |V|  got 9.30221e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
-   power balance of super_transformer [W]               got 0, expected 0                        OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
 balanced load 1 pu
    node voltages (8 nodes), max |difference| / max |V|  got 9.59845e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 1.51326e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
-   power balance of super_transformer [W]               got 2.1646e-10, expected 0               OK
+   power balance of configurable_transformer [W]        got 2.1646e-10, expected 0               OK
 unbalanced RL load, star point floating
    node voltages (8 nodes), max |difference| / max |V|  got 1.06062e-15, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 1.62668e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.15963e-16, expected 0              OK
-   power balance of super_transformer [W]               got 4.54747e-12, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.54747e-12, expected 0              OK
 unbalanced RL load, n grounded
    node voltages (8 nodes), max |difference| / max |V|  got 1.04185e-15, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 1.51618e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26656e-16, expected 0              OK
-   power balance of super_transformer [W]               got -2.18279e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -2.18279e-11, expected 0             OK
 single-phase load a-n
    node voltages (8 nodes), max |difference| / max |V|  got 1.1016e-15, expected 0               OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 1.54771e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.05878e-16, expected 0              OK
-   power balance of super_transformer [W]               got 4.54747e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.54747e-11, expected 0              OK
 three-phase short circuit
    node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 1.48526e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.99318e-16, expected 0              OK
-   power balance of super_transformer [W]               got 9.31323e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.31323e-10, expected 0              OK
 
-=== transformer_Dyn clock 1 = super_transformer: one primary delta, secondary star, clock3 1 ===
+=== transformer_Dyn clock 1 = configurable_transformer: one primary delta, secondary star, clock3 1 ===
 no load
    node voltages (8 nodes), max |difference| / max |V|  got 6.38126e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
-   power balance of super_transformer [W]               got 0, expected 0                        OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
 balanced load 1 pu
    node voltages (8 nodes), max |difference| / max |V|  got 3.7243e-16, expected 0               OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 5.03984e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
-   power balance of super_transformer [W]               got 2.17369e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.17369e-10, expected 0              OK
 unbalanced RL load, star point floating
    node voltages (8 nodes), max |difference| / max |V|  got 3.19063e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.68436e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.03237e-16, expected 0              OK
-   power balance of super_transformer [W]               got -5.18412e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -5.18412e-11, expected 0             OK
 unbalanced RL load, n grounded
    node voltages (8 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 7.61991e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.54362e-16, expected 0              OK
-   power balance of super_transformer [W]               got -7.82165e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -7.82165e-11, expected 0             OK
 single-phase load a-n
    node voltages (8 nodes), max |difference| / max |V|  got 4.03587e-16, expected 0              OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 5.15483e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.33566e-16, expected 0              OK
-   power balance of super_transformer [W]               got 1.77351e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.77351e-11, expected 0              OK
 three-phase short circuit
    node voltages (8 nodes), max |difference| / max |V|  got 1.07758e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.08033e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 5.76397e-16, expected 0              OK
-   power balance of super_transformer [W]               got 1.39698e-09, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.39698e-09, expected 0              OK
 
-=== transformer_Dyn clock 5 = super_transformer: one primary delta, secondary star, clock3 5 ===
+=== transformer_Dyn clock 5 = configurable_transformer: one primary delta, secondary star, clock3 5 ===
 no load
    node voltages (8 nodes), max |difference| / max |V|  got 6.38126e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
-   power balance of super_transformer [W]               got 0, expected 0                        OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
 balanced load 1 pu
    node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 3.95358e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
-   power balance of super_transformer [W]               got 2.24645e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.24645e-10, expected 0              OK
 unbalanced RL load, star point floating
    node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 5.79313e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.15963e-16, expected 0              OK
-   power balance of super_transformer [W]               got 1.09139e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.09139e-11, expected 0              OK
 unbalanced RL load, n grounded
    node voltages (8 nodes), max |difference| / max |V|  got 2.94162e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 4.59237e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 1.4335e-16, expected 0               OK
-   power balance of super_transformer [W]               got 1.60071e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.60071e-10, expected 0              OK
 single-phase load a-n
    node voltages (8 nodes), max |difference| / max |V|  got 4.08612e-16, expected 0              OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 4.00269e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.07077e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.09139e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.09139e-11, expected 0             OK
 three-phase short circuit
    node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 3.06025e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.52767e-16, expected 0              OK
-   power balance of super_transformer [W]               got 4.65661e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.65661e-10, expected 0              OK
 
-=== transformer_Dyn clock 7 = super_transformer: one primary delta, secondary star, clock3 7 ===
+=== transformer_Dyn clock 7 = configurable_transformer: one primary delta, secondary star, clock3 7 ===
 no load
    node voltages (8 nodes), max |difference| / max |V|  got 6.38126e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
-   power balance of super_transformer [W]               got 0, expected 0                        OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
 balanced load 1 pu
    node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 3.95358e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
-   power balance of super_transformer [W]               got 1.0823e-10, expected 0               OK
+   power balance of configurable_transformer [W]        got 1.0823e-10, expected 0               OK
 unbalanced RL load, star point floating
    node voltages (8 nodes), max |difference| / max |V|  got 4.16008e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 5.08091e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27226e-16, expected 0              OK
-   power balance of super_transformer [W]               got 1.36424e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.36424e-11, expected 0              OK
 unbalanced RL load, n grounded
    node voltages (8 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 4.87771e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26656e-16, expected 0              OK
-   power balance of super_transformer [W]               got 4.27463e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.27463e-11, expected 0              OK
 single-phase load a-n
    node voltages (8 nodes), max |difference| / max |V|  got 4.03587e-16, expected 0              OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 3.53619e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.27669e-16, expected 0              OK
-   power balance of super_transformer [W]               got 4.8658e-11, expected 0               OK
+   power balance of configurable_transformer [W]        got 4.8658e-11, expected 0               OK
 three-phase short circuit
    node voltages (8 nodes), max |difference| / max |V|  got 1.35836e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 5.10042e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.52767e-16, expected 0              OK
-   power balance of super_transformer [W]               got 0, expected 0                        OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
 
-=== transformer_Yyn clock 0 = super_transformer: one primary star, secondary star, clock3 0 ===
+=== transformer_Yyn clock 0 = configurable_transformer: one primary star, secondary star, clock3 0 ===
 no load
    node voltages (9 nodes), max |difference| / max |V|  got 7.29634e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 2.30364e-18, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.48201e-16, expected 0              OK
-   power balance of super_transformer [W]               got -6.82121e-13, expected 0             OK
+   power balance of configurable_transformer [W]        got -6.82121e-13, expected 0             OK
 balanced load 1 pu
    node voltages (9 nodes), max |difference| / max |V|  got 4.8946e-16, expected 0               OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 1.32901e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.38407e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.63709e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.63709e-11, expected 0             OK
 unbalanced RL load, star point floating
    node voltages (9 nodes), max |difference| / max |V|  got 4.55141e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 3.86324e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.73918e-16, expected 0              OK
-   power balance of super_transformer [W]               got 5.45697e-12, expected 0              OK
+   power balance of configurable_transformer [W]        got 5.45697e-12, expected 0              OK
 unbalanced RL load, n grounded
    node voltages (9 nodes), max |difference| / max |V|  got 4.99413e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 1.74073e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 5.21557e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.09139e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.09139e-11, expected 0             OK
 single-phase load a-n
    node voltages (9 nodes), max |difference| / max |V|  got 1.27026e-15, expected 0              OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 1.74613e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 1.13559e-15, expected 0              OK
-   power balance of super_transformer [W]               got -3.63798e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -3.63798e-11, expected 0             OK
 three-phase short circuit
    node voltages (9 nodes), max |difference| / max |V|  got 3.14642e-13, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 5.77046e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.0405e-13, expected 0               OK
-   power balance of super_transformer [W]               got 1.39698e-09, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.39698e-09, expected 0              OK
 single-phase load a-n, primary neutral grounded (YNyn)
    node voltages (9 nodes), max |difference| / max |V|  got 4.63741e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.21953e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.50185e-16, expected 0              OK
-   power balance of super_transformer [W]               got -4.27463e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -4.27463e-11, expected 0             OK
 
-=== transformer_Yyn clock 6 = super_transformer: one primary star, secondary star, clock3 6 ===
+=== transformer_Yyn clock 6 = configurable_transformer: one primary star, secondary star, clock3 6 ===
 no load
    node voltages (9 nodes), max |difference| / max |V|  got 8.82485e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 2.76265e-18, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.06015e-16, expected 0              OK
-   power balance of super_transformer [W]               got -2.27374e-13, expected 0             OK
+   power balance of configurable_transformer [W]        got -2.27374e-13, expected 0             OK
 balanced load 1 pu
    node voltages (9 nodes), max |difference| / max |V|  got 2.67543e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 1.0627e-15, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.04698e-16, expected 0              OK
-   power balance of super_transformer [W]               got 1.06411e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.06411e-10, expected 0              OK
 unbalanced RL load, star point floating
    node voltages (9 nodes), max |difference| / max |V|  got 3.77377e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.57987e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.84232e-16, expected 0              OK
-   power balance of super_transformer [W]               got 1.28239e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.28239e-10, expected 0              OK
 unbalanced RL load, n grounded
    node voltages (9 nodes), max |difference| / max |V|  got 6.43092e-16, expected 0              OK
    source and load currents (7), max |diff.| / max(|I|, Ib) got 1.97586e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 5.32071e-16, expected 0              OK
-   power balance of super_transformer [W]               got -4.54747e-12, expected 0             OK
+   power balance of configurable_transformer [W]        got -4.54747e-12, expected 0             OK
 single-phase load a-n
    node voltages (9 nodes), max |difference| / max |V|  got 1.03546e-15, expected 0              OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 1.12694e-15, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 9.52722e-16, expected 0              OK
-   power balance of super_transformer [W]               got -3.36513e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -3.36513e-11, expected 0             OK
 three-phase short circuit
    node voltages (9 nodes), max |difference| / max |V|  got 4.81184e-13, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 6.53172e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 1.07644e-12, expected 0              OK
-   power balance of super_transformer [W]               got 1.39698e-09, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.39698e-09, expected 0              OK
 single-phase load a-n, primary neutral grounded (YNyn)
    node voltages (9 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.83266e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.50185e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.13687e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.13687e-11, expected 0             OK
 
-=== transformer_Dd clock 0 = super_transformer: one primary delta, secondary delta, clock3 0 ===
+=== transformer_Dd clock 0 = configurable_transformer: one primary delta, secondary delta, clock3 0 ===
 no load
    node voltages (7 nodes), max |difference| / max |V|  got 7.10682e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 1.09203e-18, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.06972e-16, expected 0              OK
-   power balance of super_transformer [W]               got -4.54747e-13, expected 0             OK
+   power balance of configurable_transformer [W]        got -4.54747e-13, expected 0             OK
 balanced load 1 pu
    node voltages (7 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 2.7956e-16, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.87424e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.72804e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.72804e-11, expected 0             OK
 unbalanced RL load, star point floating
    node voltages (7 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.09636e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
-   power balance of super_transformer [W]               got 9.09495e-12, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.09495e-12, expected 0              OK
 unbalanced RL load (again)
    node voltages (7 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.09636e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
-   power balance of super_transformer [W]               got 9.09495e-12, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.09495e-12, expected 0              OK
 single-phase load a-b
    node voltages (7 nodes), max |difference| / max |V|  got 5.99993e-16, expected 0              OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 3.64502e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.38441e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.36424e-12, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.36424e-12, expected 0             OK
 three-phase short circuit
    node voltages (7 nodes), max |difference| / max |V|  got 3.78362e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 5.49332e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.79591e-16, expected 0              OK
-   power balance of super_transformer [W]               got 0, expected 0                        OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
 
-=== transformer_Dd clock 6 = super_transformer: one primary delta, secondary delta, clock3 6 ===
+=== transformer_Dd clock 6 = configurable_transformer: one primary delta, secondary delta, clock3 6 ===
 no load
    node voltages (7 nodes), max |difference| / max |V|  got 9.53481e-16, expected 0              OK
    source and load currents (4), max |diff.| / max(|I|, Ib) got 9.76743e-19, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26106e-16, expected 0              OK
-   power balance of super_transformer [W]               got -2.27374e-13, expected 0             OK
+   power balance of configurable_transformer [W]        got -2.27374e-13, expected 0             OK
 balanced load 1 pu
    node voltages (7 nodes), max |difference| / max |V|  got 3.56724e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 5.30428e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.87424e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.00044e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.00044e-11, expected 0             OK
 unbalanced RL load, star point floating
    node voltages (7 nodes), max |difference| / max |V|  got 3.84203e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.9052e-16, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
-   power balance of super_transformer [W]               got 7.18501e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 7.18501e-11, expected 0              OK
 unbalanced RL load (again)
    node voltages (7 nodes), max |difference| / max |V|  got 3.84203e-16, expected 0              OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 4.9052e-16, expected 0               OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
-   power balance of super_transformer [W]               got 7.18501e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 7.18501e-11, expected 0              OK
 single-phase load a-b
    node voltages (7 nodes), max |difference| / max |V|  got 7.32912e-16, expected 0              OK
    source and load currents (5), max |diff.| / max(|I|, Ib) got 3.53619e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.48245e-16, expected 0              OK
-   power balance of super_transformer [W]               got 0, expected 0                        OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
 three-phase short circuit
    node voltages (7 nodes), max |difference| / max |V|  got 5.4488e-16, expected 0               OK
    source and load currents (6), max |diff.| / max(|I|, Ib) got 7.21308e-16, expected 0              OK
    limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.55681e-16, expected 0              OK
-   power balance of super_transformer [W]               got 4.65661e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.65661e-10, expected 0              OK
 
-=== tri_monophase_transformer ws [1, -1, 0] = super_transformer: two primaries star, clock2 0, single-phase ===
+=== tri_monophase_transformer ws [1, -1, 0] = configurable_transformer: two primaries star, clock2 0, single-phase ===
 no load, N1 N2 floating
    node voltages (11 nodes)                             got 3.32414e-15, expected 0              OK
    source and load currents (7)                         got 1.28255e-14, expected 0              OK
    limb fluxes                                          got 1.4909e-14, expected 0               OK
-   power balance of super_transformer [W]               got 1.02773e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.02773e-10, expected 0              OK
 rated load 1 pu, N1 N2 floating
    node voltages (11 nodes)                             got 2.3322e-15, expected 0               OK
    source and load currents (8)                         got 7.58919e-15, expected 0              OK
    limb fluxes                                          got 1.03851e-14, expected 0              OK
-   power balance of super_transformer [W]               got 1.30058e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.30058e-10, expected 0              OK
 load 0.8 + j0.6 pu, N1 N2 floating
    node voltages (11 nodes)                             got 1.54106e-15, expected 0              OK
    source and load currents (8)                         got 7.92067e-15, expected 0              OK
    limb fluxes                                          got 6.78182e-15, expected 0              OK
-   power balance of super_transformer [W]               got -8.91305e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -8.91305e-11, expected 0             OK
 rated load 1 pu, N1 N2 grounded
    node voltages (11 nodes)                             got 3.47753e-16, expected 0              OK
    source and load currents (10)                        got 1.23457e-14, expected 0              OK
    limb fluxes                                          got 4.36993e-16, expected 0              OK
-   power balance of super_transformer [W]               got 3.08319e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 3.08319e-10, expected 0              OK
 short circuit, N1 N2 floating
    node voltages (11 nodes)                             got 1.52069e-14, expected 0              OK
    source and load currents (8)                         got 9.5219e-16, expected 0               OK
    limb fluxes                                          got 1.5275e-14, expected 0               OK
-   power balance of super_transformer [W]               got 2.32831e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.32831e-10, expected 0              OK
 
-=== tri_monophase_transformer ws [1, -0.5, -0.5] = super_transformer: two primaries star, clock2 0, single-phase ===
+=== tri_monophase_transformer ws [1, -0.5, -0.5] = configurable_transformer: two primaries star, clock2 0, single-phase ===
 no load, N1 N2 floating
    node voltages (11 nodes)                             got 1.78192e-15, expected 0              OK
    source and load currents (7)                         got 1.32117e-14, expected 0              OK
    limb fluxes                                          got 8.51315e-15, expected 0              OK
-   power balance of super_transformer [W]               got 6.63931e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 6.63931e-11, expected 0              OK
 rated load 1 pu, N1 N2 floating
    node voltages (11 nodes)                             got 3.40794e-15, expected 0              OK
    source and load currents (8)                         got 7.67392e-15, expected 0              OK
    limb fluxes                                          got 1.51793e-14, expected 0              OK
-   power balance of super_transformer [W]               got 2.57387e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.57387e-10, expected 0              OK
 load 0.8 + j0.6 pu, N1 N2 floating
    node voltages (11 nodes)                             got 3.14101e-16, expected 0              OK
    source and load currents (8)                         got 5.26617e-15, expected 0              OK
    limb fluxes                                          got 1.28236e-15, expected 0              OK
-   power balance of super_transformer [W]               got 1.33696e-10, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.33696e-10, expected 0              OK
 rated load 1 pu, N1 N2 grounded
    node voltages (11 nodes)                             got 3.66564e-16, expected 0              OK
    source and load currents (10)                        got 9.50303e-15, expected 0              OK
    limb fluxes                                          got 6.34236e-16, expected 0              OK
-   power balance of super_transformer [W]               got -1.06411e-10, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.06411e-10, expected 0             OK
 short circuit, N1 N2 floating
    node voltages (11 nodes)                             got 1.30849e-13, expected 0              OK
    source and load currents (8)                         got 8.55567e-16, expected 0              OK
    limb fluxes                                          got 1.44289e-13, expected 0              OK
-   power balance of super_transformer [W]               got -2.32831e-10, expected 0             OK
+   power balance of configurable_transformer [W]        got -2.32831e-10, expected 0             OK
 
-=== tri_monophase_transformer ws [1, 0, 0] = super_transformer: two primaries star, clock2 0, single-phase ===
+=== tri_monophase_transformer ws [1, 0, 0] = configurable_transformer: two primaries star, clock2 0, single-phase ===
 no load, N1 N2 floating
    node voltages (11 nodes)                             got 1.04086e-15, expected 0              OK
    source and load currents (7)                         got 1.13757e-14, expected 0              OK
    limb fluxes                                          got 1.3508e-15, expected 0               OK
-   power balance of super_transformer [W]               got 3.22871e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 3.22871e-11, expected 0              OK
 rated load 1 pu, N1 N2 floating
    node voltages (11 nodes)                             got 1.1429e-14, expected 0               OK
    source and load currents (8)                         got 1.22906e-14, expected 0              OK
    limb fluxes                                          got 7.03267e-15, expected 0              OK
-   power balance of super_transformer [W]               got -9.09495e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -9.09495e-11, expected 0             OK
 load 0.8 + j0.6 pu, N1 N2 floating
    node voltages (11 nodes)                             got 1.52229e-15, expected 0              OK
    source and load currents (8)                         got 6.4139e-15, expected 0               OK
    limb fluxes                                          got 9.84702e-16, expected 0              OK
-   power balance of super_transformer [W]               got -6.00267e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -6.00267e-11, expected 0             OK
 rated load 1 pu, N1 N2 grounded
    node voltages (11 nodes)                             got 2.60066e-16, expected 0              OK
    source and load currents (10)                        got 4.09857e-15, expected 0              OK
    limb fluxes                                          got 5.44391e-16, expected 0              OK
-   power balance of super_transformer [W]               got -4.82032e-11, expected 0             OK
+   power balance of configurable_transformer [W]        got -4.82032e-11, expected 0             OK
 short circuit, N1 N2 floating
    node voltages (11 nodes)                             got 1.79407e-15, expected 0              OK
    source and load currents (8)                         got 1.77886e-14, expected 0              OK
    limb fluxes                                          got 1.57291e-15, expected 0              OK
-   power balance of super_transformer [W]               got 6.54836e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 6.54836e-11, expected 0              OK
 
-=== tri_monophase_transformer ws [1, -1, 0] = super_transformer: two primaries star, clock2 0, single-phase, TELEMA 1500 V 50 Hz ===
+=== tri_monophase_transformer ws [1, -1, 0] = configurable_transformer: two primaries star, clock2 0, single-phase, TELEMA 1500 V 50 Hz ===
 no load, N1 N2 floating
    node voltages (11 nodes)                             got 1.37547e-14, expected 0              OK
    source and load currents (7)                         got 1.87592e-14, expected 0              OK
    limb fluxes                                          got 9.39886e-14, expected 0              OK
-   power balance of super_transformer [W]               got 9.54969e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.54969e-11, expected 0              OK
 rated load 1 pu, N1 N2 floating
    node voltages (11 nodes)                             got 2.7157e-15, expected 0               OK
    source and load currents (8)                         got 6.69818e-15, expected 0              OK
    limb fluxes                                          got 1.82971e-14, expected 0              OK
-   power balance of super_transformer [W]               got -1.90994e-10, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.90994e-10, expected 0             OK
 load 0.8 + j0.6 pu, N1 N2 floating
    node voltages (11 nodes)                             got 9.90009e-15, expected 0              OK
    source and load currents (8)                         got 1.21322e-14, expected 0              OK
    limb fluxes                                          got 6.47334e-14, expected 0              OK
-   power balance of super_transformer [W]               got -2.00089e-10, expected 0             OK
+   power balance of configurable_transformer [W]        got -2.00089e-10, expected 0             OK
 rated load 1 pu, N1 N2 grounded
    node voltages (11 nodes)                             got 3.09149e-16, expected 0              OK
    source and load currents (10)                        got 1.49569e-14, expected 0              OK
    limb fluxes                                          got 4.05058e-16, expected 0              OK
-   power balance of super_transformer [W]               got 6.36646e-11, expected 0              OK
+   power balance of configurable_transformer [W]        got 6.36646e-11, expected 0              OK
 short circuit, N1 N2 floating
    node voltages (11 nodes)                             got 1.17053e-13, expected 0              OK
    source and load currents (8)                         got 2.01238e-15, expected 0              OK
    limb fluxes                                          got 1.17922e-13, expected 0              OK
-   power balance of super_transformer [W]               got -1.16415e-09, expected 0             OK
+   power balance of configurable_transformer [W]        got -1.16415e-09, expected 0             OK
 
 === no-load ratio and phase shift for each pair of connections and each clock number ===
     (primary 1 fed at V1, the others open: |u| = V |zm/(z1 + zm)|, lagging clock*30 deg; the clock

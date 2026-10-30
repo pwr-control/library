@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Sinusoidal steady-state check of super_transformer.
+"""Sinusoidal steady-state check of configurable_transformer.
 
 Pure Python (numpy only, no Simscape), the method of
 ../+three_phase_transformer/check_three_phase_transformer.py, whose nodal
 solver and phasor models of transformer_Dd, transformer_Yyn and transformer_Dyn
-are reused: the equations of super_transformer.ssc are rebuilt one to one in
+are reused: the equations of configurable_transformer.ssc are rebuilt one to one in
 the phasor domain (der() -> j*w, rms phasors) and solved with ideal three-phase
 sources and loads.
 
-  1. Each library transformer against the configuration of super_transformer
+  1. Each library transformer against the configuration of configurable_transformer
      that stands for it, with the same sources and loads (no load, balanced
      load, unbalanced load with the neutral grounded and floating,
      single-phase loads, short circuit): node voltages, source and load
@@ -32,7 +32,7 @@ sources and loads.
      of the single-phase winding (the TELEMA bench), across a-n equals
      ws = [1 0 0] at V3/sqrt(3) with a coil of a third of r3, l3.
 
-Run:  python3 check_super_transformer.py        (exit code 0 if all pass)
+Run:  python3 check_configurable_transformer.py        (exit code 0 if all pass)
 """
 import cmath
 import math
@@ -52,7 +52,7 @@ IEC = {'star': 'Y', 'delta': 'D'}
 TOL = 1e-9
 
 
-# ---------------------------------------------------------------- super_transformer
+# ---------------------------------------------------------------- configurable_transformer
 def placement(clock, d1, dw):
     """p0, p1, p2 of the ssc: phase j of the winding on limb k with P(j,k) = p[(k - j) mod 3]."""
     q = (clock + d1 - dw)/2
@@ -70,8 +70,8 @@ def clock_assert(clock, d1, dw, what):
         raise ValueError('%s clock number must be odd' % what)
 
 
-def add_super(ckt, p, nodes, w, t='S.'):
-    """super_transformer.ssc; p: the block parameters ('primaries' 1 or 2, connections as strings).
+def add_configurable(ckt, p, nodes, w, t='S.'):
+    """configurable_transformer.ssc; p: the block parameters ('primaries' 1 or 2, connections as strings).
 
     nodes maps the ports of the configuration (A1, B1, C1, N1, A2, ..., a, b, c, n, s1, s2) to
     circuit nodes; the hidden ports are not used (connected to the reference in the ssc).
@@ -294,7 +294,7 @@ def compare_three_phase(chk, kind, clock):
     p_lib = dict(Sr=630e3, V1=690, V2=400, fr=50, r1=0.004, l1=0.028, r2=0.006, l2=0.022,
                  lm=150, lm0=0.6, rfe=400, clock=clock)
     conn1, sec = {'Dyn': ('delta', 'star'), 'Yyn': ('star', 'star'), 'Dd': ('delta', 'delta')}[kind]
-    p_sup = dict(primaries=1, conn1=conn1, conn2='star', clock2=0, secondary=sec, clock3=clock, ws=[1, -1, 0],
+    p_cfg = dict(primaries=1, conn1=conn1, conn2='star', clock2=0, secondary=sec, clock3=clock, ws=[1, -1, 0],
                  Sr=p_lib['Sr'], V1=p_lib['V1'], V2=400, V3=p_lib['V2'], fr=p_lib['fr'],
                  r1=p_lib['r1'], l1=p_lib['l1'], r2=0.005, l2=0.03, r3=p_lib['r2'], l3=p_lib['l2'],
                  lm=p_lib['lm'], lm0=p_lib['lm0'], rfe=p_lib['rfe'])
@@ -304,7 +304,7 @@ def compare_three_phase(chk, kind, clock):
     Ib = p_lib['Sr']/(SQ3*p_lib['V2'])
     has_n = sec == 'star'
     has_N = conn1 == 'star'
-    print('\n=== transformer_%s clock %d = super_transformer: one primary %s, secondary %s, clock3 %d ===' % (
+    print('\n=== transformer_%s clock %d = configurable_transformer: one primary %s, secondary %s, clock3 %d ===' % (
         kind, clock, conn1, sec, clock))
 
     def loads_noload(ckt):
@@ -357,7 +357,7 @@ def compare_three_phase(chk, kind, clock):
         cases.append(('single-phase load a-n, primary neutral grounded (YNyn)', 'YN'))
     for title, build_loads in cases:
         sols = []
-        for which in ('lib', 'sup'):
+        for which in ('lib', 'cfg'):
             ckt = ctp.Circuit()
             source(ckt, 'P', 'ABC', p_lib['V1'])
             if build_loads == 'YN':
@@ -380,21 +380,21 @@ def compare_three_phase(chk, kind, clock):
                     nodes['N1'] = 'N'
                 if has_n:
                     nodes['n'] = 'n'
-                d = add_super(ckt, p_sup, nodes, w, 'S.')
+                d = add_configurable(ckt, p_cfg, nodes, w, 'S.')
             sols.append(ckt.solve())
-        lib, sup = sols
-        vkeys = [k for k in lib if k.startswith('V:') and k in sup]
+        lib, cfg = sols
+        vkeys = [k for k in lib if k.startswith('V:') and k in cfg]
         ikeys = [k for k in lib if (k.startswith('IP') or k.startswith('IL') or k.startswith('Isc')
-                                    or k.startswith('IN') or k.startswith('Iref')) and k in sup]
+                                    or k.startswith('IN') or k.startswith('Iref')) and k in cfg]
         vscale = max(abs(lib[k]) for k in vkeys)
         iscale = max(max(abs(lib[k]) for k in ikeys), Ib)
         print('%s' % title)
-        chk.same('node voltages (%d nodes), max |difference| / max |V|' % len(vkeys), lib, sup, vkeys, vkeys, vscale)
-        chk.same('source and load currents (%d), max |diff.| / max(|I|, Ib)' % len(ikeys), lib, sup, ikeys, ikeys,
+        chk.same('node voltages (%d nodes), max |difference| / max |V|' % len(vkeys), lib, cfg, vkeys, vkeys, vscale)
+        chk.same('source and load currents (%d), max |diff.| / max(|I|, Ib)' % len(ikeys), lib, cfg, ikeys, ikeys,
                  iscale)
-        chk.same('limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi|', lib, sup,
+        chk.same('limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi|', lib, cfg,
                  ['T.psi' + k for k in 'abc'], ['S.psi' + k for k in 'abc'], max(abs(lib['T.psi' + k]) for k in 'abc'))
-        chk.balance('power balance of super_transformer [W]', sup, d, w, 'S.', loads)
+        chk.balance('power balance of configurable_transformer [W]', cfg, d, w, 'S.', loads)
 
 
 def compare_tri_mono(chk, ws, p_over=None, title=''):
@@ -402,18 +402,18 @@ def compare_tri_mono(chk, ws, p_over=None, title=''):
              r3=0.005, l3=0.030, lm=120, lm0=0.5, rfe=600)
     if p_over:
         p.update(p_over)
-    p_sup = dict(p, primaries=2, conn1='star', conn2='star', clock2=0, secondary='single_phase', clock3=0)
+    p_cfg = dict(p, primaries=2, conn1='star', conn2='star', clock2=0, secondary='single_phase', clock3=0)
     w = 2*math.pi*p['fr']
     Zb3 = p['V3']**2/p['Sr']
     I3b = p['Sr']/p['V3']
-    print('\n=== tri_monophase_transformer ws %s = super_transformer: two primaries star, clock2 0, single-phase%s ===' % (
-        ws, title))
+    print('\n=== tri_monophase_transformer ws %s = configurable_transformer: two primaries star, clock2 0, '
+          'single-phase%s ===' % (ws, title))
     cases = (('no load, N1 N2 floating', None, False), ('rated load 1 pu, N1 N2 floating', Zb3, False),
              ('load 0.8 + j0.6 pu, N1 N2 floating', Zb3*(0.8 + 0.6j), False),
              ('rated load 1 pu, N1 N2 grounded', Zb3, True), ('short circuit, N1 N2 floating', 0.0, False))
     for label, ZL, gnd in cases:
         sols = []
-        for which in ('lib', 'sup'):
+        for which in ('lib', 'cfg'):
             ckt = ctp.Circuit()
             source(ckt, 'P', ('A1', 'B1', 'C1'), p['V1'])
             source(ckt, 'P', ('A2', 'B2', 'C2'), p['V2']*0.985, -2.0)       # second grid former, not matched
@@ -432,18 +432,18 @@ def compare_tri_mono(chk, ws, p_over=None, title=''):
             if which == 'lib':
                 add_tri_mono(ckt, p, nodes, w, 'T.')
             else:
-                d = add_super(ckt, p_sup, nodes, w, 'S.')
+                d = add_configurable(ckt, p_cfg, nodes, w, 'S.')
             sols.append(ckt.solve())
-        lib, sup = sols
-        vkeys = [k for k in lib if k.startswith('V:') and k in sup]
-        ikeys = [k for k in lib if k.startswith('I') and not k.startswith('T.') and k in sup]
+        lib, cfg = sols
+        vkeys = [k for k in lib if k.startswith('V:') and k in cfg]
+        ikeys = [k for k in lib if k.startswith('I') and not k.startswith('T.') and k in cfg]
         print(label)
-        chk.same('node voltages (%d nodes)' % len(vkeys), lib, sup, vkeys, vkeys, max(abs(lib[k]) for k in vkeys))
-        chk.same('source and load currents (%d)' % len(ikeys), lib, sup, ikeys, ikeys,
+        chk.same('node voltages (%d nodes)' % len(vkeys), lib, cfg, vkeys, vkeys, max(abs(lib[k]) for k in vkeys))
+        chk.same('source and load currents (%d)' % len(ikeys), lib, cfg, ikeys, ikeys,
                  max(max(abs(lib[k]) for k in ikeys), I3b))
-        chk.same('limb fluxes', lib, sup, ['T.psi' + k for k in 'abc'], ['S.psi' + k for k in 'abc'],
+        chk.same('limb fluxes', lib, cfg, ['T.psi' + k for k in 'abc'], ['S.psi' + k for k in 'abc'],
                  max(abs(lib['T.psi' + k]) for k in 'abc'))
-        chk.balance('power balance of super_transformer [W]', sup, d, w, 'S.', loads)
+        chk.balance('power balance of configurable_transformer [W]', cfg, d, w, 'S.', loads)
 
 
 # ------------------------------------------------------- 2. new configurations
@@ -506,7 +506,7 @@ def check_clock_numbers(chk):
                     source(ckt, 'P', ('A1', 'B1', 'C1'), BASE['V1'])
                     reference_floating(ckt, p)
                     try:
-                        add_super(ckt, p, ports(p), w)
+                        add_configurable(ckt, p, ports(p), w)
                         refused = ''
                     except ValueError as e:
                         refused = str(e)
@@ -547,7 +547,7 @@ def check_short_circuits(chk):
                     anchor(ckt, ('N' + k if p['conn' + k] == 'star' else 'A' + k))
             if '3' not in (fed, shorted):
                 anchor(ckt, 'n' if sec == 'star' else 'c')
-            d = add_super(ckt, p, ports(p), w)
+            d = add_configurable(ckt, p, ports(p), w)
             sol = ckt.solve()
             I = line_currents(sol, 'P', port[fed])
             Ib = BASE['Sr']/(SQ3*V[fed])
@@ -584,7 +584,7 @@ def check_two_primaries_load(chk):
         else:
             for x in 'abc':
                 ckt.impedance('IL' + x, x, 'G', Zl)
-        d = add_super(ckt, p, ports(p), w)
+        d = add_configurable(ckt, p, ports(p), w)
         sol = ckt.solve()
         # pu T network: (1 - um)/z1 + (e2 - um)/z2 = um/zm + um/(z3 + zl)
         um = (1/z['1'] + e2/z['2'])/(1/z['1'] + 1/z['2'] + 1/zm + 1/(z['3'] + zl))
@@ -618,7 +618,7 @@ def check_single_phase_no_load(chk):
             ckt = ctp.Circuit()
             source(ckt, 'P', ('A1', 'B1', 'C1'), BASE['V1'])
             reference_floating(ckt, p)
-            add_super(ckt, p, ports(p), w)
+            add_configurable(ckt, p, ports(p), w)
             sol = ckt.solve()
             us = u_ll(sol, 's1', 's2')
             g = ws[0] + ws[1]*A120**2 + ws[2]*A120
@@ -657,7 +657,7 @@ def check_star_vs_single_phase(chk):
                         else:
                             ckt.impedance('ILs', across[0], across[1], ZL)
                             anchor(ckt, across[1])
-                        ds.append(add_super(ckt, p, ports(p), w))
+                        ds.append(add_configurable(ckt, p, ports(p), w))
                         sols.append(ckt.solve())
                     s1p, s3p = sols
                     label = '%d primar%s, primary 1 %s%s, ws %s = star loaded %s-%s' % (
@@ -679,7 +679,7 @@ def check_star_vs_single_phase(chk):
 
 def main():
     chk = Checker()
-    print('check_super_transformer.py: super_transformer.ssc rebuilt in the phasor domain')
+    print('check_configurable_transformer.py: configurable_transformer.ssc rebuilt in the phasor domain')
     for clock in (11, 1, 5, 7):
         compare_three_phase(chk, 'Dyn', clock)
     for clock in (0, 6):
