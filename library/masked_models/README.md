@@ -132,6 +132,13 @@ output.
   harmonic content, initial fluxes, speed, phase and position-sensor error in the mask.
 - `single_phase_transformer.slx`, `saturable_single_phase_transformer.slx` (explicit saturation
   model), `three_windings_transformer.slx`.
+- `configurable_trafo.slx` — the configurable transformer `configurable_transformer`: one or two
+  three-phase primaries (star or delta), secondary three-phase (star or delta, any clock number) or
+  single-phase (turns distribution `ws`), on a three-limb core. The block is the Simscape component
+  itself, so its dialog is the mask: the configuration is in dropdowns and the block shows only the
+  ports of the chosen configuration (no measurement bus; the limb flux linkages are physical-signal
+  outputs). Built by `update_configurable_trafo.m`; the library is not named
+  `configurable_transformer` so that it does not shadow the package of the component.
 
 ## `electronic_components`
 

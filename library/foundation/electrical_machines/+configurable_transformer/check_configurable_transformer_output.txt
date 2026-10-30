@@ -1,0 +1,750 @@
+check_configurable_transformer.py: configurable_transformer.ssc rebuilt in the phasor domain
+
+=== transformer_Dyn clock 11 = configurable_transformer: one primary delta, secondary star, clock3 11 ===
+no load
+   node voltages (8 nodes), max |difference| / max |V|  got 9.30221e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
+balanced load 1 pu
+   node voltages (8 nodes), max |difference| / max |V|  got 9.59845e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 1.51326e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.1646e-10, expected 0               OK
+unbalanced RL load, star point floating
+   node voltages (8 nodes), max |difference| / max |V|  got 1.06062e-15, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 1.62668e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.15963e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.54747e-12, expected 0              OK
+unbalanced RL load, n grounded
+   node voltages (8 nodes), max |difference| / max |V|  got 1.04185e-15, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 1.51618e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26656e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -2.18279e-11, expected 0             OK
+single-phase load a-n
+   node voltages (8 nodes), max |difference| / max |V|  got 1.1016e-15, expected 0               OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 1.54771e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.05878e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.54747e-11, expected 0              OK
+three-phase short circuit
+   node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 1.48526e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.99318e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.31323e-10, expected 0              OK
+
+=== transformer_Dyn clock 1 = configurable_transformer: one primary delta, secondary star, clock3 1 ===
+no load
+   node voltages (8 nodes), max |difference| / max |V|  got 6.38126e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
+balanced load 1 pu
+   node voltages (8 nodes), max |difference| / max |V|  got 3.7243e-16, expected 0               OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 5.03984e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.17369e-10, expected 0              OK
+unbalanced RL load, star point floating
+   node voltages (8 nodes), max |difference| / max |V|  got 3.19063e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.68436e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.03237e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -5.18412e-11, expected 0             OK
+unbalanced RL load, n grounded
+   node voltages (8 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 7.61991e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.54362e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -7.82165e-11, expected 0             OK
+single-phase load a-n
+   node voltages (8 nodes), max |difference| / max |V|  got 4.03587e-16, expected 0              OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 5.15483e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.33566e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.77351e-11, expected 0              OK
+three-phase short circuit
+   node voltages (8 nodes), max |difference| / max |V|  got 1.07758e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.08033e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 5.76397e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.39698e-09, expected 0              OK
+
+=== transformer_Dyn clock 5 = configurable_transformer: one primary delta, secondary star, clock3 5 ===
+no load
+   node voltages (8 nodes), max |difference| / max |V|  got 6.38126e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
+balanced load 1 pu
+   node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 3.95358e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.24645e-10, expected 0              OK
+unbalanced RL load, star point floating
+   node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 5.79313e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.15963e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.09139e-11, expected 0              OK
+unbalanced RL load, n grounded
+   node voltages (8 nodes), max |difference| / max |V|  got 2.94162e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 4.59237e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 1.4335e-16, expected 0               OK
+   power balance of configurable_transformer [W]        got 1.60071e-10, expected 0              OK
+single-phase load a-n
+   node voltages (8 nodes), max |difference| / max |V|  got 4.08612e-16, expected 0              OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 4.00269e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.07077e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.09139e-11, expected 0             OK
+three-phase short circuit
+   node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 3.06025e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.52767e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.65661e-10, expected 0              OK
+
+=== transformer_Dyn clock 7 = configurable_transformer: one primary delta, secondary star, clock3 7 ===
+no load
+   node voltages (8 nodes), max |difference| / max |V|  got 6.38126e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 1.0068e-18, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.29145e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
+balanced load 1 pu
+   node voltages (8 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 3.95358e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27228e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.0823e-10, expected 0               OK
+unbalanced RL load, star point floating
+   node voltages (8 nodes), max |difference| / max |V|  got 4.16008e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 5.08091e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.27226e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.36424e-11, expected 0              OK
+unbalanced RL load, n grounded
+   node voltages (8 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 4.87771e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26656e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.27463e-11, expected 0              OK
+single-phase load a-n
+   node voltages (8 nodes), max |difference| / max |V|  got 4.03587e-16, expected 0              OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 3.53619e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.27669e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.8658e-11, expected 0               OK
+three-phase short circuit
+   node voltages (8 nodes), max |difference| / max |V|  got 1.35836e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 5.10042e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.52767e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
+
+=== transformer_Yyn clock 0 = configurable_transformer: one primary star, secondary star, clock3 0 ===
+no load
+   node voltages (9 nodes), max |difference| / max |V|  got 7.29634e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 2.30364e-18, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.48201e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -6.82121e-13, expected 0             OK
+balanced load 1 pu
+   node voltages (9 nodes), max |difference| / max |V|  got 4.8946e-16, expected 0               OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 1.32901e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.38407e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.63709e-11, expected 0             OK
+unbalanced RL load, star point floating
+   node voltages (9 nodes), max |difference| / max |V|  got 4.55141e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 3.86324e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.73918e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 5.45697e-12, expected 0              OK
+unbalanced RL load, n grounded
+   node voltages (9 nodes), max |difference| / max |V|  got 4.99413e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 1.74073e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 5.21557e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.09139e-11, expected 0             OK
+single-phase load a-n
+   node voltages (9 nodes), max |difference| / max |V|  got 1.27026e-15, expected 0              OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 1.74613e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 1.13559e-15, expected 0              OK
+   power balance of configurable_transformer [W]        got -3.63798e-11, expected 0             OK
+three-phase short circuit
+   node voltages (9 nodes), max |difference| / max |V|  got 3.14642e-13, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 5.77046e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.0405e-13, expected 0               OK
+   power balance of configurable_transformer [W]        got 1.39698e-09, expected 0              OK
+single-phase load a-n, primary neutral grounded (YNyn)
+   node voltages (9 nodes), max |difference| / max |V|  got 4.63741e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.21953e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.50185e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -4.27463e-11, expected 0             OK
+
+=== transformer_Yyn clock 6 = configurable_transformer: one primary star, secondary star, clock3 6 ===
+no load
+   node voltages (9 nodes), max |difference| / max |V|  got 8.82485e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 2.76265e-18, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 7.06015e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -2.27374e-13, expected 0             OK
+balanced load 1 pu
+   node voltages (9 nodes), max |difference| / max |V|  got 2.67543e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 1.0627e-15, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.04698e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.06411e-10, expected 0              OK
+unbalanced RL load, star point floating
+   node voltages (9 nodes), max |difference| / max |V|  got 3.77377e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.57987e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.84232e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.28239e-10, expected 0              OK
+unbalanced RL load, n grounded
+   node voltages (9 nodes), max |difference| / max |V|  got 6.43092e-16, expected 0              OK
+   source and load currents (7), max |diff.| / max(|I|, Ib) got 1.97586e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 5.32071e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -4.54747e-12, expected 0             OK
+single-phase load a-n
+   node voltages (9 nodes), max |difference| / max |V|  got 1.03546e-15, expected 0              OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 1.12694e-15, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 9.52722e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -3.36513e-11, expected 0             OK
+three-phase short circuit
+   node voltages (9 nodes), max |difference| / max |V|  got 4.81184e-13, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 6.53172e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 1.07644e-12, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.39698e-09, expected 0              OK
+single-phase load a-n, primary neutral grounded (YNyn)
+   node voltages (9 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.83266e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 3.50185e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.13687e-11, expected 0             OK
+
+=== transformer_Dd clock 0 = configurable_transformer: one primary delta, secondary delta, clock3 0 ===
+no load
+   node voltages (7 nodes), max |difference| / max |V|  got 7.10682e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 1.09203e-18, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.06972e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -4.54747e-13, expected 0             OK
+balanced load 1 pu
+   node voltages (7 nodes), max |difference| / max |V|  got 2.85379e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 2.7956e-16, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.87424e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.72804e-11, expected 0             OK
+unbalanced RL load, star point floating
+   node voltages (7 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.09636e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.09495e-12, expected 0              OK
+unbalanced RL load (again)
+   node voltages (7 nodes), max |difference| / max |V|  got 3.28883e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.09636e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.09495e-12, expected 0              OK
+single-phase load a-b
+   node voltages (7 nodes), max |difference| / max |V|  got 5.99993e-16, expected 0              OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 3.64502e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.38441e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.36424e-12, expected 0             OK
+three-phase short circuit
+   node voltages (7 nodes), max |difference| / max |V|  got 3.78362e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 5.49332e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.79591e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
+
+=== transformer_Dd clock 6 = configurable_transformer: one primary delta, secondary delta, clock3 6 ===
+no load
+   node voltages (7 nodes), max |difference| / max |V|  got 9.53481e-16, expected 0              OK
+   source and load currents (4), max |diff.| / max(|I|, Ib) got 9.76743e-19, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26106e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -2.27374e-13, expected 0             OK
+balanced load 1 pu
+   node voltages (7 nodes), max |difference| / max |V|  got 3.56724e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 5.30428e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.87424e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.00044e-11, expected 0             OK
+unbalanced RL load, star point floating
+   node voltages (7 nodes), max |difference| / max |V|  got 3.84203e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.9052e-16, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 7.18501e-11, expected 0              OK
+unbalanced RL load (again)
+   node voltages (7 nodes), max |difference| / max |V|  got 3.84203e-16, expected 0              OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 4.9052e-16, expected 0               OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.26503e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 7.18501e-11, expected 0              OK
+single-phase load a-b
+   node voltages (7 nodes), max |difference| / max |V|  got 7.32912e-16, expected 0              OK
+   source and load currents (5), max |diff.| / max(|I|, Ib) got 3.53619e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 2.48245e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 0, expected 0                        OK
+three-phase short circuit
+   node voltages (7 nodes), max |difference| / max |V|  got 5.4488e-16, expected 0               OK
+   source and load currents (6), max |diff.| / max(|I|, Ib) got 7.21308e-16, expected 0              OK
+   limb fluxes psi_a, psi_b, psi_c, max |diff.| / max |psi| got 4.55681e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 4.65661e-10, expected 0              OK
+
+=== tri_monophase_transformer ws [1, -1, 0] = configurable_transformer: two primaries star, clock2 0, single-phase ===
+no load, N1 N2 floating
+   node voltages (11 nodes)                             got 3.32414e-15, expected 0              OK
+   source and load currents (7)                         got 1.28255e-14, expected 0              OK
+   limb fluxes                                          got 1.4909e-14, expected 0               OK
+   power balance of configurable_transformer [W]        got 1.02773e-10, expected 0              OK
+rated load 1 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 2.3322e-15, expected 0               OK
+   source and load currents (8)                         got 7.58919e-15, expected 0              OK
+   limb fluxes                                          got 1.03851e-14, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.30058e-10, expected 0              OK
+load 0.8 + j0.6 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 1.54106e-15, expected 0              OK
+   source and load currents (8)                         got 7.92067e-15, expected 0              OK
+   limb fluxes                                          got 6.78182e-15, expected 0              OK
+   power balance of configurable_transformer [W]        got -8.91305e-11, expected 0             OK
+rated load 1 pu, N1 N2 grounded
+   node voltages (11 nodes)                             got 3.47753e-16, expected 0              OK
+   source and load currents (10)                        got 1.23457e-14, expected 0              OK
+   limb fluxes                                          got 4.36993e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 3.08319e-10, expected 0              OK
+short circuit, N1 N2 floating
+   node voltages (11 nodes)                             got 1.52069e-14, expected 0              OK
+   source and load currents (8)                         got 9.5219e-16, expected 0               OK
+   limb fluxes                                          got 1.5275e-14, expected 0               OK
+   power balance of configurable_transformer [W]        got 2.32831e-10, expected 0              OK
+
+=== tri_monophase_transformer ws [1, -0.5, -0.5] = configurable_transformer: two primaries star, clock2 0, single-phase ===
+no load, N1 N2 floating
+   node voltages (11 nodes)                             got 1.78192e-15, expected 0              OK
+   source and load currents (7)                         got 1.32117e-14, expected 0              OK
+   limb fluxes                                          got 8.51315e-15, expected 0              OK
+   power balance of configurable_transformer [W]        got 6.63931e-11, expected 0              OK
+rated load 1 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 3.40794e-15, expected 0              OK
+   source and load currents (8)                         got 7.67392e-15, expected 0              OK
+   limb fluxes                                          got 1.51793e-14, expected 0              OK
+   power balance of configurable_transformer [W]        got 2.57387e-10, expected 0              OK
+load 0.8 + j0.6 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 3.14101e-16, expected 0              OK
+   source and load currents (8)                         got 5.26617e-15, expected 0              OK
+   limb fluxes                                          got 1.28236e-15, expected 0              OK
+   power balance of configurable_transformer [W]        got 1.33696e-10, expected 0              OK
+rated load 1 pu, N1 N2 grounded
+   node voltages (11 nodes)                             got 3.66564e-16, expected 0              OK
+   source and load currents (10)                        got 9.50303e-15, expected 0              OK
+   limb fluxes                                          got 6.34236e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.06411e-10, expected 0             OK
+short circuit, N1 N2 floating
+   node voltages (11 nodes)                             got 1.30849e-13, expected 0              OK
+   source and load currents (8)                         got 8.55567e-16, expected 0              OK
+   limb fluxes                                          got 1.44289e-13, expected 0              OK
+   power balance of configurable_transformer [W]        got -2.32831e-10, expected 0             OK
+
+=== tri_monophase_transformer ws [1, 0, 0] = configurable_transformer: two primaries star, clock2 0, single-phase ===
+no load, N1 N2 floating
+   node voltages (11 nodes)                             got 1.04086e-15, expected 0              OK
+   source and load currents (7)                         got 1.13757e-14, expected 0              OK
+   limb fluxes                                          got 1.3508e-15, expected 0               OK
+   power balance of configurable_transformer [W]        got 3.22871e-11, expected 0              OK
+rated load 1 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 1.1429e-14, expected 0               OK
+   source and load currents (8)                         got 1.22906e-14, expected 0              OK
+   limb fluxes                                          got 7.03267e-15, expected 0              OK
+   power balance of configurable_transformer [W]        got -9.09495e-11, expected 0             OK
+load 0.8 + j0.6 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 1.52229e-15, expected 0              OK
+   source and load currents (8)                         got 6.4139e-15, expected 0               OK
+   limb fluxes                                          got 9.84702e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -6.00267e-11, expected 0             OK
+rated load 1 pu, N1 N2 grounded
+   node voltages (11 nodes)                             got 2.60066e-16, expected 0              OK
+   source and load currents (10)                        got 4.09857e-15, expected 0              OK
+   limb fluxes                                          got 5.44391e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got -4.82032e-11, expected 0             OK
+short circuit, N1 N2 floating
+   node voltages (11 nodes)                             got 1.79407e-15, expected 0              OK
+   source and load currents (8)                         got 1.77886e-14, expected 0              OK
+   limb fluxes                                          got 1.57291e-15, expected 0              OK
+   power balance of configurable_transformer [W]        got 6.54836e-11, expected 0              OK
+
+=== tri_monophase_transformer ws [1, -1, 0] = configurable_transformer: two primaries star, clock2 0, single-phase, TELEMA 1500 V 50 Hz ===
+no load, N1 N2 floating
+   node voltages (11 nodes)                             got 1.37547e-14, expected 0              OK
+   source and load currents (7)                         got 1.87592e-14, expected 0              OK
+   limb fluxes                                          got 9.39886e-14, expected 0              OK
+   power balance of configurable_transformer [W]        got 9.54969e-11, expected 0              OK
+rated load 1 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 2.7157e-15, expected 0               OK
+   source and load currents (8)                         got 6.69818e-15, expected 0              OK
+   limb fluxes                                          got 1.82971e-14, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.90994e-10, expected 0             OK
+load 0.8 + j0.6 pu, N1 N2 floating
+   node voltages (11 nodes)                             got 9.90009e-15, expected 0              OK
+   source and load currents (8)                         got 1.21322e-14, expected 0              OK
+   limb fluxes                                          got 6.47334e-14, expected 0              OK
+   power balance of configurable_transformer [W]        got -2.00089e-10, expected 0             OK
+rated load 1 pu, N1 N2 grounded
+   node voltages (11 nodes)                             got 3.09149e-16, expected 0              OK
+   source and load currents (10)                        got 1.49569e-14, expected 0              OK
+   limb fluxes                                          got 4.05058e-16, expected 0              OK
+   power balance of configurable_transformer [W]        got 6.36646e-11, expected 0              OK
+short circuit, N1 N2 floating
+   node voltages (11 nodes)                             got 1.17053e-13, expected 0              OK
+   source and load currents (8)                         got 2.01238e-15, expected 0              OK
+   limb fluxes                                          got 1.17922e-13, expected 0              OK
+   power balance of configurable_transformer [W]        got -1.16415e-09, expected 0             OK
+
+=== no-load ratio and phase shift for each pair of connections and each clock number ===
+    (primary 1 fed at V1, the others open: |u| = V |zm/(z1 + zm)|, lagging clock*30 deg; the clock
+    numbers of the wrong parity are refused by the asserts of the ssc)
+   Yy0   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yy0   secondary phase(u_ab/u_A1B1) [deg]             got -2.84217e-14, expected 0             OK
+   Y+Y0  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+Y0  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -2.84217e-14, expected 0             OK
+   Yy1   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   Y+Y1  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Yy2   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yy2   secondary phase(u_ab/u_A1B1) [deg]             got -60, expected -60                    OK
+   Y+Y2  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+Y2  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -60, expected -60                    OK
+   Yy3   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   Y+Y3  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Yy4   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yy4   secondary phase(u_ab/u_A1B1) [deg]             got -120, expected -120                  OK
+   Y+Y4  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+Y4  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -120, expected -120                  OK
+   Yy5   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   Y+Y5  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Yy6   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yy6   secondary phase(u_ab/u_A1B1) [deg]             got -180, expected -180                  OK
+   Y+Y6  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+Y6  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -180, expected -180                  OK
+   Yy7   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   Y+Y7  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Yy8   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yy8   secondary phase(u_ab/u_A1B1) [deg]             got 120, expected 120                    OK
+   Y+Y8  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+Y8  primary 2 phase(u_A2B2/u_A1B1) [deg]           got 120, expected 120                    OK
+   Yy9   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   Y+Y9  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Yy10  secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yy10  secondary phase(u_ab/u_A1B1) [deg]             got 60, expected 60                      OK
+   Y+Y10 primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+Y10 primary 2 phase(u_A2B2/u_A1B1) [deg]           got 60, expected 60                      OK
+   Yy11  secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   Y+Y11 primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Yd0   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   Y+D0  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Yd1   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yd1   secondary phase(u_ab/u_A1B1) [deg]             got -30, expected -30                    OK
+   Y+D1  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+D1  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -30, expected -30                    OK
+   Yd2   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   Y+D2  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Yd3   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yd3   secondary phase(u_ab/u_A1B1) [deg]             got -90, expected -90                    OK
+   Y+D3  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+D3  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -90, expected -90                    OK
+   Yd4   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   Y+D4  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Yd5   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yd5   secondary phase(u_ab/u_A1B1) [deg]             got -150, expected -150                  OK
+   Y+D5  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+D5  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -150, expected -150                  OK
+   Yd6   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   Y+D6  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Yd7   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yd7   secondary phase(u_ab/u_A1B1) [deg]             got 150, expected 150                    OK
+   Y+D7  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+D7  primary 2 phase(u_A2B2/u_A1B1) [deg]           got 150, expected 150                    OK
+   Yd8   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   Y+D8  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Yd9   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yd9   secondary phase(u_ab/u_A1B1) [deg]             got 90, expected 90                      OK
+   Y+D9  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+D9  primary 2 phase(u_A2B2/u_A1B1) [deg]           got 90, expected 90                      OK
+   Yd10  secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   Y+D10 primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Yd11  secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Yd11  secondary phase(u_ab/u_A1B1) [deg]             got 30, expected 30                      OK
+   Y+D11 primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   Y+D11 primary 2 phase(u_A2B2/u_A1B1) [deg]           got 30, expected 30                      OK
+   Dy0   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   D+Y0  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Dy1   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dy1   secondary phase(u_ab/u_A1B1) [deg]             got -30, expected -30                    OK
+   D+Y1  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+Y1  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -30, expected -30                    OK
+   Dy2   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   D+Y2  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Dy3   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dy3   secondary phase(u_ab/u_A1B1) [deg]             got -90, expected -90                    OK
+   D+Y3  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+Y3  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -90, expected -90                    OK
+   Dy4   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   D+Y4  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Dy5   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dy5   secondary phase(u_ab/u_A1B1) [deg]             got -150, expected -150                  OK
+   D+Y5  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+Y5  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -150, expected -150                  OK
+   Dy6   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   D+Y6  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Dy7   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dy7   secondary phase(u_ab/u_A1B1) [deg]             got 150, expected 150                    OK
+   D+Y7  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+Y7  primary 2 phase(u_A2B2/u_A1B1) [deg]           got 150, expected 150                    OK
+   Dy8   secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   D+Y8  primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Dy9   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dy9   secondary phase(u_ab/u_A1B1) [deg]             got 90, expected 90                      OK
+   D+Y9  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+Y9  primary 2 phase(u_A2B2/u_A1B1) [deg]           got 90, expected 90                      OK
+   Dy10  secondary refused: Secondary clock number must be odd got 0, expected 0                        OK
+   D+Y10 primary 2 refused: Primary 2 clock number must be odd got 0, expected 0                        OK
+   Dy11  secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dy11  secondary phase(u_ab/u_A1B1) [deg]             got 30, expected 30                      OK
+   D+Y11 primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+Y11 primary 2 phase(u_A2B2/u_A1B1) [deg]           got 30, expected 30                      OK
+   Dd0   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dd0   secondary phase(u_ab/u_A1B1) [deg]             got -2.84217e-14, expected 0             OK
+   D+D0  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+D0  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -2.84217e-14, expected 0             OK
+   Dd1   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   D+D1  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Dd2   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dd2   secondary phase(u_ab/u_A1B1) [deg]             got -60, expected -60                    OK
+   D+D2  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+D2  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -60, expected -60                    OK
+   Dd3   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   D+D3  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Dd4   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dd4   secondary phase(u_ab/u_A1B1) [deg]             got -120, expected -120                  OK
+   D+D4  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+D4  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -120, expected -120                  OK
+   Dd5   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   D+D5  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Dd6   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dd6   secondary phase(u_ab/u_A1B1) [deg]             got -180, expected -180                  OK
+   D+D6  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+D6  primary 2 phase(u_A2B2/u_A1B1) [deg]           got -180, expected -180                  OK
+   Dd7   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   D+D7  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Dd8   secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dd8   secondary phase(u_ab/u_A1B1) [deg]             got 120, expected 120                    OK
+   D+D8  primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+D8  primary 2 phase(u_A2B2/u_A1B1) [deg]           got 120, expected 120                    OK
+   Dd9   secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   D+D9  primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+   Dd10  secondary |u_ab/u_A1B1| / (V/V1)               got 0.999692, expected 0.999692          OK
+   Dd10  secondary phase(u_ab/u_A1B1) [deg]             got 60, expected 60                      OK
+   D+D10 primary 2 |u_A2B2/u_A1B1| / (V/V1)             got 0.999692, expected 0.999692          OK
+   D+D10 primary 2 phase(u_A2B2/u_A1B1) [deg]           got 60, expected 60                      OK
+   Dd11  secondary refused: Secondary clock number must be even got 0, expected 0                        OK
+   D+D11 primary 2 refused: Primary 2 clock number must be even got 0, expected 0                        OK
+
+=== short-circuit impedance between each pair of windings (pu on Sr) ===
+   Y+Y0 y0                fed 1, 3 shorted: Ib/|I| = |z1 + zm || z3| got 0.0656074, expected 0.0656074        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got 1.04774e-09, expected 0              OK
+   Y+Y0 y0                fed 1, 2 shorted: Ib/|I| = |z1 + zm || z2| got 0.055895, expected 0.055895          OK
+                             angle of z_sc [deg]        got 79.6958, expected 79.6958            OK
+                             power balance [W]          got 0, expected 0                        OK
+   Y+Y0 y0                fed 2, 3 shorted: Ib/|I| = |z2 + zm || z3| got 0.0609873, expected 0.0609873        OK
+                             angle of z_sc [deg]        got 79.61, expected 79.61                OK
+                             power balance [W]          got -1.39698e-09, expected 0             OK
+   Y+Y0 y0                fed 3, 1 shorted: Ib/|I| = |z3 + zm || z1| got 0.0656108, expected 0.0656108        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got 9.31323e-10, expected 0              OK
+   Y+D11 d1               fed 1, 3 shorted: Ib/|I| = |z1 + zm || z3| got 0.0656074, expected 0.0656074        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got -9.31323e-10, expected 0             OK
+   Y+D11 d1               fed 1, 2 shorted: Ib/|I| = |z1 + zm || z2| got 0.055895, expected 0.055895          OK
+                             angle of z_sc [deg]        got 79.6958, expected 79.6958            OK
+                             power balance [W]          got -6.98492e-10, expected 0             OK
+   Y+D11 d1               fed 2, 3 shorted: Ib/|I| = |z2 + zm || z3| got 0.0609873, expected 0.0609873        OK
+                             angle of z_sc [deg]        got 79.61, expected 79.61                OK
+                             power balance [W]          got -9.31323e-10, expected 0             OK
+   Y+D11 d1               fed 3, 1 shorted: Ib/|I| = |z3 + zm || z1| got 0.0656108, expected 0.0656108        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got 1.16415e-10, expected 0              OK
+   D+Y1 y11               fed 1, 3 shorted: Ib/|I| = |z1 + zm || z3| got 0.0656074, expected 0.0656074        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got 1.5134e-09, expected 0               OK
+   D+Y1 y11               fed 1, 2 shorted: Ib/|I| = |z1 + zm || z2| got 0.055895, expected 0.055895          OK
+                             angle of z_sc [deg]        got 79.6958, expected 79.6958            OK
+                             power balance [W]          got 9.31323e-10, expected 0              OK
+   D+Y1 y11               fed 2, 3 shorted: Ib/|I| = |z2 + zm || z3| got 0.0609873, expected 0.0609873        OK
+                             angle of z_sc [deg]        got 79.61, expected 79.61                OK
+                             power balance [W]          got -2.32831e-09, expected 0             OK
+   D+Y1 y11               fed 3, 1 shorted: Ib/|I| = |z3 + zm || z1| got 0.0656108, expected 0.0656108        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got -2.32831e-10, expected 0             OK
+   D+D6 d0                fed 1, 3 shorted: Ib/|I| = |z1 + zm || z3| got 0.0656074, expected 0.0656074        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got -3.49246e-10, expected 0             OK
+   D+D6 d0                fed 1, 2 shorted: Ib/|I| = |z1 + zm || z2| got 0.055895, expected 0.055895          OK
+                             angle of z_sc [deg]        got 79.6958, expected 79.6958            OK
+                             power balance [W]          got -6.98492e-10, expected 0             OK
+   D+D6 d0                fed 2, 3 shorted: Ib/|I| = |z2 + zm || z3| got 0.0609873, expected 0.0609873        OK
+                             angle of z_sc [deg]        got 79.61, expected 79.61                OK
+                             power balance [W]          got -4.65661e-10, expected 0             OK
+   D+D6 d0                fed 3, 1 shorted: Ib/|I| = |z3 + zm || z1| got 0.0656108, expected 0.0656108        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got 0, expected 0                        OK
+   Y+D1 y6                fed 1, 3 shorted: Ib/|I| = |z1 + zm || z3| got 0.0656074, expected 0.0656074        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got -9.31323e-10, expected 0             OK
+   Y+D1 y6                fed 1, 2 shorted: Ib/|I| = |z1 + zm || z2| got 0.055895, expected 0.055895          OK
+                             angle of z_sc [deg]        got 79.6958, expected 79.6958            OK
+                             power balance [W]          got 6.98492e-10, expected 0              OK
+   Y+D1 y6                fed 2, 3 shorted: Ib/|I| = |z2 + zm || z3| got 0.0609873, expected 0.0609873        OK
+                             angle of z_sc [deg]        got 79.61, expected 79.61                OK
+                             power balance [W]          got 6.98492e-10, expected 0              OK
+   Y+D1 y6                fed 3, 1 shorted: Ib/|I| = |z3 + zm || z1| got 0.0656108, expected 0.0656108        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got -2.91038e-09, expected 0             OK
+   D+Y7 d6                fed 1, 3 shorted: Ib/|I| = |z1 + zm || z3| got 0.0656074, expected 0.0656074        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got 9.31323e-10, expected 0              OK
+   D+Y7 d6                fed 1, 2 shorted: Ib/|I| = |z1 + zm || z2| got 0.055895, expected 0.055895          OK
+                             angle of z_sc [deg]        got 79.6958, expected 79.6958            OK
+                             power balance [W]          got -1.62981e-09, expected 0             OK
+   D+Y7 d6                fed 2, 3 shorted: Ib/|I| = |z2 + zm || z3| got 0.0609873, expected 0.0609873        OK
+                             angle of z_sc [deg]        got 79.61, expected 79.61                OK
+                             power balance [W]          got 0, expected 0                        OK
+   D+Y7 d6                fed 3, 1 shorted: Ib/|I| = |z3 + zm || z1| got 0.0656108, expected 0.0656108        OK
+                             angle of z_sc [deg]        got 82.1163, expected 82.1163            OK
+                             power balance [W]          got 8.14907e-10, expected 0              OK
+
+=== two primaries sharing a balanced load on the secondary (T network of z1, z2, z3, zm) ===
+Y+Y0 y0, e2 1.00/_0 deg
+   I_A1 / Ib1                                           got 0.475418, expected 0.475418          OK
+   I_A2 / Ib2                                           got 0.559658, expected 0.559658          OK
+   phase(I_A2) - phase(u_A1) [deg]                      got -18.7827, expected -18.7827          OK
+   I_a / Ib3 (load)                                     got 1.02837, expected 1.02837            OK
+   phase(I_a) - phase(u_A1) [deg]                       got -21.0152, expected -21.0152          OK
+   power balance [W]                                    got -1.41881e-10, expected 0             OK
+Y+D1 y0, e2 1.00/_0 deg
+   I_A1 / Ib1                                           got 0.475418, expected 0.475418          OK
+   I_A2 / Ib2                                           got 0.559658, expected 0.559658          OK
+   phase(I_A2) - phase(u_A1) [deg]                      got -48.7827, expected -48.7827          OK
+   I_a / Ib3 (load)                                     got 1.02837, expected 1.02837            OK
+   phase(I_a) - phase(u_A1) [deg]                       got -21.0152, expected -21.0152          OK
+   power balance [W]                                    got -3.27418e-11, expected 0             OK
+Y+D11 d11, e2 1.00/_0 deg
+   I_A1 / Ib1                                           got 0.475418, expected 0.475418          OK
+   I_A2 / Ib2                                           got 0.559658, expected 0.559658          OK
+   phase(I_A2) - phase(u_A1) [deg]                      got 11.2173, expected 11.2173            OK
+   I_a / Ib3 (load)                                     got 1.02837, expected 1.02837            OK
+   phase(I_a) - phase(u_A1) [deg]                       got 8.9848, expected 8.9848              OK
+   power balance [W]                                    got -9.64064e-11, expected 0             OK
+D+Y11 y11, e2 1.00/_0 deg
+   I_A1 / Ib1                                           got 0.475418, expected 0.475418          OK
+   I_A2 / Ib2                                           got 0.559658, expected 0.559658          OK
+   phase(I_A2) - phase(u_A1) [deg]                      got 11.2173, expected 11.2173            OK
+   I_a / Ib3 (load)                                     got 1.02837, expected 1.02837            OK
+   phase(I_a) - phase(u_A1) [deg]                       got 8.9848, expected 8.9848              OK
+   power balance [W]                                    got -6.36646e-11, expected 0             OK
+D+D0 d6, e2 1.00/_0 deg
+   I_A1 / Ib1                                           got 0.475418, expected 0.475418          OK
+   I_A2 / Ib2                                           got 0.559658, expected 0.559658          OK
+   phase(I_A2) - phase(u_A1) [deg]                      got -18.7827, expected -18.7827          OK
+   I_a / Ib3 (load)                                     got 1.02837, expected 1.02837            OK
+   phase(I_a) - phase(u_A1) [deg]                       got 158.985, expected 158.985            OK
+   power balance [W]                                    got -1.96451e-10, expected 0             OK
+Y+D1 y0, e2 1.03/_2 deg
+   I_A1 / Ib1                                           got 0.352859, expected 0.352859          OK
+   I_A2 / Ib2                                           got 1.39199, expected 1.39199            OK
+   phase(I_A2) - phase(u_A1) [deg]                      got -54.3588, expected -54.3588          OK
+   I_a / Ib3 (load)                                     got 1.04397, expected 1.04397            OK
+   phase(I_a) - phase(u_A1) [deg]                       got -19.8755, expected -19.8755          OK
+   power balance [W]                                    got -7.09406e-11, expected 0             OK
+D+Y5 d4, e2 0.97/_-3 deg
+   I_A1 / Ib1                                           got 1.5341, expected 1.5341              OK
+   I_A2 / Ib2                                           got 0.516165, expected 0.516165          OK
+   phase(I_A2) - phase(u_A1) [deg]                      got 7.61205, expected 7.61205            OK
+   I_a / Ib3 (load)                                     got 1.0127, expected 1.0127              OK
+   phase(I_a) - phase(u_A1) [deg]                       got -142.659, expected -142.659          OK
+   power balance [W]                                    got 1.03682e-10, expected 0              OK
+
+=== single-phase secondary at no load: |u_s1s2| = V3 |zm/(z1 + zm)|, phase arg(g) (+30 deg delta) ===
+   star  ws [1, -1, 0]       |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   star  ws [1, -1, 0]       phase(u_s1s2/u_A1) [deg]   got 29.9989, expected 29.9989            OK
+   star  ws [1, -0.5, -0.5]  |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   star  ws [1, -0.5, -0.5]  phase(u_s1s2/u_A1) [deg]   got -0.00114556, expected -0.00114556    OK
+   star  ws [1, 0, 0]        |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   star  ws [1, 0, 0]        phase(u_s1s2/u_A1) [deg]   got -0.00114556, expected -0.00114556    OK
+   star  ws [0, 1, -1]       |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   star  ws [0, 1, -1]       phase(u_s1s2/u_A1) [deg]   got -90.0011, expected -90.0011          OK
+   star  ws [-1, 0, 1]       |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   star  ws [-1, 0, 1]       phase(u_s1s2/u_A1) [deg]   got 149.999, expected 149.999            OK
+   star  ws [0.5, -1, 0.5]   |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   star  ws [0.5, -1, 0.5]   phase(u_s1s2/u_A1) [deg]   got 59.9989, expected 59.9989            OK
+   delta ws [1, -1, 0]       |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   delta ws [1, -1, 0]       phase(u_s1s2/u_A1) [deg]   got 59.9989, expected 59.9989            OK
+   delta ws [1, -0.5, -0.5]  |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   delta ws [1, -0.5, -0.5]  phase(u_s1s2/u_A1) [deg]   got 29.9989, expected 29.9989            OK
+   delta ws [1, 0, 0]        |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   delta ws [1, 0, 0]        phase(u_s1s2/u_A1) [deg]   got 29.9989, expected 29.9989            OK
+   delta ws [0, 1, -1]       |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   delta ws [0, 1, -1]       phase(u_s1s2/u_A1) [deg]   got -60.0011, expected -60.0011          OK
+   delta ws [-1, 0, 1]       |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   delta ws [-1, 0, 1]       phase(u_s1s2/u_A1) [deg]   got 179.999, expected 179.999            OK
+   delta ws [0.5, -1, 0.5]   |u_s1s2| / V3              got 0.999692, expected 0.999692          OK
+   delta ws [0.5, -1, 0.5]   phase(u_s1s2/u_A1) [deg]   got 89.9989, expected 89.9989            OK
+
+=== single-phase load on a star secondary = single-phase secondary ===
+1 primary, primary 1 star, ws [1, -1, 0] = star loaded a-b
+   load voltage, star / single-phase                    got 9.08864e-16, expected 0              OK
+   load current, star / single-phase                    got 8.80112e-16, expected 0              OK
+   source currents (3)                                  got 8.35918e-16, expected 0              OK
+   limb fluxes                                          got 4.71492e-14, expected 0              OK
+   power balance, single-phase [W]                      got 1.52795e-10, expected 0              OK
+1 primary, primary 1 star, N1 grounded, ws [1, -1, 0] = star loaded a-b
+   load voltage, star / single-phase                    got 5.99674e-16, expected 0              OK
+   load current, star / single-phase                    got 6.69803e-16, expected 0              OK
+   source currents (3)                                  got 6.35176e-16, expected 0              OK
+   limb fluxes                                          got 4.50519e-16, expected 0              OK
+   power balance, single-phase [W]                      got 1.52795e-10, expected 0              OK
+1 primary, primary 1 star, ws [1, 0, 0] = star loaded a-n
+   load voltage, star / single-phase                    got 8.36158e-16, expected 0              OK
+   load current, star / single-phase                    got 8.82294e-16, expected 0              OK
+   source currents (3)                                  got 1.00025e-15, expected 0              OK
+   limb fluxes                                          got 6.54433e-16, expected 0              OK
+   power balance, single-phase [W]                      got -2.84672e-10, expected 0             OK
+1 primary, primary 1 star, N1 grounded, ws [1, 0, 0] = star loaded a-n
+   load voltage, star / single-phase                    got 4.20833e-16, expected 0              OK
+   load current, star / single-phase                    got 4.43351e-16, expected 0              OK
+   source currents (3)                                  got 2.49044e-16, expected 0              OK
+   limb fluxes                                          got 6.31125e-16, expected 0              OK
+   power balance, single-phase [W]                      got 0, expected 0                        OK
+1 primary, primary 1 delta, ws [1, -1, 0] = star loaded a-b
+   load voltage, star / single-phase                    got 1.55142e-15, expected 0              OK
+   load current, star / single-phase                    got 1.50519e-15, expected 0              OK
+   source currents (3)                                  got 1.68474e-15, expected 0              OK
+   limb fluxes                                          got 1.00936e-16, expected 0              OK
+   power balance, single-phase [W]                      got -1.63709e-11, expected 0             OK
+1 primary, primary 1 delta, ws [1, 0, 0] = star loaded a-n
+   load voltage, star / single-phase                    got 1.57985e-15, expected 0              OK
+   load current, star / single-phase                    got 1.62548e-15, expected 0              OK
+   source currents (3)                                  got 1.69531e-15, expected 0              OK
+   limb fluxes                                          got 4.51958e-16, expected 0              OK
+   power balance, single-phase [W]                      got 3.4197e-10, expected 0               OK
+2 primaries, primary 1 star, ws [1, -1, 0] = star loaded a-b
+   load voltage, star / single-phase                    got 6.10243e-16, expected 0              OK
+   load current, star / single-phase                    got 6.95918e-16, expected 0              OK
+   source currents (6)                                  got 1.54479e-14, expected 0              OK
+   limb fluxes                                          got 6.48745e-14, expected 0              OK
+   power balance, single-phase [W]                      got -2.18279e-11, expected 0             OK
+2 primaries, primary 1 star, N1 grounded, ws [1, -1, 0] = star loaded a-b
+   load voltage, star / single-phase                    got 5.38888e-16, expected 0              OK
+   load current, star / single-phase                    got 5.3467e-16, expected 0               OK
+   source currents (6)                                  got 1.16618e-14, expected 0              OK
+   limb fluxes                                          got 3.48547e-16, expected 0              OK
+   power balance, single-phase [W]                      got 1.12777e-10, expected 0              OK
+2 primaries, primary 1 star, ws [1, 0, 0] = star loaded a-n
+   load voltage, star / single-phase                    got 5.5362e-15, expected 0               OK
+   load current, star / single-phase                    got 5.53243e-15, expected 0              OK
+   source currents (6)                                  got 9.05868e-15, expected 0              OK
+   limb fluxes                                          got 3.24156e-15, expected 0              OK
+   power balance, single-phase [W]                      got -5.27507e-11, expected 0             OK
+2 primaries, primary 1 star, N1 grounded, ws [1, 0, 0] = star loaded a-n
+   load voltage, star / single-phase                    got 8.63577e-16, expected 0              OK
+   load current, star / single-phase                    got 8.42142e-16, expected 0              OK
+   source currents (6)                                  got 1.43827e-14, expected 0              OK
+   limb fluxes                                          got 5.21819e-16, expected 0              OK
+   power balance, single-phase [W]                      got 7.82165e-11, expected 0              OK
+2 primaries, primary 1 delta, ws [1, -1, 0] = star loaded a-b
+   load voltage, star / single-phase                    got 1.5684e-15, expected 0               OK
+   load current, star / single-phase                    got 1.54222e-15, expected 0              OK
+   source currents (6)                                  got 1.32085e-15, expected 0              OK
+   limb fluxes                                          got 2.01234e-16, expected 0              OK
+   power balance, single-phase [W]                      got 2.20098e-10, expected 0              OK
+2 primaries, primary 1 delta, ws [1, 0, 0] = star loaded a-n
+   load voltage, star / single-phase                    got 1.53584e-15, expected 0              OK
+   load current, star / single-phase                    got 1.57235e-15, expected 0              OK
+   source currents (6)                                  got 1.92452e-14, expected 0              OK
+   limb fluxes                                          got 8.29605e-16, expected 0              OK
+   power balance, single-phase [W]                      got 3.27418e-11, expected 0              OK
+
+ALL CHECKS PASSED
