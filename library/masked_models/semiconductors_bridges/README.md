@@ -151,8 +151,9 @@ is wrong for every family; `mos_simple_2th` turns the negative held diode curren
 recovery energy and the junction temperature of the die falls below 0 K ("Temperature must be
 greater than absolute zero" from the junction *Thermal Mass*, about 1 ms into the simulation).
 **Use 20 nonlinear iterations for the T-type bridges** (verified with the test bench on
-2026-10-31: 20 and 50 pass, 5 fails; the smallest value in between has not been searched) or
-switch fixed-cost off. The *Mode iterations* setting (default 2) did not need to change.
+2026-10-31: 10, 20 and 50 pass, 5 fails; 20 keeps a margin for the steps in which two legs
+commutate together) or switch fixed-cost off. The *Mode iterations* setting (default 2) did not
+need to change.
 
 ## Mask parameters
 

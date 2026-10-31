@@ -17,8 +17,9 @@ tb.nonlin_iter_ttype = 20; % [-]   same for the T-type cells. A T-type commutati
                            %       inside the nonlinear iterations: with 5 the step is left with inconsistent
                            %       modes, kA of spurious current flow in a diode, mos_simple_2th turns the
                            %       negative held diode current into a negative Err and the junction
-                           %       temperature falls below 0 K (assertion at t = 0.9 ms). 20 and 50 work,
-                           %       5 does not (2026-10-31); the smallest value in between has not been searched.
+                           %       temperature falls below 0 K (assertion at t = 0.9 ms). 10, 20 and 50
+                           %       pass, 5 fails (2026-10-31); 20 keeps a margin for steps in which two legs
+                           %       commutate together.
 tb.mode_iter  = 2;         % [-]   fixed-cost mode iterations (Simulink default 2), exposed for experiments
 tb.gate_on    = 15;        % [V]   gate command when on  (ideal switch Vth and MOSFET G_th sit in between)
 tb.gate_off   = -10;       % [V]   gate command when off
