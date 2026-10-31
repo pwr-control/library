@@ -159,8 +159,8 @@ transients. Scripts under `py/`.
 
 ## Power converters and control
 
-The documents of the solid-state transformer project and the note on the grid-forming and
-grid-following AFE blocks, kept here with the same sources as in `repos_doc/` of
+The documents of the solid-state transformer project, the note on the grid-forming and
+grid-following AFE blocks and the note on the active power decoupling of a single-phase AFE, kept here with the same sources as in `repos_doc/` of
 [repositories-documentation](https://github.com/pwr-control/repositories-documentation)
 so that the Simulink models can link the PDFs. They compile against the copy of the document
 template in [`../AAA_template_latex_settings/`](../AAA_template_latex_settings) (two levels up
@@ -212,3 +212,17 @@ parameter structure `p` with the values of `grid_forming_param_example.m` and
 `grid_following_param_example.m`, what the blocks do not model. All figures are TikZ. The PDF is the
 Help of the two block masks (the Help button opens the copy found on the MATLAB path, otherwise the
 copy on GitHub). Master copy in `repos_doc/grid_forming_following_afe/` of repositories-documentation.
+
+### `single_phase_afe_power_decoupling`
+*Active power decoupling of a single-phase AFE: the ripple port and its control in the model
+`single_phase_afe`* (Rev. 00, October 2026). The method implemented in the model
+`foundations_of_power_electronics/single_phase_afe` of modelization-and-control: why the power of a
+single-phase converter pulsates at 2f and the energy that moves, the ripple port (second full bridge,
+two inductors, buffer capacitor at 2000 V) and the sizing of its parts, the control step by step
+(double-integrator observer of the DC-link voltage, phase-shift filter at 100 Hz, rotation at 2θ,
+vector PI, output through the β axis to compensate the 90° of the DC-link capacitor; buffer voltage
+and current loops), an averaged simulation with the discrete loops (ripple 16 % → 0.8 %, third
+harmonic 13 % → 0.5 %), the check of the numbers of the model and the open points. The observer and
+the filter are the C-Caller sources `linear_double_integrator_observer.c` and `phase_shift_flt.c` of
+`../user_defined_functions/ccaller/`. Companion Python script and PDF figures in the folder. Master
+copy in `repos_doc/single_phase_afe_power_decoupling/` of repositories-documentation.
