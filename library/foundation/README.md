@@ -75,6 +75,19 @@ with a linear inductor.
 Single-block power stages of the compact converter blocks of [`../masked_models`](../masked_models)
 (one converter = one nonvirtual block of power stage, MATLAB Home licence):
 
+- **`ideal_bridges`** — functional bridges, one block per converter: switch + antiparallel diode as a
+  piecewise-linear resistor (`Ron` / `Goff`, no losses, no dead time), gates in as a physical-signal
+  vector `G` (+15 / -10 V against `Vth`), terminal currents `I` and DC-link voltage(s) `V` out, optional
+  DC-link capacitor(s) and AC series inductors (`ideal_bridges.onoff`). Two-level `full_bridge` and
+  `three_phase_bridge` (gate order `[a+; a-; b+; b-; ...]`); three-level T-type `half_bridge_ttype`,
+  `full_bridge_ttype` and `three_phase_bridge_ttype` (per leg Q1 from `+` to the midpoint, Q4 from the
+  midpoint to `-`, Q2/Q3 anti-series to the neutral point `np`, exposed as a port; split DC link `Cdc1` /
+  `Cdc2` with ESR, optional; gate order `[Q1; Q2; Q3; Q4]` per leg as the library three-level modulators
+  and `afe_single_phase_ttype`; `V = [vdc; vdc1; vdc2]`). `check_ideal_bridges_ttype.py` (python3 +
+  numpy, output committed) checks the structure of the five `.ssc` (equation and `der()` counts for every
+  on/off combination), one T-type leg at the 16 gate patterns and the half bridge in the time domain with
+  three-level PWM. Build with `ssc_build ideal_bridges` from this folder (`ideal_bridges_lib.slx`,
+  committed next to the package). Details in [`pwr_electronics/+ideal_bridges/README.md`](pwr_electronics/+ideal_bridges/README.md).
 - **`afe_ssc`** — `afe_two_level_lcl`: two-level bridge with DC-link capacitor and LCL filter, the power
   stage of `grid_following_dqctrl` and `grid_forming_dqctrl`. Gate commands in as a physical-signal
   vector, measurements out in pu.
