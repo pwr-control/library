@@ -316,7 +316,7 @@ class System:
         return self.add(xml, sid)
 
     def solver_configuration(self, name, position, local_solver=True, sample_time="tb.tc",
-                             nonlin_iter="tb.nonlin_iter"):
+                             nonlin_iter="tb.nonlin_iter", mode_iter="2"):
         sid = self.sids()
         idata = [("ContentPreviewEnabled", "on"), ("PhysicalDomain", "network_engine_domain"),
                  ("SubClassName", "solver"), ("LeftPortType", "input"), ("RightPortType", "generic"),
@@ -336,7 +336,7 @@ class System:
                  ("LocalSolverChoice", "NE_BACKWARD_EULER_ADVANCER"),
                  ("ResolveIndetEquations", "on"), ("FunctionEvalNumThread", "1"),
                  ("LocalSolverSampleTime", sample_time), ("DoFixedCost", "on"),
-                 ("MaxNonlinIter", nonlin_iter), ("MaxModeIter", "2"), ("ComputeImpulses", "off"),
+                 ("MaxNonlinIter", nonlin_iter), ("MaxModeIter", mode_iter), ("ComputeImpulses", "off"),
                  ("ImpulseIterations", "2"), ("LinearAlgebra", "auto"),
                  ("LinearAlgebraNumThread", "0"), ("EquationFormulation", "NE_TIME_EF"),
                  ("DelaysMemoryBudget", "1024"), ("AutomaticFiltering", "on"),

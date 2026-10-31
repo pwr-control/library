@@ -17,15 +17,15 @@ and the `_cc` / `_ccaller` suffix marks the C version.
 
 ## `semiconductors_bridges`
 
-Converter power stages, rebuilt in October 2026 as one family of 18 generated libraries (see
+Converter power stages. Since October 2026 one family of 18 generated libraries (see
 [`semiconductors_bridges/README.md`](semiconductors_bridges/README.md)): three topologies ×
 two-level / three-level T-type × three device families, in three subfolders.
 
 | Subfolder             | Blocks (block name = file name)                                                                                                                                                              |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `half_bridge/`        | `half_bridge_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `half_bridge_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                               |
-| `full_bridge/`        | `full_bridge_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `full_bridge_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                               |
-| `three_phase_bridge/` | `three_phase_bridge_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `three_phase_bridge_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                 |
+| `half_bridge/`        | `half_bridge_two_level_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `half_bridge_three_level_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                               |
+| `full_bridge/`        | `full_bridge_two_level_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `full_bridge_three_level_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                               |
+| `three_phase_bridge/` | `three_phase_bridge_two_level_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `three_phase_bridge_three_level_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                 |
 | `test/`               | `test_semiconductors_bridges.slx` with the 18 bridges, parameter and check scripts                                                                                                           |
 | `tools/`              | Python generator of the libraries and of the test model                                                                                                                                      |
 
@@ -34,9 +34,11 @@ the left (`udc(+)`, `np` for the T-type bridges, `udc(-)`), the ac terminals on 
 flat measurement bus `m`. Devices are either the Simscape Foundation ideal switch with PWL diode
 and RC snubber, or the loss models `mos_simple_2th` / `igbt_simple_2th` of
 [`../foundation/semiconductors`](../foundation/semiconductors) with a junction-heatsink-ambient
-thermal network per die. All Simscape. The earlier models based on the Simscape Electrical
-IGBT/MOSFET/Diode blocks, the NPC bridges, the Vienna rectifier and the passive rectifiers were
-removed (list and replacement table in the folder README).
+thermal network per die. All Simscape. The 23 earlier models (Simscape Electrical
+IGBT/MOSFET/Diode blocks, NPC bridges, Vienna rectifier, passive rectifiers) stay in the folder
+root until the models of `modelization-and-control` that link them have been moved to the new
+bridges (correspondence table in the folder README). T-type bridges need about 50 fixed-cost
+nonlinear iterations in the Solver Configuration (two diodes flip in one commutation).
 
 ## `modulators`
 

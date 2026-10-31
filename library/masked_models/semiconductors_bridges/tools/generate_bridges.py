@@ -4,7 +4,7 @@
 generate_bridges.py - writes the 18 semiconductor bridge libraries of
 library/masked_models/semiconductors_bridges:
 
-    {half_bridge | full_bridge | three_phase_bridge}[_ttype]_{ideal_switch | mos_simple_2th | igbt_simple_2th}.slx
+    {half_bridge | full_bridge | three_phase_bridge}_{two_level | three_level_ttype}_{ideal_switch | mos_simple_2th | igbt_simple_2th}.slx
 
 Each library holds one masked subsystem with the same name as the file. The switching cells
 are full copies (no links inside the library), so a bridge is self-contained apart from the
@@ -13,7 +13,7 @@ Simscape Foundation library and, for the 2th versions, igbt_simple_2th_lib / mos
 
 Usage:  python3 generate_bridges.py [output_dir]
 The files are written in <output_dir>/{half_bridge,full_bridge,three_phase_bridge}/, by default
-the folder that contains tools/. Simulink R2026a then opens them directly; "save" from Simulink
+the folder that contains tools/ (the legacy models of that folder are not touched). Simulink then opens them directly; "save" from Simulink
 rewrites them in its own canonical form (the content is the same).
 """
 import os
@@ -396,7 +396,7 @@ def icon_commands(topology, ttype, family, n_left, n_right):
 
 
 def block_name(topology, ttype, family):
-    return f"{topology}{'_ttype' if ttype else ''}_{FAMILIES[family]['lib_suffix']}"
+    return f"{topology}_{'three_level_ttype' if ttype else 'two_level'}_{FAMILIES[family]['lib_suffix']}"
 
 
 def build_library(topology, ttype, family, out_dir):

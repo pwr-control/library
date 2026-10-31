@@ -5,12 +5,12 @@ folder holds exactly one family of bridges, built by the same generator with one
 
 |                        | half bridge                                   | full bridge                                   | three-phase bridge                                          |
 |------------------------|-----------------------------------------------|-----------------------------------------------|-------------------------------------------------------------|
-| two-level, ideal switch | `half_bridge/half_bridge_ideal_switch`        | `full_bridge/full_bridge_ideal_switch`        | `three_phase_bridge/three_phase_bridge_ideal_switch`        |
-| two-level, MOSFET       | `half_bridge/half_bridge_mos_simple_2th`      | `full_bridge/full_bridge_mos_simple_2th`      | `three_phase_bridge/three_phase_bridge_mos_simple_2th`      |
-| two-level, IGBT         | `half_bridge/half_bridge_igbt_simple_2th`     | `full_bridge/full_bridge_igbt_simple_2th`     | `three_phase_bridge/three_phase_bridge_igbt_simple_2th`     |
-| T-type, ideal switch    | `half_bridge/half_bridge_ttype_ideal_switch`  | `full_bridge/full_bridge_ttype_ideal_switch`  | `three_phase_bridge/three_phase_bridge_ttype_ideal_switch`  |
-| T-type, MOSFET          | `half_bridge/half_bridge_ttype_mos_simple_2th`| `full_bridge/full_bridge_ttype_mos_simple_2th`| `three_phase_bridge/three_phase_bridge_ttype_mos_simple_2th`|
-| T-type, IGBT            | `half_bridge/half_bridge_ttype_igbt_simple_2th`| `full_bridge/full_bridge_ttype_igbt_simple_2th`| `three_phase_bridge/three_phase_bridge_ttype_igbt_simple_2th`|
+| two-level, ideal switch | `half_bridge/half_bridge_two_level_ideal_switch`        | `full_bridge/full_bridge_two_level_ideal_switch`        | `three_phase_bridge/three_phase_bridge_two_level_ideal_switch`        |
+| two-level, MOSFET       | `half_bridge/half_bridge_two_level_mos_simple_2th`      | `full_bridge/full_bridge_two_level_mos_simple_2th`      | `three_phase_bridge/three_phase_bridge_two_level_mos_simple_2th`      |
+| two-level, IGBT         | `half_bridge/half_bridge_two_level_igbt_simple_2th`     | `full_bridge/full_bridge_two_level_igbt_simple_2th`     | `three_phase_bridge/three_phase_bridge_two_level_igbt_simple_2th`     |
+| T-type, ideal switch    | `half_bridge/half_bridge_three_level_ttype_ideal_switch`  | `full_bridge/full_bridge_three_level_ttype_ideal_switch`  | `three_phase_bridge/three_phase_bridge_three_level_ttype_ideal_switch`  |
+| T-type, MOSFET          | `half_bridge/half_bridge_three_level_ttype_mos_simple_2th`| `full_bridge/full_bridge_three_level_ttype_mos_simple_2th`| `three_phase_bridge/three_phase_bridge_three_level_ttype_mos_simple_2th`|
+| T-type, IGBT            | `half_bridge/half_bridge_three_level_ttype_igbt_simple_2th`| `full_bridge/full_bridge_three_level_ttype_igbt_simple_2th`| `three_phase_bridge/three_phase_bridge_three_level_ttype_igbt_simple_2th`|
 
 The block inside each library has the same name as the file. Three device families:
 
@@ -27,8 +27,11 @@ The block inside each library has the same name as the file. Three device famili
   same thermal network.
 
 The 2th bridges need the compiled libraries `igbt_simple_2th_lib.slx` / `mos_simple_2th_lib.slx`
-of `foundation/semiconductors` on the MATLAB path. Nothing else from MathWorks beyond Simscape
-Foundation is used: the Simscape Electrical device models (`ee_lib`) are no longer referenced.
+of `foundation/semiconductors` on the MATLAB path. The 18 bridges use nothing from MathWorks beyond
+Simscape Foundation. The 23 legacy models in the folder root (Simscape Electrical devices, see
+[below](#legacy-models-in-the-folder-root)) are kept for now because the models of
+`modelization-and-control` still link them; the new names carry `two_level` /
+`three_level_ttype` so that none of them collides with a legacy file.
 
 Folder layout:
 
@@ -38,7 +41,9 @@ semiconductors_bridges/
 ├── full_bridge/          6 libraries + README
 ├── three_phase_bridge/   6 libraries + README
 ├── test/                 test_semiconductors_bridges.slx + param/run scripts + README
-└── tools/                Python generator of the 18 libraries and of the test model
+├── tools/                Python generator of the 18 libraries and of the test model
+└── *.slx                 23 legacy models (unchanged, to be removed once modelization-and-control
+                          has been moved to the new bridges)
 ```
 
 ## Common interface
@@ -128,9 +133,26 @@ gate input, the two electrical terminals and the measurement outputs:
   `mass_heatsink_m = M/N` and `rth_*_HA_m = N·R_HA`. The mass parameters are per die, the
   junction mass is given in J/K (`JunctionTermalMass_m`) and converted internally.
 
-Suggested solver settings (as in the models of `modelization-and-control`): a *Solver
-Configuration* per network with *Use local solver* on, Backward Euler, sample time equal to the
-modulator `tc` (1 µs for 10 kHz PWM), fixed-cost iterations on; global solver ode23tb.
+### Solver settings
+
+As in the models of `modelization-and-control`: a *Solver Configuration* per network with *Use
+local solver* on, Backward Euler, sample time equal to the modulator `tc` (1 µs for 10 kHz PWM),
+fixed-cost iterations on; global solver ode23tb.
+
+**Nonlinear iterations.** 3–5 are enough for the two-level bridges, where one diode turns on per
+commutation. In a T-type leg a commutation flips two diodes within one step: for a positive output
+current at the P→O transition the third-quadrant diode D3 (through Q2) and the outer diode D4 both
+see a hugely negative voltage in the first evaluation and turn on, then D4 turns off again; the
+same happens with D1 and D2 for a negative current at O→N. The if/else branches of the devices are
+re-evaluated inside the fixed-cost nonlinear iterations, so with 5 iterations the step is accepted
+with inconsistent modes and kA of spurious current flow through a diode for one step. The
+ideal-switch and IGBT cells do not stop on it (the IGBT events use absolute values), but the step
+is wrong for every family; `mos_simple_2th` turns the negative held diode current into a negative
+recovery energy and the junction temperature of the die falls below 0 K ("Temperature must be
+greater than absolute zero" from the junction *Thermal Mass*, about 1 ms into the simulation).
+**Use 50 nonlinear iterations for the T-type bridges** (verified with the test bench on
+2026-10-31; the smallest sufficient value has not been searched) or switch fixed-cost off. The
+*Mode iterations* setting (default 2) did not need to change.
 
 ## Mask parameters
 
@@ -199,9 +221,12 @@ unused (the port `Hd` is still connected, as the component requires).
 ## Test bench
 
 [`test/test_semiconductors_bridges.slx`](test) instantiates the 18 bridges, each with its dc
-supply, R-L load, sensors and local solver, driven by the five modulators. `test_semiconductors_bridges_run.m`
-simulates it and checks the fundamental of the load current and voltage of every bridge against
-the modulation, plus losses and temperature rises of the 2th bridges. See [`test/README.md`](test/README.md).
+supply, R-L load, sensors and local solver, in five groups, one per modulator (`modulator_hb`,
+`modulator_1ph`, `modulator_3ph`, `modulator_1ph3L`, `modulator_3ph3L`); a group holds the
+modulation sources, the modulator and the test cells it drives, so a whole group can be commented
+out to shorten a run. `test_semiconductors_bridges_run.m` simulates it and checks the fundamental
+of the load current and voltage of every bridge against the modulation, plus losses and
+temperature rises of the 2th bridges. See [`test/README.md`](test/README.md).
 
 ## Regeneration
 
@@ -213,42 +238,43 @@ by Simulink R2026a), `sscblocks.py` holds the Simscape block definitions. Simuli
 generated files directly; saving from Simulink rewrites them in its canonical form. Edit the
 generator and regenerate rather than editing 18 files by hand.
 
-## History of the folder (October 2026 reorganization)
+## Legacy models in the folder root
 
-The folder previously held 23 models that mixed four device technologies (Foundation ideal
-switch, Simscape Electrical IGBT/MOSFET/Diode with thermal ports, `igbt_simple`) and five
-topologies. It was rebuilt around the matrix above. Files removed:
+Before October 2026 the folder held 23 models that mixed four device technologies (Foundation
+ideal switch, Simscape Electrical IGBT/MOSFET/Diode with thermal ports, `igbt_simple`) and five
+topologies. They are **kept unchanged in the folder root** because about 20 models of
+`modelization-and-control` link them (table in the next section); they will be removed once
+those models have been moved to the new bridges. Do not use them for new work. Correspondence:
 
-| Removed file                                                        | Reason                                                                 | Replacement                                   |
-|---------------------------------------------------------------------|------------------------------------------------------------------------|-----------------------------------------------|
-| `full_bridge_ideal_switch.slx`                                      | regenerated with the common interface                                  | `full_bridge/full_bridge_ideal_switch`        |
-| `three_phase_inverter_ideal_switch_based_model.slx`                 | regenerated with the common interface                                  | `three_phase_bridge/three_phase_bridge_ideal_switch` |
-| `full_bridge_three_level_ttype_ideal_switch_based_model.slx`        | regenerated (dc ports now on the left, Q2/Q3 common emitter)           | `full_bridge/full_bridge_ttype_ideal_switch`  |
-| `three_phase_three_level_ttype_inverter_ideal_switch_based_model.slx` | regenerated (dc ports now on the left, Q2/Q3 common emitter)         | `three_phase_bridge/three_phase_bridge_ttype_ideal_switch` |
-| `full_bridge_igbt_based_with_thermal_model.slx`                     | Simscape Electrical `IGBT (Ideal, Switching)`                          | `full_bridge/full_bridge_igbt_simple_2th`     |
-| `full_bridge_igbt_based_with_advanced_thermal_model.slx`            | Simscape Electrical IGBT + Diode with reverse recovery                 | `full_bridge/full_bridge_igbt_simple_2th`     |
-| `full_bridge_mosfet_based_with_thermal_model.slx`, `_zvs`           | Simscape Electrical `MOSFET (Ideal, Switching)`                        | `full_bridge/full_bridge_mos_simple_2th`      |
-| `three_phase_inverter_igbt_based_with_thermal_model.slx`            | Simscape Electrical IGBT                                               | `three_phase_bridge/three_phase_bridge_igbt_simple_2th` |
-| `three_phase_inverter_igbt_advanced_thermal_model.slx`              | Simscape Electrical IGBT + Diode                                       | `three_phase_bridge/three_phase_bridge_igbt_simple_2th` |
-| `three_phase_inverter_mosfet_based_with_thermal_model.slx`, `_zvs`  | Simscape Electrical MOSFET                                             | `three_phase_bridge/three_phase_bridge_mos_simple_2th` |
-| `three_phase_inverter_with_igbt_simple.slx`                         | `igbt_simple` (single thermal port) instead of `igbt_simple_2th`       | `three_phase_bridge/three_phase_bridge_igbt_simple_2th` |
-| `full_bridge_three_level_ttype_igbt_based_model.slx`                | Simscape Electrical IGBT                                               | `full_bridge/full_bridge_ttype_igbt_simple_2th` |
-| `full_bridge_three_level_ttype_mosfet_based_model.slx`              | Simscape Electrical MOSFET                                             | `full_bridge/full_bridge_ttype_mos_simple_2th` |
-| `three_phase_inverter_three_level_ttype_igbt_based_model.slx`       | Simscape Electrical IGBT + Diode                                       | `three_phase_bridge/three_phase_bridge_ttype_igbt_simple_2th` |
-| `full_bridge_three_level_npc_{ideal_switch,igbt,mosfet}_based_model.slx` | NPC topology, outside the matrix (not linked by any model)        | none (T-type bridges)                         |
-| `vienna_rectifier_ideal_switch_based_model.slx`                     | Vienna rectifier, outside the matrix                                   | none                                          |
-| `full_bridge_diode_rectifier.slx`, `three_phase_diode_rectifier.slx`, `three_phase_diode_rectifier_with_thermal_model.slx` | passive rectifiers, outside the matrix | none (gate the bridges off, or the diodes of `foundation/semiconductors`) |
+| Legacy file                                                         | Devices                                                                | New bridge                                                      |
+|---------------------------------------------------------------------|------------------------------------------------------------------------|-----------------------------------------------------------------|
+| `full_bridge_ideal_switch.slx`                                      | Foundation switch + diode + snubber                                    | `full_bridge/full_bridge_two_level_ideal_switch`                |
+| `three_phase_inverter_ideal_switch_based_model.slx`                 | Foundation switch + diode + snubber                                    | `three_phase_bridge/three_phase_bridge_two_level_ideal_switch`  |
+| `full_bridge_three_level_ttype_ideal_switch_based_model.slx`        | Foundation switch + diode (dc ports on the right)                      | `full_bridge/full_bridge_three_level_ttype_ideal_switch`        |
+| `three_phase_three_level_ttype_inverter_ideal_switch_based_model.slx` | Foundation switch + diode (dc ports on the right)                    | `three_phase_bridge/three_phase_bridge_three_level_ttype_ideal_switch` |
+| `full_bridge_igbt_based_with_thermal_model.slx`                     | Simscape Electrical `IGBT (Ideal, Switching)`                          | `full_bridge/full_bridge_two_level_igbt_simple_2th`             |
+| `full_bridge_igbt_based_with_advanced_thermal_model.slx`            | Simscape Electrical IGBT + Diode with reverse recovery                 | `full_bridge/full_bridge_two_level_igbt_simple_2th`             |
+| `full_bridge_mosfet_based_with_thermal_model.slx`, `_zvs`           | Simscape Electrical `MOSFET (Ideal, Switching)`                        | `full_bridge/full_bridge_two_level_mos_simple_2th`              |
+| `three_phase_inverter_igbt_based_with_thermal_model.slx`            | Simscape Electrical IGBT                                               | `three_phase_bridge/three_phase_bridge_two_level_igbt_simple_2th` |
+| `three_phase_inverter_igbt_advanced_thermal_model.slx`              | Simscape Electrical IGBT + Diode                                       | `three_phase_bridge/three_phase_bridge_two_level_igbt_simple_2th` |
+| `three_phase_inverter_mosfet_based_with_thermal_model.slx`, `_zvs`  | Simscape Electrical MOSFET                                             | `three_phase_bridge/three_phase_bridge_two_level_mos_simple_2th` |
+| `three_phase_inverter_with_igbt_simple.slx`                         | `igbt_simple` (single thermal port)                                    | `three_phase_bridge/three_phase_bridge_two_level_igbt_simple_2th` |
+| `full_bridge_three_level_ttype_igbt_based_model.slx`                | Simscape Electrical IGBT                                               | `full_bridge/full_bridge_three_level_ttype_igbt_simple_2th`     |
+| `full_bridge_three_level_ttype_mosfet_based_model.slx`              | Simscape Electrical MOSFET                                             | `full_bridge/full_bridge_three_level_ttype_mos_simple_2th`      |
+| `three_phase_inverter_three_level_ttype_igbt_based_model.slx`       | Simscape Electrical IGBT + Diode                                       | `three_phase_bridge/three_phase_bridge_three_level_ttype_igbt_simple_2th` |
+| `full_bridge_three_level_npc_{ideal_switch,igbt,mosfet}_based_model.slx` | NPC topology, outside the matrix (not linked by any model)        | none                                                            |
+| `vienna_rectifier_ideal_switch_based_model.slx`                     | Vienna rectifier, outside the matrix                                   | none                                                            |
+| `full_bridge_diode_rectifier.slx`, `three_phase_diode_rectifier.slx`, `three_phase_diode_rectifier_with_thermal_model.slx` | passive rectifiers, outside the matrix | none (gate a bridge off, or the diodes of `foundation/semiconductors`) |
 
-New in the matrix: the six half bridges, the T-type MOSFET three-phase bridge and all the
+New with the matrix: the six half bridges, the T-type MOSFET three-phase bridge and all the
 `*_2th` versions.
 
-### Impact on `modelization-and-control`
+### Moving the models of `modelization-and-control`
 
-The models of `pwr-control/modelization-and-control` that link the removed libraries keep
-working only after being re-pointed to the new blocks (the link is by library name, so the old
-links are now unresolved). From a scan of the repository on 2026-10-31:
+Nothing breaks now: the legacy libraries are still on the path. The models that link them, from
+a scan of the repository on 2026-10-31, are:
 
-| Removed library                                              | Linking models                                                                                                                                                                                                                 |
+| Legacy library                                               | Linking models                                                                                                                                                                                                                 |
 |--------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `full_bridge_ideal_switch`                                   | battery_single_phase_inverter/ps_full_bridge, dcdc_zvs_full_bridge, ps_25V_12kA_r, ps_isop_rail, ps_isop_rail_bid, single_phase_inverter (+ `_param`), single_phase_dab, single_phase_cllc (+ `_param`)                       |
 | `three_phase_inverter_ideal_switch_based_model`              | afe_inv_loopback, afe_inv_psm (+ `_param`), afe_inv_psm_n, afe_inv_psm (for_home), inv_im (+ `_param`), inv_psm, afe_inv_psm_with_hf_models, mpc_psm, ps_25V_12kA_r, three_phase_dab, grid_afe_n                              |
@@ -259,7 +285,8 @@ links are now unresolved). From a scan of the repository on 2026-10-31:
 | `full_bridge_diode_rectifier`, `three_phase_diode_rectifier` (+ `_with_thermal_model`) | dcdc_zvs_full_bridge, ps_isop_rail, ps_isop_rail_bid, single_phase_inverter (+ `_param`), single_phase_ttype_inverter (+ `_param`)                                               |
 | `vienna_rectifier_ideal_switch_based_model`                  | vienna_rectifier                                                                                                                                                                                                               |
 
-What changes when re-pointing: the library and block names; for the T-type bridges the dc ports
+What changes when a model is moved to the new bridges: the library and block names (table
+above); for the T-type bridges the dc ports
 are now on the left (`udc(+)`, `np`, `udc(-)`) and the ac ports on the right; the `m` bus
 element names (`switch_*` instead of `ideal_switch_*`, flat `igbt_*_Qk` / `mosfet_*_Qk` /
 `diode_*_Qk` instead of `module_k.*`); the thermal mask parameters follow the `igbt_simple_2th`
@@ -272,4 +299,5 @@ need an ideal bridge can alternatively use the single-component bridges of
 
 | Rev. | Date       | Notes                                                                                   |
 |------|------------|-----------------------------------------------------------------------------------------|
-| 01   | 2026-10-31 | Folder rebuilt: 18 generated libraries in three subfolders, test bench, this README      |
+| 01   | 2026-10-31 | 18 generated libraries in three subfolders, test bench, this README                      |
+| 02   | 2026-10-31 | Names `*_two_level_*` / `*_three_level_ttype_*`; the 23 legacy models stay in the folder root; test grouped per modulator; T-type cells with 50 nonlinear iterations (`tb.nonlin_iter_ttype`), solver notes |

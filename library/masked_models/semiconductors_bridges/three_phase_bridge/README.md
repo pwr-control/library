@@ -6,12 +6,12 @@ three-phase bridge.
 
 | Library                                  | Devices                                   | dc ports (left)            | ac ports (right) |
 |------------------------------------------|-------------------------------------------|----------------------------|------------------|
-| `three_phase_bridge_ideal_switch`        | 6 × Foundation switch + diode + snubber    | `udc(+)`, `udc(-)`         | `u`, `v`, `w`    |
-| `three_phase_bridge_mos_simple_2th`      | 6 × `mos_simple_2th` + thermal network     | `udc(+)`, `udc(-)`         | `u`, `v`, `w`    |
-| `three_phase_bridge_igbt_simple_2th`     | 6 × `igbt_simple_2th` + thermal network    | `udc(+)`, `udc(-)`         | `u`, `v`, `w`    |
-| `three_phase_bridge_ttype_ideal_switch`  | 12 × Foundation switch + diode + snubber   | `udc(+)`, `np`, `udc(-)`   | `u`, `v`, `w`    |
-| `three_phase_bridge_ttype_mos_simple_2th`| 12 × `mos_simple_2th` + thermal network    | `udc(+)`, `np`, `udc(-)`   | `u`, `v`, `w`    |
-| `three_phase_bridge_ttype_igbt_simple_2th`| 12 × `igbt_simple_2th` + thermal network  | `udc(+)`, `np`, `udc(-)`   | `u`, `v`, `w`    |
+| `three_phase_bridge_two_level_ideal_switch`        | 6 × Foundation switch + diode + snubber    | `udc(+)`, `udc(-)`         | `u`, `v`, `w`    |
+| `three_phase_bridge_two_level_mos_simple_2th`      | 6 × `mos_simple_2th` + thermal network     | `udc(+)`, `udc(-)`         | `u`, `v`, `w`    |
+| `three_phase_bridge_two_level_igbt_simple_2th`     | 6 × `igbt_simple_2th` + thermal network    | `udc(+)`, `udc(-)`         | `u`, `v`, `w`    |
+| `three_phase_bridge_three_level_ttype_ideal_switch`  | 12 × Foundation switch + diode + snubber   | `udc(+)`, `np`, `udc(-)`   | `u`, `v`, `w`    |
+| `three_phase_bridge_three_level_ttype_mos_simple_2th`| 12 × `mos_simple_2th` + thermal network    | `udc(+)`, `np`, `udc(-)`   | `u`, `v`, `w`    |
+| `three_phase_bridge_three_level_ttype_igbt_simple_2th`| 12 × `igbt_simple_2th` + thermal network  | `udc(+)`, `np`, `udc(-)`   | `u`, `v`, `w`    |
 
 ## Two-level
 

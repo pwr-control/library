@@ -15,7 +15,7 @@ mdl = 'test_semiconductors_bridges';
 test_semiconductors_bridges_param;                        % creates tb
 
 topologies = {'half_bridge', 'full_bridge', 'three_phase_bridge'};
-levels     = {'', '_ttype'};
+levels     = {'_two_level', '_three_level_ttype'};
 families   = {'ideal_switch', 'igbt_simple_2th', 'mos_simple_2th'};
 tol_fund   = 0.06;      % relative tolerance on the fundamental amplitudes (dead time, device drops)
 

@@ -6,12 +6,12 @@ bridge.
 
 | Library                           | Devices                                   | dc ports (left)            | ac ports (right)      |
 |-----------------------------------|-------------------------------------------|----------------------------|-----------------------|
-| `full_bridge_ideal_switch`        | 4 × Foundation switch + diode + snubber    | `udc(+)`, `udc(-)`         | `uac(+)`, `uac(-)`    |
-| `full_bridge_mos_simple_2th`      | 4 × `mos_simple_2th` + thermal network     | `udc(+)`, `udc(-)`         | `uac(+)`, `uac(-)`    |
-| `full_bridge_igbt_simple_2th`     | 4 × `igbt_simple_2th` + thermal network    | `udc(+)`, `udc(-)`         | `uac(+)`, `uac(-)`    |
-| `full_bridge_ttype_ideal_switch`  | 8 × Foundation switch + diode + snubber    | `udc(+)`, `np`, `udc(-)`   | `uac(+)`, `uac(-)`    |
-| `full_bridge_ttype_mos_simple_2th`| 8 × `mos_simple_2th` + thermal network     | `udc(+)`, `np`, `udc(-)`   | `uac(+)`, `uac(-)`    |
-| `full_bridge_ttype_igbt_simple_2th`| 8 × `igbt_simple_2th` + thermal network   | `udc(+)`, `np`, `udc(-)`   | `uac(+)`, `uac(-)`    |
+| `full_bridge_two_level_ideal_switch`        | 4 × Foundation switch + diode + snubber    | `udc(+)`, `udc(-)`         | `uac(+)`, `uac(-)`    |
+| `full_bridge_two_level_mos_simple_2th`      | 4 × `mos_simple_2th` + thermal network     | `udc(+)`, `udc(-)`         | `uac(+)`, `uac(-)`    |
+| `full_bridge_two_level_igbt_simple_2th`     | 4 × `igbt_simple_2th` + thermal network    | `udc(+)`, `udc(-)`         | `uac(+)`, `uac(-)`    |
+| `full_bridge_three_level_ttype_ideal_switch`  | 8 × Foundation switch + diode + snubber    | `udc(+)`, `np`, `udc(-)`   | `uac(+)`, `uac(-)`    |
+| `full_bridge_three_level_ttype_mos_simple_2th`| 8 × `mos_simple_2th` + thermal network     | `udc(+)`, `np`, `udc(-)`   | `uac(+)`, `uac(-)`    |
+| `full_bridge_three_level_ttype_igbt_simple_2th`| 8 × `igbt_simple_2th` + thermal network   | `udc(+)`, `np`, `udc(-)`   | `uac(+)`, `uac(-)`    |
 
 ## Two-level
 

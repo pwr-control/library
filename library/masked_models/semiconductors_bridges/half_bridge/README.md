@@ -6,12 +6,12 @@ bridge.
 
 | Library                           | Devices                                   | dc ports (left)            | ac port (right) |
 |-----------------------------------|-------------------------------------------|----------------------------|-----------------|
-| `half_bridge_ideal_switch`        | 2 × Foundation switch + diode + snubber    | `udc(+)`, `udc(-)`         | `u`             |
-| `half_bridge_mos_simple_2th`      | 2 × `mos_simple_2th` + thermal network     | `udc(+)`, `udc(-)`         | `u`             |
-| `half_bridge_igbt_simple_2th`     | 2 × `igbt_simple_2th` + thermal network    | `udc(+)`, `udc(-)`         | `u`             |
-| `half_bridge_ttype_ideal_switch`  | 4 × Foundation switch + diode + snubber    | `udc(+)`, `np`, `udc(-)`   | `u`             |
-| `half_bridge_ttype_mos_simple_2th`| 4 × `mos_simple_2th` + thermal network     | `udc(+)`, `np`, `udc(-)`   | `u`             |
-| `half_bridge_ttype_igbt_simple_2th`| 4 × `igbt_simple_2th` + thermal network   | `udc(+)`, `np`, `udc(-)`   | `u`             |
+| `half_bridge_two_level_ideal_switch`        | 2 × Foundation switch + diode + snubber    | `udc(+)`, `udc(-)`         | `u`             |
+| `half_bridge_two_level_mos_simple_2th`      | 2 × `mos_simple_2th` + thermal network     | `udc(+)`, `udc(-)`         | `u`             |
+| `half_bridge_two_level_igbt_simple_2th`     | 2 × `igbt_simple_2th` + thermal network    | `udc(+)`, `udc(-)`         | `u`             |
+| `half_bridge_three_level_ttype_ideal_switch`  | 4 × Foundation switch + diode + snubber    | `udc(+)`, `np`, `udc(-)`   | `u`             |
+| `half_bridge_three_level_ttype_mos_simple_2th`| 4 × `mos_simple_2th` + thermal network     | `udc(+)`, `np`, `udc(-)`   | `u`             |
+| `half_bridge_three_level_ttype_igbt_simple_2th`| 4 × `igbt_simple_2th` + thermal network   | `udc(+)`, `np`, `udc(-)`   | `u`             |
 
 ## Two-level leg
 
