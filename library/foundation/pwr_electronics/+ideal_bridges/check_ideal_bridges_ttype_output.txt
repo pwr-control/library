@@ -1,0 +1,225 @@
+
+=== A. structure of the .ssc files ===
+half_bridge_ttype: 4 nodes ['p', 'np', 'n', 'a'], G[4], outputs {'I': 1, 'V': 3}, 11 variables, 5 branches, 8 intermediates, onoff ['cap_dc', 'ind_ac']
+   cap_dc=on ind_ac=on: equations = variables + outputs (11 + 4) got 15, expected 15                          OK
+   cap_dc=on ind_ac=on: der() equations = differentiated variables got 3, expected 3                          OK
+   cap_dc=on ind_ac=on: differentiated variables declared       got 0, expected 0                             OK
+   cap_dc=on ind_ac=off: equations = variables + outputs (11 + 4) got 15, expected 15                         OK
+   cap_dc=on ind_ac=off: der() equations = differentiated variables got 2, expected 2                         OK
+   cap_dc=on ind_ac=off: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=on: equations = variables + outputs (11 + 4) got 15, expected 15                         OK
+   cap_dc=off ind_ac=on: der() equations = differentiated variables got 1, expected 1                         OK
+   cap_dc=off ind_ac=on: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=off: equations = variables + outputs (11 + 4) got 15, expected 15                        OK
+   cap_dc=off ind_ac=off: der() equations = differentiated variables got 0, expected 0                        OK
+   cap_dc=off ind_ac=off: differentiated variables declared     got 0, expected 0                             OK
+   dynamic ifs (switches) = size of G                           got 4, expected 4                             OK
+   highest gate index used = size of G                          got 4, expected 4                             OK
+   every gate index used once                                   got [1, 2, 3, 4], expected [1, 2, 3, 4]       OK
+   branch currents declared as variables                        got True, expected True                       OK
+   branch nodes declared                                        got True, expected True                       OK
+   branches = 2 capacitor + 3 per leg                           got 5, expected 5                             OK
+   size of G = 4 per leg                                        got 4, expected 4                             OK
+   output V = [vdc; vdc1; vdc2]                                 got 3, expected 3                             OK
+   initial equations (bank voltages)                            got 2, expected 2                             OK
+   np is a node on the left side                                got left, expected left                       OK
+   output I = number of AC terminals                            got 1, expected 1                             OK
+   every port has a Side annotation                             got ['G', 'I', 'V', 'a', 'n', 'np', 'p'], expected ['G', 'I', 'V', 'a', 'n', 'np', 'p']OK
+   hidden parameters exist: Cdc1, Rdc1, Cdc2, Rdc2, Vdc0        got True, expected True                       OK
+   hidden parameters exist: L, RL                               got True, expected True                       OK
+full_bridge_ttype: 5 nodes ['p', 'np', 'n', 'a', 'b'], G[8], outputs {'I': 2, 'V': 3}, 18 variables, 8 branches, 13 intermediates, onoff ['cap_dc', 'ind_ac']
+   cap_dc=on ind_ac=on: equations = variables + outputs (18 + 5) got 23, expected 23                          OK
+   cap_dc=on ind_ac=on: der() equations = differentiated variables got 4, expected 4                          OK
+   cap_dc=on ind_ac=on: differentiated variables declared       got 0, expected 0                             OK
+   cap_dc=on ind_ac=off: equations = variables + outputs (18 + 5) got 23, expected 23                         OK
+   cap_dc=on ind_ac=off: der() equations = differentiated variables got 2, expected 2                         OK
+   cap_dc=on ind_ac=off: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=on: equations = variables + outputs (18 + 5) got 23, expected 23                         OK
+   cap_dc=off ind_ac=on: der() equations = differentiated variables got 2, expected 2                         OK
+   cap_dc=off ind_ac=on: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=off: equations = variables + outputs (18 + 5) got 23, expected 23                        OK
+   cap_dc=off ind_ac=off: der() equations = differentiated variables got 0, expected 0                        OK
+   cap_dc=off ind_ac=off: differentiated variables declared     got 0, expected 0                             OK
+   dynamic ifs (switches) = size of G                           got 8, expected 8                             OK
+   highest gate index used = size of G                          got 8, expected 8                             OK
+   every gate index used once                                   got [1, 2, 3, 4, 5, 6, 7, 8], expected [1, 2, 3, 4, 5, 6, 7, 8]OK
+   branch currents declared as variables                        got True, expected True                       OK
+   branch nodes declared                                        got True, expected True                       OK
+   branches = 2 capacitor + 3 per leg                           got 8, expected 8                             OK
+   size of G = 4 per leg                                        got 8, expected 8                             OK
+   output V = [vdc; vdc1; vdc2]                                 got 3, expected 3                             OK
+   initial equations (bank voltages)                            got 2, expected 2                             OK
+   np is a node on the left side                                got left, expected left                       OK
+   output I = number of AC terminals                            got 2, expected 2                             OK
+   every port has a Side annotation                             got ['G', 'I', 'V', 'a', 'b', 'n', 'np', 'p'], expected ['G', 'I', 'V', 'a', 'b', 'n', 'np', 'p']OK
+   hidden parameters exist: Cdc1, Rdc1, Cdc2, Rdc2, Vdc0        got True, expected True                       OK
+   hidden parameters exist: L, RL                               got True, expected True                       OK
+three_phase_bridge_ttype: 6 nodes ['p', 'np', 'n', 'a', 'b', 'c'], G[12], outputs {'I': 3, 'V': 3}, 25 variables, 11 branches, 16 intermediates, onoff ['cap_dc', 'ind_ac']
+   cap_dc=on ind_ac=on: equations = variables + outputs (25 + 6) got 31, expected 31                          OK
+   cap_dc=on ind_ac=on: der() equations = differentiated variables got 5, expected 5                          OK
+   cap_dc=on ind_ac=on: differentiated variables declared       got 0, expected 0                             OK
+   cap_dc=on ind_ac=off: equations = variables + outputs (25 + 6) got 31, expected 31                         OK
+   cap_dc=on ind_ac=off: der() equations = differentiated variables got 2, expected 2                         OK
+   cap_dc=on ind_ac=off: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=on: equations = variables + outputs (25 + 6) got 31, expected 31                         OK
+   cap_dc=off ind_ac=on: der() equations = differentiated variables got 3, expected 3                         OK
+   cap_dc=off ind_ac=on: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=off: equations = variables + outputs (25 + 6) got 31, expected 31                        OK
+   cap_dc=off ind_ac=off: der() equations = differentiated variables got 0, expected 0                        OK
+   cap_dc=off ind_ac=off: differentiated variables declared     got 0, expected 0                             OK
+   dynamic ifs (switches) = size of G                           got 12, expected 12                           OK
+   highest gate index used = size of G                          got 12, expected 12                           OK
+   every gate index used once                                   got [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], expected [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]OK
+   branch currents declared as variables                        got True, expected True                       OK
+   branch nodes declared                                        got True, expected True                       OK
+   branches = 2 capacitor + 3 per leg                           got 11, expected 11                           OK
+   size of G = 4 per leg                                        got 12, expected 12                           OK
+   output V = [vdc; vdc1; vdc2]                                 got 3, expected 3                             OK
+   initial equations (bank voltages)                            got 2, expected 2                             OK
+   np is a node on the left side                                got left, expected left                       OK
+   output I = number of AC terminals                            got 3, expected 3                             OK
+   every port has a Side annotation                             got ['G', 'I', 'V', 'a', 'b', 'c', 'n', 'np', 'p'], expected ['G', 'I', 'V', 'a', 'b', 'c', 'n', 'np', 'p']OK
+   hidden parameters exist: Cdc1, Rdc1, Cdc2, Rdc2, Vdc0        got True, expected True                       OK
+   hidden parameters exist: L, RL                               got True, expected True                       OK
+full_bridge: 4 nodes ['p', 'n', 'a', 'b'], G[4], outputs {'I': 2, 'V': 1}, 10 variables, 5 branches, 4 intermediates, onoff ['cap_dc', 'ind_ac']
+   cap_dc=on ind_ac=on: equations = variables + outputs (10 + 3) got 13, expected 13                          OK
+   cap_dc=on ind_ac=on: der() equations = differentiated variables got 3, expected 3                          OK
+   cap_dc=on ind_ac=on: differentiated variables declared       got 0, expected 0                             OK
+   cap_dc=on ind_ac=off: equations = variables + outputs (10 + 3) got 13, expected 13                         OK
+   cap_dc=on ind_ac=off: der() equations = differentiated variables got 1, expected 1                         OK
+   cap_dc=on ind_ac=off: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=on: equations = variables + outputs (10 + 3) got 13, expected 13                         OK
+   cap_dc=off ind_ac=on: der() equations = differentiated variables got 2, expected 2                         OK
+   cap_dc=off ind_ac=on: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=off: equations = variables + outputs (10 + 3) got 13, expected 13                        OK
+   cap_dc=off ind_ac=off: der() equations = differentiated variables got 0, expected 0                        OK
+   cap_dc=off ind_ac=off: differentiated variables declared     got 0, expected 0                             OK
+   dynamic ifs (switches) = size of G                           got 4, expected 4                             OK
+   highest gate index used = size of G                          got 4, expected 4                             OK
+   every gate index used once                                   got [1, 2, 3, 4], expected [1, 2, 3, 4]       OK
+   branch currents declared as variables                        got True, expected True                       OK
+   branch nodes declared                                        got True, expected True                       OK
+   branches = 1 capacitor + 2 per leg                           got 5, expected 5                             OK
+   size of G = 2 per leg                                        got 4, expected 4                             OK
+   output I = number of AC terminals                            got 2, expected 2                             OK
+   every port has a Side annotation                             got ['G', 'I', 'V', 'a', 'b', 'n', 'p'], expected ['G', 'I', 'V', 'a', 'b', 'n', 'p']OK
+   hidden parameters exist: Cdc, Vdc0                           got True, expected True                       OK
+   hidden parameters exist: L, RL                               got True, expected True                       OK
+three_phase_bridge: 5 nodes ['p', 'n', 'a', 'b', 'c'], G[6], outputs {'I': 3, 'V': 1}, 14 variables, 7 branches, 6 intermediates, onoff ['cap_dc', 'ind_ac']
+   cap_dc=on ind_ac=on: equations = variables + outputs (14 + 4) got 18, expected 18                          OK
+   cap_dc=on ind_ac=on: der() equations = differentiated variables got 4, expected 4                          OK
+   cap_dc=on ind_ac=on: differentiated variables declared       got 0, expected 0                             OK
+   cap_dc=on ind_ac=off: equations = variables + outputs (14 + 4) got 18, expected 18                         OK
+   cap_dc=on ind_ac=off: der() equations = differentiated variables got 1, expected 1                         OK
+   cap_dc=on ind_ac=off: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=on: equations = variables + outputs (14 + 4) got 18, expected 18                         OK
+   cap_dc=off ind_ac=on: der() equations = differentiated variables got 3, expected 3                         OK
+   cap_dc=off ind_ac=on: differentiated variables declared      got 0, expected 0                             OK
+   cap_dc=off ind_ac=off: equations = variables + outputs (14 + 4) got 18, expected 18                        OK
+   cap_dc=off ind_ac=off: der() equations = differentiated variables got 0, expected 0                        OK
+   cap_dc=off ind_ac=off: differentiated variables declared     got 0, expected 0                             OK
+   dynamic ifs (switches) = size of G                           got 6, expected 6                             OK
+   highest gate index used = size of G                          got 6, expected 6                             OK
+   every gate index used once                                   got [1, 2, 3, 4, 5, 6], expected [1, 2, 3, 4, 5, 6]OK
+   branch currents declared as variables                        got True, expected True                       OK
+   branch nodes declared                                        got True, expected True                       OK
+   branches = 1 capacitor + 2 per leg                           got 7, expected 7                             OK
+   size of G = 2 per leg                                        got 6, expected 6                             OK
+   output I = number of AC terminals                            got 3, expected 3                             OK
+   every port has a Side annotation                             got ['G', 'I', 'V', 'a', 'b', 'c', 'n', 'p'], expected ['G', 'I', 'V', 'a', 'b', 'c', 'n', 'p']OK
+   hidden parameters exist: Cdc, Vdc0                           got True, expected True                       OK
+   hidden parameters exist: L, RL                               got True, expected True                       OK
+
+=== B. one T-type leg at an operating point (Vdc = 800 V, np = 0, Ron = 1 mOhm, Goff = 1 uS) ===
+1) states P, O, N (the ones of the three-level modulation)
+   Q1Q2----, i_a = +100 A: one consistent solution              got 1, expected 1                             OK
+      P: vm = (+) - Ron*i_a  [i_a = +100]                       got 399.9, expected 399.9                     OK
+      P: i1 = i_a                                               got 100.001, expected 100                     OK
+      P: |i_np| leakage only                                    got True, expected True                       OK
+   --Q2Q3--, i_a = +100 A: one consistent solution              got 1, expected 1                             OK
+      O: vm = np - 2*Ron*i_a  [i_a = +100]                      got -0.2, expected -0.2                       OK
+      O: i_np = -i_a (leg fed from np)                          got -100, expected -100                       OK
+      O: vs halfway between np and vm                           got -0.1, expected -0.1                       OK
+   ----Q3Q4, i_a = +100 A: one consistent solution              got 1, expected 1                             OK
+      N: vm = (-) - Ron*i_a  [i_a = +100]                       got -400.1, expected -400.1                   OK
+      N: i4 = -i_a                                              got -99.9988, expected -100                   OK
+      N: Q2 blocking (v2 > 0)                                   got True, expected True                       OK
+   Q1Q2----, i_a = -100 A: one consistent solution              got 1, expected 1                             OK
+      P: vm = (+) - Ron*i_a  [i_a = -100]                       got 400.1, expected 400.1                     OK
+      P: i1 = i_a                                               got -99.9988, expected -100                   OK
+      P: |i_np| leakage only                                    got True, expected True                       OK
+   --Q2Q3--, i_a = -100 A: one consistent solution              got 1, expected 1                             OK
+      O: vm = np - 2*Ron*i_a  [i_a = -100]                      got 0.2, expected 0.2                         OK
+      O: i_np = -i_a (leg fed from np)                          got 100, expected 100                         OK
+      O: vs halfway between np and vm                           got 0.1, expected 0.1                         OK
+   ----Q3Q4, i_a = -100 A: one consistent solution              got 1, expected 1                             OK
+      N: vm = (-) - Ron*i_a  [i_a = -100]                       got -399.9, expected -399.9                   OK
+      N: i4 = -i_a                                              got 100.001, expected 100                     OK
+      N: Q2 blocking (v2 > 0)                                   got True, expected True                       OK
+2) all gates off: freewheeling through D4 (i_a > 0) and D1 (i_a < 0)
+   --------, i_a = +100 A: one consistent solution              got 1, expected 1                             OK
+      i_a > 0: D4 conducts, vm = (-) - Ron*i_a                  got -400.1, expected -400.1                   OK
+      i_a > 0: D4 conducting                                    got True, expected True                       OK
+      i_a > 0: neutral pair blocks (D3 forward, Q2 leakage only), |i_np| < 10 mA got True, expected True      OK
+   --------, i_a = -100 A: one consistent solution              got 1, expected 1                             OK
+      i_a < 0: D1 conducts, vm = (+) - Ron*i_a                  got 400.1, expected 400.1                     OK
+      i_a < 0: D1 conducting                                    got True, expected True                       OK
+      i_a < 0: neutral pair blocks (D2 forward, Q3 leakage only), |i_np| < 10 mA got True, expected True      OK
+   --------, i_a = +0 A: one consistent solution                got 1, expected 1                             OK
+      i_a = 0: midpoint floats between the rails                got True, expected True                       OK
+3) dead-time intervals of the three-level modulation (one switch on)
+   --Q2----, i_a = +100 A: one consistent solution              got 1, expected 1                             OK
+      Q2 alone, i_a > 0: clamped to np through Q2 + D3          got -0.2, expected -0.2                       OK
+   --Q2----, i_a = -100 A: one consistent solution              got 1, expected 1                             OK
+      Q2 alone, i_a < 0: clamped to (+) through D1              got 400.1, expected 400.1                     OK
+   ----Q3--, i_a = -100 A: one consistent solution              got 1, expected 1                             OK
+      Q3 alone, i_a < 0: clamped to np through Q3 + D2          got 0.2, expected 0.2                         OK
+   ----Q3--, i_a = +100 A: one consistent solution              got 1, expected 1                             OK
+      Q3 alone, i_a > 0: clamped to (-) through D4              got -400.1, expected -400.1                   OK
+4) shoot-through patterns (i_a = 0)
+   Q1--Q3--, i_a = +0 A: one consistent solution                got 1, expected 1                             OK
+      Q1 + Q3: upper bank shorted, i_np = (vp - np)/(3 Ron)     got 133333, expected 133333                   OK
+      Q1 + Q3: D2 conducting                                    got True, expected True                       OK
+   --Q2--Q4, i_a = +0 A: one consistent solution                got 1, expected 1                             OK
+      Q2 + Q4: lower bank shorted, i_np = -(np - vn)/(3 Ron)    got -133333, expected -133333                 OK
+      Q2 + Q4: D3 conducting                                    got True, expected True                       OK
+   Q1----Q4, i_a = +0 A: one consistent solution                got 1, expected 1                             OK
+      Q1 + Q4: link shorted, i1 = (vp - vn)/(2 Ron)             got 400000, expected 400000                   OK
+      Q1 + Q4: no neutral current (midpoint at np)              got True, expected True                       OK
+5) scan of the 16 gate patterns, i_a = 0: which ones short a bank
+      pattern      vm [V]    i_np [A]      short
+      --------         -0.0          0.0      -
+      ------Q4       -400.0         -0.0      -
+      ----Q3--         -0.0          0.0      -
+      ----Q3Q4       -400.0         -0.0      -
+      --Q2----         -0.0          0.0      -
+      --Q2--Q4       -266.7    -133333.3      yes
+      --Q2Q3--         -0.0          0.0      -
+      --Q2Q3Q4       -266.7    -133333.3      yes
+      Q1------        400.0          0.0      -
+      Q1----Q4         -0.0          0.0      yes
+      Q1--Q3--        266.7     133333.3      yes
+      Q1--Q3Q4         -0.0          0.0      yes
+      Q1Q2----        400.0          0.0      -
+      Q1Q2--Q4         -0.0          0.0      yes
+      Q1Q2Q3--        266.7     133333.3      yes
+      Q1Q2Q3Q4         -0.0          0.0      yes
+   shorting patterns = (Q1&Q4) | (Q1&Q3) | (Q2&Q4)              got [(0, 1, 0, 1), (0, 1, 1, 1), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 1), (1, 1, 0, 1), (1, 1, 1, 0), (1, 1, 1, 1)], expected [(0, 1, 0, 1), (0, 1, 1, 1), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 1), (1, 1, 0, 1), (1, 1, 1, 0), (1, 1, 1, 1)]OK
+
+=== C. half_bridge_ttype in the time domain: 800 V source, load 4 Ohm from a to np, 10 kHz three-level PWM ===
+   midpoint on one of the three levels (+), np, (-): fraction of samples got 0.999975, expected 1             OK
+   midpoint voltage: highest value = (+) (band 2 V)             got 800.004, expected 800                     OK
+   midpoint voltage: lowest value = (-) (band 2 V)              got -0.00483662, expected 0                   OK
+   fraction of samples at the np level = 1 - mean|m| + dead time got 0.500387, expected 0.500704              OK
+   fundamental of the midpoint voltage = m*Vdc/2 - (4/pi)*dt*Vdc/2 got 315.121, expected 314.907              OK
+   fundamental of the current = U1/|R + jwL|                    got 78.3433, expected 78.3438                 OK
+   current lags the voltage by atan(wL/R) [deg]                 got 4.47972, expected 4.47963                 OK
+   net neutral-point current: fundamental = fund(i_load*|m|)    got 52.5144, expected 52.0165                 OK
+   mean np current = (C2 dvc2 - C1 dvc1)/T (KCL of np) [A]      got 0.100193, expected 0.100196               OK
+   mean np current ~ 0 once the np offset has settled [A]       got 0.100193, expected 0                      OK
+   neutral-point voltage ripple at f1 = I_np1/(w (C1 + C2))     got 20.8978, expected 20.8948                 OK
+   mean of the two bank voltages = Vdc/2                        got 400, expected 400                         OK
+   source power = load + inductor losses (+ Ron, ESR) [relative] got 12341.9, expected 12330.5                OK
+   max diode iterations per step 3, P_load = 12299.8 W, I1 = 78.34 A, U1 = 315.1 V, I_np1 = 52.51 A, np ripple = 20.90 V
+
+189 checks, 0 failed
