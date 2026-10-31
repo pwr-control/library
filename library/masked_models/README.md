@@ -37,7 +37,7 @@ and RC snubber, or the loss models `mos_simple_2th` / `igbt_simple_2th` of
 thermal network per die. All Simscape. The 23 earlier models (Simscape Electrical
 IGBT/MOSFET/Diode blocks, NPC bridges, Vienna rectifier, passive rectifiers) stay in the folder
 root until the models of `modelization-and-control` that link them have been moved to the new
-bridges (correspondence table in the folder README). T-type bridges need about 50 fixed-cost
+bridges (correspondence table in the folder README). T-type bridges need about 20 fixed-cost
 nonlinear iterations in the Solver Configuration (two diodes flip in one commutation).
 
 ## `modulators`

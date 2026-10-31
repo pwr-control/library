@@ -11,14 +11,14 @@ tb.fpwm       = 10e3;      % [Hz]  PWM carrier frequency (all modulators)
 tb.dead_time  = 1e-6;      % [s]   dead time (all modulators)
 tb.tc         = 1e-6;      % [s]   modulator sampling time and local solver step of every bridge
 tb.nonlin_iter = 5;        % [-]   fixed-cost nonlinear iterations of the local solvers, two-level cells
-tb.nonlin_iter_ttype = 50; % [-]   same for the T-type cells. A T-type commutation flips two diodes within
+tb.nonlin_iter_ttype = 20; % [-]   same for the T-type cells. A T-type commutation flips two diodes within
                            %       one step (the third-quadrant diode and the outer diode both turn on, then
                            %       one turns off) and the if/else branches of the devices are re-evaluated
                            %       inside the nonlinear iterations: with 5 the step is left with inconsistent
                            %       modes, kA of spurious current flow in a diode, mos_simple_2th turns the
                            %       negative held diode current into a negative Err and the junction
-                           %       temperature falls below 0 K (assertion at t = 0.9 ms). 50 works
-                           %       (2026-10-31); the smallest sufficient value has not been searched.
+                           %       temperature falls below 0 K (assertion at t = 0.9 ms). 20 and 50 work,
+                           %       5 does not (2026-10-31); the smallest value in between has not been searched.
 tb.mode_iter  = 2;         % [-]   fixed-cost mode iterations (Simulink default 2), exposed for experiments
 tb.gate_on    = 15;        % [V]   gate command when on  (ideal switch Vth and MOSFET G_th sit in between)
 tb.gate_off   = -10;       % [V]   gate command when off

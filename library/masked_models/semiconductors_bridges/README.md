@@ -150,9 +150,9 @@ ideal-switch and IGBT cells do not stop on it (the IGBT events use absolute valu
 is wrong for every family; `mos_simple_2th` turns the negative held diode current into a negative
 recovery energy and the junction temperature of the die falls below 0 K ("Temperature must be
 greater than absolute zero" from the junction *Thermal Mass*, about 1 ms into the simulation).
-**Use 50 nonlinear iterations for the T-type bridges** (verified with the test bench on
-2026-10-31; the smallest sufficient value has not been searched) or switch fixed-cost off. The
-*Mode iterations* setting (default 2) did not need to change.
+**Use 20 nonlinear iterations for the T-type bridges** (verified with the test bench on
+2026-10-31: 20 and 50 pass, 5 fails; the smallest value in between has not been searched) or
+switch fixed-cost off. The *Mode iterations* setting (default 2) did not need to change.
 
 ## Mask parameters
 
@@ -300,4 +300,4 @@ need an ideal bridge can alternatively use the single-component bridges of
 | Rev. | Date       | Notes                                                                                   |
 |------|------------|-----------------------------------------------------------------------------------------|
 | 01   | 2026-10-31 | 18 generated libraries in three subfolders, test bench, this README                      |
-| 02   | 2026-10-31 | Names `*_two_level_*` / `*_three_level_ttype_*`; the 23 legacy models stay in the folder root; test grouped per modulator; T-type cells with 50 nonlinear iterations (`tb.nonlin_iter_ttype`), solver notes |
+| 02   | 2026-10-31 | Names `*_two_level_*` / `*_three_level_ttype_*`; the 23 legacy models stay in the folder root; test grouped per modulator; T-type cells with 20 nonlinear iterations (`tb.nonlin_iter_ttype`), solver notes |
