@@ -10,7 +10,7 @@
 tb.fpwm       = 10e3;      % [Hz]  PWM carrier frequency (all modulators)
 tb.dead_time  = 1e-6;      % [s]   dead time (all modulators)
 tb.tc         = 1e-6;      % [s]   modulator sampling time and local solver step of every bridge
-tb.nonlin_iter = 3;        % [-]   fixed-cost nonlinear iterations of the local solvers
+tb.nonlin_iter = 5;        % [-]   fixed-cost nonlinear iterations of the local solvers
 tb.gate_on    = 15;        % [V]   gate command when on  (ideal switch Vth and MOSFET G_th sit in between)
 tb.gate_off   = -10;       % [V]   gate command when off
 tb.f_out      = 50;        % [Hz]  fundamental frequency of the modulation
