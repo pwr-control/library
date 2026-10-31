@@ -317,11 +317,12 @@ the Variables tab.
 ## Limitations
 
 - No switching or conduction losses, no reverse recovery, no thermal ports.
-  For losses use `igbt_simple` / `igbt_loss` bridges or the T-type blocks
-  with device models of `masked_models/semiconductors_bridges` instead.
+  For losses use the `*_mos_simple_2th` / `*_igbt_simple_2th` bridges of
+  `masked_models/semiconductors_bridges` instead.
 - No dead time or shoot-through protection; no neutral-point balancing.
-- Two-level and three-level T-type topologies only; the NPC (diode-clamped)
-  bridges remain in `masked_models/semiconductors_bridges`.
+- Two-level and three-level T-type topologies only; no NPC (diode-clamped)
+  bridge exists in the library since the October 2026 reorganization of
+  `masked_models/semiconductors_bridges`.
 
 ## Revision history
 
