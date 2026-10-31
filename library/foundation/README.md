@@ -86,8 +86,8 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   and `afe_single_phase_ttype`; `V = [vdc; vdc1; vdc2]`). `check_ideal_bridges_ttype.py` (python3 +
   numpy, output committed) checks the structure of the five `.ssc` (equation and `der()` counts for every
   on/off combination), one T-type leg at the 16 gate patterns and the half bridge in the time domain with
-  three-level PWM. Build with `ssc_build ideal_bridges` from this folder (`ideal_bridges_lib.slx`, not
-  committed yet). Details in [`pwr_electronics/+ideal_bridges/README.md`](pwr_electronics/+ideal_bridges/README.md).
+  three-level PWM. Build with `ssc_build ideal_bridges` from this folder (`ideal_bridges_lib.slx`,
+  committed next to the package). Details in [`pwr_electronics/+ideal_bridges/README.md`](pwr_electronics/+ideal_bridges/README.md).
 - **`afe_ssc`** — `afe_two_level_lcl`: two-level bridge with DC-link capacitor and LCL filter, the power
   stage of `grid_following_dqctrl` and `grid_forming_dqctrl`. Gate commands in as a physical-signal
   vector, measurements out in pu.

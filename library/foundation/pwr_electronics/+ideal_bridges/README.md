@@ -298,8 +298,9 @@ python3 check_ideal_bridges_ttype.py --png waveforms.png      # with matplotlib:
 5. Block count: `sldiagnostics('model_name', 'CountBlocks')` before and after
    replacing the discrete bridges.
 
-The files were written without compiling them in MATLAB; the first
-`ssc_build` will tell. Constructs used and where they are documented:
+The files were written without MATLAB at hand; `ssc_build ideal_bridges`
+then compiled all five blocks (2026-10-31, `ideal_bridges_lib.slx` committed
+next to the package). Constructs used and where they are documented:
 vector physical-signal ports (`inputs G = {zeros(6,1), 'V'}`), parametric
 `if` in equations, conditional sections for the initial equation and for
 hiding parameters (`annotations [Cdc, Vdc0] : ExternalAccess = none`),
