@@ -17,38 +17,26 @@ and the `_cc` / `_ccaller` suffix marks the C version.
 
 ## `semiconductors_bridges`
 
-Converter power stages. Each has a `gate_commands` inport (except the passive rectifiers),
-physical DC and AC terminals and a measurement bus `m`. Switches are either ideal
-(controlled switch + PWL diode) or thermal IGBT / MOSFET devices with a junction-heatsink-ambient
-network, so the same topology can be run fast or with losses. All Simscape.
+Converter power stages, rebuilt in October 2026 as one family of 18 generated libraries (see
+[`semiconductors_bridges/README.md`](semiconductors_bridges/README.md)): three topologies ×
+two-level / three-level T-type × three device families, in three subfolders.
 
-- Two-level, ideal switch: `full_bridge_ideal_switch.slx`,
-  `three_phase_inverter_ideal_switch_based_model.slx`.
-- Two-level with thermal model: `full_bridge_igbt_based_with_thermal_model.slx`,
-  `full_bridge_mosfet_based_with_thermal_model.slx`,
-  `full_bridge_mosfet_based_with_thermal_model_zvs.slx`,
-  `three_phase_inverter_igbt_based_with_thermal_model.slx`,
-  `three_phase_inverter_mosfet_based_with_thermal_model.slx`,
-  `three_phase_inverter_mosfet_based_with_thermal_model_zvs.slx` — the `_zvs` variants carry a
-  snubber sized for soft switching.
-- Two-level, advanced thermal model (separate free-wheeling diodes, per-device thermal paths,
-  reverse-recovery current and module stray inductance):
-  `full_bridge_igbt_based_with_advanced_thermal_model.slx`,
-  `three_phase_inverter_igbt_advanced_thermal_model.slx`.
-- `three_phase_inverter_with_igbt_simple.slx` — six `igbt_simple` devices with averaged switching
-  loss estimation and three module thermal blocks.
-- Three-level NPC single-phase: `full_bridge_three_level_npc_ideal_switch_based_model.slx`,
-  `full_bridge_three_level_npc_igbt_based_model.slx`,
-  `full_bridge_three_level_npc_mosfet_based_model.slx`.
-- Three-level T-type single-phase: `full_bridge_three_level_ttype_ideal_switch_based_model.slx`,
-  `full_bridge_three_level_ttype_igbt_based_model.slx`,
-  `full_bridge_three_level_ttype_mosfet_based_model.slx` — the IGBT version has separate parameter
-  sets for the neutral branch and the outer switches.
-- Three-level T-type three-phase: `three_phase_three_level_ttype_inverter_ideal_switch_based_model.slx`,
-  `three_phase_inverter_three_level_ttype_igbt_based_model.slx`.
-- `vienna_rectifier_ideal_switch_based_model.slx` — three-level Vienna rectifier, twelve switches.
-- Passive rectifiers: `full_bridge_diode_rectifier.slx`, `three_phase_diode_rectifier.slx`,
-  `three_phase_diode_rectifier_with_thermal_model.slx`.
+| Subfolder             | Blocks (block name = file name)                                                                                                                                                              |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `half_bridge/`        | `half_bridge_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `half_bridge_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                               |
+| `full_bridge/`        | `full_bridge_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `full_bridge_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                               |
+| `three_phase_bridge/` | `three_phase_bridge_{ideal_switch,mos_simple_2th,igbt_simple_2th}`, `three_phase_bridge_ttype_{ideal_switch,mos_simple_2th,igbt_simple_2th}`                                                 |
+| `test/`               | `test_semiconductors_bridges.slx` with the 18 bridges, parameter and check scripts                                                                                                           |
+| `tools/`              | Python generator of the libraries and of the test model                                                                                                                                      |
+
+Every block has the `gate_commands` bus inport (from the modulators below), the dc terminals on
+the left (`udc(+)`, `np` for the T-type bridges, `udc(-)`), the ac terminals on the right and the
+flat measurement bus `m`. Devices are either the Simscape Foundation ideal switch with PWL diode
+and RC snubber, or the loss models `mos_simple_2th` / `igbt_simple_2th` of
+[`../foundation/semiconductors`](../foundation/semiconductors) with a junction-heatsink-ambient
+thermal network per die. All Simscape. The earlier models based on the Simscape Electrical
+IGBT/MOSFET/Diode blocks, the NPC bridges, the Vienna rectifier and the passive rectifiers were
+removed (list and replacement table in the folder README).
 
 ## `modulators`
 
