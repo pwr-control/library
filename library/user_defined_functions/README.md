@@ -1,7 +1,8 @@
 # User defined functions — C code for the C-Caller blocks
 
 The control algorithms in C. The same source runs inside the Simulink models through C-Caller
-blocks and on the target, so simulation and firmware share one implementation.
+blocks and on the target, so simulation and firmware share one implementation. The folders
+`ekf_im`, `hex2bin` and `maximum_bits` hold MATLAB code instead.
 
 ## Layout
 
@@ -12,6 +13,7 @@ user_defined_functions/
 │   ├── all_ccallers.c      list of the matching source file names — a manifest, not compilable C
 │   ├── include/            48 headers
 │   └── src/                47 sources
+├── ekf_im/                 EKF of the induction machine (MATLAB, MATLAB Function block)
 ├── hex2bin/
 └── maximum_bits/
 ```
@@ -107,6 +109,23 @@ These declare their own `…ProcessSimulink` entry point instead of a separate `
 - `fb_state_machine.*` — the same machine with feedback-based transition guards (DC-link voltage
   and duty thresholds). It reuses the same include guard and symbol names, so it is an alternative
   build of the same unit, not a second one to be compiled alongside.
+
+## Extended Kalman filter of the induction machine (MATLAB)
+
+`ekf_im/` is MATLAB code written for a MATLAB Function block (`%#codegen`), with the data built by
+the class `ekf_im_setup` of `setup_files/objs`.
+
+- `ekf_im_step.m` — one step of the six-state filter x = [iα iβ ψα ψβ ω T_load] in pu:
+  second-order Taylor prediction (forward Euler is unstable on the rotor-flux mode above about
+  0.28 pu of speed at 8 kHz), covariance with the first- or second-order transition matrix,
+  Joseph-form correction, speed and load torque held at zero while the shaft is known to be at
+  standstill. The coefficients come as an `ekf_im_setup` object in a script or as a struct with
+  the same field names in a block.
+- `test_ekf_im.m` — check without Simulink on the 261 kW machine of inv_im: magnetization, speed
+  ramps and load steps under a rotor-flux oriented control, with the filter as observer or in the
+  loop (sensorless). With exact parameters the flux angle error stays below 0.2° in steady state,
+  with peaks of 2.9° and 3.7° at the 0.3 pu and 0.5 pu load steps. The derivation and the choice
+  of Q and R are in the research note `im_foc_ekf_sensorless` (pwr-control/repositories-documentation).
 
 ## MATLAB helpers
 
