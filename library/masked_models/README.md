@@ -167,12 +167,18 @@ Passive three-phase loads in Simscape: `three_phase_rl_load.slx`, `three_phase_r
 ## `power_supply_emulators`
 
 Programmable three-phase sources with positive- and negative-sequence references in ξ/η
-coordinates (Simulink).
+coordinates (Simulink). Each one also exists as a MATLAB Function copy (`_mfcn`) with the same
+block name, mask and output bus and far fewer non-virtual blocks, see
+[`power_supply_emulators/README.md`](power_supply_emulators/README.md).
 
 - `three_phase_voltage_emulator.slx` — sequence references and nominal values.
+- `three_phase_voltage_emulator_mfcn.slx` — the same block as one MATLAB Function (3 non-virtual
+  blocks instead of 44).
 - `three_phase_voltage_with_frt_emulator.slx` — adds scripted fault-ride-through events (dip
   depths per sequence, start and end times, ramp, phase shift), driven by the FRT settings from
   [`../setup_files`](../setup_files).
+- `three_phase_voltage_with_frt_emulator_mfcn.slx` — the same block as one MATLAB Function and
+  one Integrator for the LVRT filter states (4 non-virtual blocks instead of 123).
 
 ## `lithium_ion_batteries`
 
