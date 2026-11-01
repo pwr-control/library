@@ -1,5 +1,10 @@
 function [ua_grid_emu, ub_grid_emu, uc_grid_emu, gamma_grid_emulator, omega_grid_emulator, ...
-    vp_xi, vp_eta, vn_xi, vn_eta, dx] = grid_emulator_frt(t, x)
+    vp_xi, vp_eta, vn_xi, vn_eta, dx] = grid_emulator_frt(t, x, ...
+    nominal_frequency_m, nominal_voltage_m, Vemu_ref_norm_m, ...
+    vp_xi_pu_m, vp_eta_pu_m, vn_xi_pu_m, vn_eta_pu_m, Am, Bm, Cm, ...
+    enable_frt_1_m, enable_frt_2_m, start_time_LVRT_m, end_time_LVRT_m, ...
+    deepPOSxi_m, deepPOSeta_m, deepNEGxi_m, deepNEGeta_m, ...
+    Amplitude_U_m, Amplitude_V_m, Amplitude_W_m, t_ramp_m, Phase_shift_m)
 %#codegen
 % GRID_EMULATOR_FRT
 % MATLAB Function copy of three_phase_voltage_with_frt_emulator/
@@ -16,7 +21,8 @@ function [ua_grid_emu, ub_grid_emu, uc_grid_emu, gamma_grid_emulator, omega_grid
 %       1 vp_xi, 2 vp_eta, 3 vn_xi, 4 vn_eta  (sequence references [pu])
 %       5, 6, 7 amplitudes of the phases U, V, W [pu], 8 phase shift [rad]
 %
-% PARAMETERS: the 23 mask parameters of the block (scope Parameter)
+% PARAMETERS: the 23 mask parameters of the block, in the order of the mask (arguments
+%   with scope Parameter, no ports)
 %
 % OUTPUTS (elements of the bus grid_emulator_outputs, same order as the original)
 %   ua_grid_emu, ub_grid_emu, uc_grid_emu : phase voltages [V]

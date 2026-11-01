@@ -11,7 +11,9 @@ Structure (always):
     input port is driven exactly once;
   * MATLAB Function block: chart name = Stateflow instance name = block path,
     chartFileNumber = S-function Tag, chart inputs/outputs = Inports/Outports of the block,
-    chart parameters = mask parameters, script = tools/mfcn_src/<function>.m;
+    chart parameters = mask parameters, script = tools/mfcn_src/<function>.m, function
+    arguments = inputs + parameters, S-function Parameters = sorted parameter names,
+    Stateflow ids numbered as Simulink does (instance id = chart id + objects + 1);
   * mask = mask of the original block (parameter names, prompts, default values, dialog
     order), output bus = bus of the original (element names and order);
   * non-virtual blocks of the original and of the copy, counted as
@@ -303,6 +305,32 @@ def check_structure(slx, original, src_file):
         with open(os.path.join(HERE, "mfcn_src", src_file), encoding="utf-8") as fh:
             if fh.read().replace("\r\n", "\n") != script:
                 err(f"the script in the .slx differs from tools/mfcn_src/{src_file}")
+        # rules of every MATLAB Function block saved by Simulink (checked on all the .slx
+        # files of the repositories): the parameters are arguments of the function, after
+        # the port inputs; the S-function lists them, sorted, in Parameters
+        import octave_mfcn
+        _, args = octave_mfcn.signature(script)
+        if args != data["INPUT_DATA"] + data["PARAMETER_DATA"]:
+            err(f"function arguments {args} != inputs + parameters "
+                f"{data['INPUT_DATA'] + data['PARAMETER_DATA']}")
+        want = ",".join(sorted(data["PARAMETER_DATA"]))
+        if (P(sfun, "Parameters") or "") != want:
+            err(f"S-function Parameters {P(sfun, 'Parameters')!r} != {want!r}")
+        # Stateflow ids: the loader numbers the objects of a chart after the chart id, so
+        # the instance id must be chart id + objects + 1 (otherwise MATLAB stops on the
+        # assertion fParserOldIds.find(std::make_pair(fCurrentChart, id)) == end())
+        objs = [o for o in chart.find("Children") if o.get("SSID")]
+        cid = int(chart.get("id"))
+        iid = int(machine.find("instance").get("id"))
+        if iid != cid + len(objs) + 1:
+            err(f"instance id {iid} != chart id {cid} + {len(objs)} objects + 1")
+        ids = ([int(machine.find("machine").get("id")), cid]
+               + list(range(cid + 1, cid + len(objs) + 1)) + [iid]
+               + [int(t.get("id")) for t in machine.iter("target")])
+        if len(set(ids)) != len(ids):
+            err(f"Stateflow ids not unique: {sorted(ids)}")
+        if cid <= max(int(o.get("SSID")) for o in objs):
+            err(f"chart id {cid} not above the SSIDs of its objects")
 
     # same mask, same bus as the original
     o_root = original.root_block()

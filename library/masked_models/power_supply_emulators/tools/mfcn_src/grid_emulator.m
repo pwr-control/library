@@ -1,4 +1,5 @@
-function [ua_grid_emu, ub_grid_emu, uc_grid_emu, gamma_grid_emulator, omega_grid_emulator] = grid_emulator(t)
+function [ua_grid_emu, ub_grid_emu, uc_grid_emu, gamma_grid_emulator, omega_grid_emulator] = grid_emulator(t, ...
+    freq, ugrid_nom, vp_xi_pu, vp_eta_pu, vn_xi_pu, vn_eta_pu, fcut_lvrt)
 %#codegen
 % GRID_EMULATOR
 % MATLAB Function copy of three_phase_voltage_emulator/three_phase_voltage_source_emulator:
@@ -11,7 +12,7 @@ function [ua_grid_emu, ub_grid_emu, uc_grid_emu, gamma_grid_emulator, omega_grid
 %   t : simulation time [s], from the Clock block (the simulation must start at t = 0,
 %       where the states of the original start from zero)
 %
-% PARAMETERS (mask parameters of the block, scope Parameter)
+% PARAMETERS (mask parameters of the block: arguments with scope Parameter, no ports)
 %   freq      : nominal frequency [Hz]
 %   ugrid_nom : nominal line-to-line rms voltage [V]
 %   vp_xi_pu, vp_eta_pu, vn_xi_pu, vn_eta_pu : positive / negative sequence references [pu]

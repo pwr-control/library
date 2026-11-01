@@ -81,8 +81,12 @@ choices, the copy stops with an error from its mask initialization.
 
 ## How the copies work
 
-**Base copy** (`tools/mfcn_src/grid_emulator.m`, one input: the time `t` from a Clock). The
-original integrates five states: the grid angle and four first-order LVRT filters fed by
+In both copies the mask parameters reach the MATLAB Function block as arguments of the
+function with scope Parameter (no ports), after the port inputs, with the same names as in
+the mask.
+
+**Base copy** (`tools/mfcn_src/grid_emulator.m`, one port input: the time `t` from a Clock).
+The original integrates five states: the grid angle and four first-order LVRT filters fed by
 constants. Both have a closed-form solution, so the copy has no states:
 
 - `gamma = mod(omega*t + pi, 2*pi) - pi`, `omega = 2*pi*freq` (Constant → Integrator → bounder);
@@ -91,7 +95,7 @@ constants. Both have a closed-form solution, so the copy has no states:
 - ξη → αβ (positive sequence rotated by +γ, negative by −γ) → abc, as the MATLAB Function
   blocks of the original.
 
-**FRT copy** (`tools/mfcn_src/grid_emulator_frt.m`, inputs `t` and `x`, outputs the bus
+**FRT copy** (`tools/mfcn_src/grid_emulator_frt.m`, port inputs `t` and `x`, outputs the bus
 elements and `dx`). The Step, Rate Limiter, Sum, Constant and Variant Source blocks of the
 original are written as functions of `t` (a step followed by a rate limiter is a clamped ramp
 of slope `Vemu_ref_norm/t_ramp`). The eight LVRT filters of the original (four on the sequence
@@ -168,4 +172,19 @@ its own format the first time they are saved. Once a copy has been edited and sa
 Simulink, the `.slx` is the reference: copy the function code back to `tools/mfcn_src/` before
 running the generator again.
 
-Rev. 00, 2026-11-01.
+The Stateflow part of a MATLAB Function block follows rules that the Simulink loader takes for
+granted (a file that breaks the first one makes MATLAB R2026b stop on the assertion
+`fParserOldIds.find(std::make_pair(fCurrentChart, id)) == fParserOldIds.end()` in
+`loadhierarchy.cpp` while loading the library). They hold for every MATLAB Function block of
+the `.slx` files of `library` and `modelization-and-control` (1838 blocks), and
+`check_emulators_mfcn.py` checks them on the two copies:
+
+- the loader numbers the objects of a chart (state, transition, junction, data) with the ids
+  that follow the chart id: the Stateflow instance id is chart id + number of objects + 1, the
+  target id comes after it;
+- the parameters (scope Parameter) are arguments of the function, after the port inputs;
+- the S-function inside the block lists them in its `Parameters` field, names joined by commas
+  and sorted by character code (`Am,Amplitude_U_m,...,vp_xi_pu_m`).
+
+Rev. 01, 2026-11-01: Stateflow ids, parameters in the signature and in the S-function (the
+rev. 00 libraries crashed MATLAB on loading).

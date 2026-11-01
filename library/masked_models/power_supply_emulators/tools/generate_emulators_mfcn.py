@@ -191,15 +191,17 @@ def line(zorder, src, dst, name=None, points=None, indent="  "):
 
 
 def read_function(path, name, inputs, outputs, params):
-    """Read the MATLAB Function code and check it against the block interface."""
+    """Read the MATLAB Function code and check it against the block interface: the
+    signature lists the port inputs, then the mask parameters (scope Parameter), as
+    Simulink requires for the parameters of a MATLAB Function block."""
     with open(path, encoding="utf-8") as fh:
         code = fh.read()
     sig = re.search(r"^function\s*\[(.*?)\]\s*=\s*(\w+)\s*\((.*?)\)", code, re.S | re.M)
     outs = [o.strip() for o in sig.group(1).replace("...", " ").replace(",", " ").split()]
-    ins = [i.strip() for i in sig.group(3).split(",")]
+    ins = [i.strip() for i in sig.group(3).replace("...", " ").split(",")]
     assert sig.group(2) == name, f"{path}: function name {sig.group(2)} != {name}"
     assert outs == outputs, f"{path}: outputs {outs} != {outputs}"
-    assert ins == inputs, f"{path}: inputs {ins} != {inputs}"
+    assert ins == inputs + params, f"{path}: inputs {ins} != {inputs + params}"
     for p in params:
         assert re.search(r"\b%s\b" % re.escape(p), code), f"{path}: parameter {p} not used"
     return code.replace("\r\n", "\n")
@@ -346,9 +348,12 @@ def machine_xml(machine_id, target_id, chart_id, instance_id, instance_name):
 
 
 # ----------------------------------------------------------------------------- systems
-def mfcn_system_xml(sid, file_number, inputs, outputs):
+def mfcn_system_xml(sid, file_number, inputs, outputs, params):
     """Contents of the MATLAB Function subsystem: Inports -> ' SFunction ' -> Outports,
-    output 1 of the S-function (call output) -> ' Demux ' -> ' Terminator '."""
+    output 1 of the S-function (call output) -> ' Demux ' -> ' Terminator '.
+    The S-function receives the parameters (scope Parameter) through its Parameters list:
+    names joined by commas, sorted by character code, as in every MATLAB Function block
+    saved by Simulink."""
     nin, nout = len(inputs), len(outputs)
     k = 0
     in_sids, out_sids = [], []
@@ -383,7 +388,9 @@ def mfcn_system_xml(sid, file_number, inputs, outputs):
           + P("Tag", f"Stateflow S-Function {file_number}")
           + f'    <PortCounts in="{nin}" out="{nout + 1}"/>\n'
           + P("Position", f"[180, 100, 230, {100 + sf_h}]") + P("ZOrder", z())
-          + P("FunctionName", "sf_sfun") + P("PortCounts", f"[{nin} {nout + 1}]")
+          + P("FunctionName", "sf_sfun")
+          + (P("Parameters", ",".join(sorted(params))) if params else "")
+          + P("PortCounts", f"[{nin} {nout + 1}]")
           + P("SFunctionDeploymentMode", "off") + P("EnableBusSupport", "off")
           + P("SFcnIsStateOwnerBlock", "off")
           + "    <PortProperties>\n")
@@ -613,7 +620,17 @@ def build(spec):
     if spec["integrator"]:
         sids["integrator"] = 6
     sid_high = max(sids.values())
-    machine_id, chart_id, instance_id, target_id = 10, 11, 12, 13
+    # Stateflow ids as Simulink numbers them (rule checked on every .slx of the repositories):
+    # the loader gives the objects of a chart (state, transition, junction, data) the ids
+    # after the chart id, so the instance id is chart id + objects + 1 and the target id
+    # comes last; an instance id inside that range stops the loader with the assertion
+    # fParserOldIds.find(std::make_pair(fCurrentChart, id)) == fParserOldIds.end().
+    # Chart id above every SSID of the chart.
+    n_objects = 3 + len(spec["inputs"]) + len(spec["outputs"]) + len(spec["params"])
+    machine_id = 100
+    chart_id = machine_id + 1
+    instance_id = chart_id + n_objects + 1
+    target_id = instance_id + 1
     file_number = 1
     chart_name = f'{spec["block"]}/{spec["mfcn"]}'
 
@@ -632,7 +649,7 @@ def build(spec):
         "root": root,
         str(sids["root"]): inner_system_xml(spec, sids),
         str(sids["mfcn"]): mfcn_system_xml(sids["mfcn"], file_number, spec["inputs"],
-                                           spec["outputs"]),
+                                           spec["outputs"], [p[0] for p in spec["params"]]),
     }
     sys_rels = {
         "root": [str(sids["root"])],
