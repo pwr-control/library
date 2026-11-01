@@ -150,6 +150,20 @@ results = test_power_supply_emulators_mfcn;                    % ode45, MaxStep 
 results = test_power_supply_emulators_mfcn('MaxStep', 1e-6, 'Plot', true);
 ```
 
+Results in MATLAB R2026b (ode45, MaxStep 1e-5 s, RelTol 1e-6, 0.2 s, 2026-11-01), all passed:
+
+| Scenario | Max difference | Tolerance |
+|----------|---------------:|----------:|
+| Base, default mask values | 1.6e-11 (`ua_grid_emu`) | 1e-4 |
+| Base, 60 Hz, unbalanced, 20 Hz LVRT filter | 3.6e-11 (`gamma_grid_emulator`) | 1e-4 |
+| FRT, no dip (`enable_frt_1` = `enable_frt_2` = 0) | 1.6e-11 (`ua_grid_emu`) | 1e-4 |
+| FRT 2, dips on the sequence references | 4.5e-4 (`ua_grid_emu`) | 1.5e-3 |
+| FRT 1, dips on the phase amplitudes + phase shift | 2.2e-4 (`vp_xi`) | 1.5e-3 |
+| FRT 1, `t_ramp` = 0, first-order filter | 6.7e-5 (`ua_grid_emu`) | 1e-4 |
+| FRT 2, non-companion second-order filter, 60 Hz | 1.1e-3 (`ua_grid_emu`) | 3e-3 |
+
+Non-virtual blocks printed by the test: 44 and 3 (base), 123 and 4 (FRT).
+
 ## Using the copies in a model
 
 Drag the block from the `_mfcn` library, or replace the existing links keeping names,
