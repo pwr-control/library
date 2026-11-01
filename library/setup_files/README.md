@@ -107,8 +107,16 @@ DC-link components and the normalization bases:
   single-phase inverter.
 - `ctrl_dab_setup`, `ctrl_cllc_setup`, `ctrl_isop_rail_setup` — voltage and current PI gains of
   the isolated DC/DC stages.
-- `ekf_pmsm_setup`, `ekf_im_setup` — extended Kalman filters: linearization blocks, covariances
-  and gain, built from the per-unit machine parameters and the sample time.
+- `ekf_pmsm_setup` — extended Kalman filter of the PMSM: linearization blocks, covariances and
+  gain, built from the per-unit machine parameters and the sample time.
+- `ekf_im_setup` — data of the six-state extended Kalman filter of the induction machine
+  (rev. 01, 2026-11): normalized coefficients including the inverter output inductor, mechanical
+  time constant on the natural torque base, Q, R, P0 and x0 from the measurement noise and the
+  model uncertainty, hold and voltage-delay settings. Built with
+  `ekf_im_setup(im, ts, l_series, r_series)`; the algorithm is
+  `user_defined_functions/ekf_im/ekf_im_step.m`. The eight-coefficient call of rev. 00 is still
+  accepted, so the inits copied from the common template keep running, but it gives no usable
+  filter.
 - `fof_setup`, `sof_setup` — first- and second-order filters, continuous and ZOH-discretized.
 - `harmonic_observer` — resonant two-state observer with gains placed by `acker` in the continuous
   and discrete domain.
