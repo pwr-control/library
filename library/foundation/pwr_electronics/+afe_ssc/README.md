@@ -16,15 +16,18 @@ links included).
 | `afe_three_level_ttype_lcl_delta.ssc` | `afe_ttype_ssc` | AFE Three-Level T-Type Bridge with LCL Filter, Delta Capacitors | three-level T-type, 12 switches | delta | `+`, `np`, `-` | [12x1] | [22x1] |
 
 `afe_two_level_lcl` is the power stage of the masked blocks `grid_forming_dqctrl` and
-`grid_following_dqctrl` (`masked_models/grid_forming`, `masked_models/grid_following`). The other
-three were added in November 2026. `afe_ttype_ssc` also holds `afe_single_phase_ttype` (single-phase
+`grid_following_dqctrl` (`masked_models/grid_forming`, `masked_models/grid_following`),
+`afe_two_level_lcl_delta` the one of their delta versions `grid_forming_dqctrl_delta` and
+`grid_following_dqctrl_delta`. The other three were added in November 2026. `afe_ttype_ssc` also holds `afe_single_phase_ttype` (single-phase
 T-type AFE with LC filter, see `foundation/README.md`). `onoff.m` in each package is the enumeration
 of the `cap_dc` parameter (`afe_ssc.onoff`, `afe_ttype_ssc.onoff`, members `off` and `on`); it must
 stay in the package folder.
 
-The block name in the library is the first comment line after `component` in the `.ssc` file. The
-masks link to the block `AFE Two-Level Bridge with LCL Filter` of `afe_ssc_lib`, so that line of
-`afe_two_level_lcl.ssc` must not change.
+The block name in the library is the first comment line after `component` in the `.ssc` file,
+wrapped by `ssc_build` at 20 characters per line. The masks link to the blocks
+`AFE Two-Level Bridge\nwith LCL Filter` and `AFE Two-Level Bridge\nwith LCL Filter,\nDelta Capacitors`
+of `afe_ssc_lib`, so the first comment lines of `afe_two_level_lcl.ssc` and `afe_two_level_lcl_delta.ssc`
+must not change.
 
 ## What changed in `afe_two_level_lcl` (November 2026)
 

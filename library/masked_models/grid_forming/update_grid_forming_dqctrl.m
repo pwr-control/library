@@ -12,6 +12,11 @@ function update_grid_forming_dqctrl()
 %   grid_forming_following_afe, description and user guide of the block, opened by the Help button of
 %   the mask: the PDF found on the MATLAB path, otherwise the copy on GitHub), port labels, description.
 %
+%   grid_forming_dqctrl_delta.slx (same block with the filter capacitors in delta, November 2026) holds a
+%   library link to the MATLAB Function of this block, so the control code loaded here applies to it too.
+%   After a change of the ports, the mask or the layout of grid_forming_dqctrl_mod1, make it again with
+%   tools/make_dqctrl_delta.py (python3).
+%
 %   Interface after the update (2026-10-23, master/slave and negative-sequence compensator for the TELEMA VFC
 %   test bench):
 %     inputs    1 t_master   master time [s]
