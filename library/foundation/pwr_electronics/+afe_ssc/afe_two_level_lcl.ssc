@@ -31,7 +31,7 @@ component afe_two_level_lcl
 % interlock inside the block: with both switches of a leg on, the leg shorts
 % the DC link through 2*Ron.
 %
-% Measurement output M: physical-signal vector [14x1], dimensionless (pu):
+% Measurement output M: physical-signal vector [17x1], dimensionless (pu):
 %   M(1:3)   i1_abc/ibez   converter-side inductor currents, positive OUT of the bridge
 %   M(4:6)   uc_abc/ubez   filter capacitor voltages (capacitor node to star point)
 %   M(7:9)   i2_abc/ibez   grid-side inductor currents, positive towards the grid
@@ -40,6 +40,13 @@ component afe_two_level_lcl
 %                          afe_dq_mod1/LCL_filter/threephase_vi_measures_stack1
 %   M(13)    vdc/udc_nom   DC-link voltage (+) - (-)
 %   M(14)    ic/ibez       DC-link capacitor current, (+) -> (-)
+%   M(15:17) icf_abc/ibez  filter capacitor currents, capacitor node -> star point
+%                          (= i1 - i2 of the same phase, the three add up to zero)
+% M(15:17) were added in November 2026; M(1:14) are unchanged. The controls of
+% grid_forming_dqctrl and grid_following_dqctrl read M by index (1 to 13), so
+% they work with the longer vector; a model that splits M with a Demux of 14
+% outputs needs 17 (or a Selector). afe_two_level_lcl_delta is the same block
+% with the filter capacitors in delta, same M.
 %
 % Ports: a b c (AC, left), + - (DC, right), G (gates, left), M (measurements, right).
 % Initial conditions: none imposed (the capacitor voltages and the inductor
@@ -60,7 +67,7 @@ component afe_two_level_lcl
   end
 
   outputs
-    M = {zeros(14,1), '1'}; % M
+    M = {zeros(17,1), '1'}; % M
   end
 
   parameters
@@ -128,7 +135,7 @@ component afe_two_level_lcl
     v_bl = vm_b - n.v;             % Voltage across switch b-
     v_ch = p.v - vm_c;             % Voltage across switch c+
     v_cl = vm_c - n.v;             % Voltage across switch c-
-    ic_a = i1_a - i2_a;            % Filter capacitor current a
+    ic_a = i1_a - i2_a;            % Filter capacitor current a, capacitor node -> star point
     ic_b = i1_b - i2_b;            % Filter capacitor current b
     ic_c = i1_c - i2_c;            % Filter capacitor current c
     uc_a = vk_a - vn;              % Filter capacitor voltage a (terminal, with Rcf)
@@ -243,7 +250,8 @@ component afe_two_level_lcl
           i2_a/ibez; i2_b/ibez; i2_c/ibez;
           ug_a/ubez; ug_b/ubez; ug_c/ubez;
           vdc/udc_nom;
-          ic/ibez];
+          ic/ibez;
+          ic_a/ibez; ic_b/ibez; ic_c/ibez];
   end
 
   % hide the parameters of the DC-link capacitor when it is switched off

@@ -90,7 +90,12 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   committed next to the package). Details in [`pwr_electronics/+ideal_bridges/README.md`](pwr_electronics/+ideal_bridges/README.md).
 - **`afe_ssc`** — `afe_two_level_lcl`: two-level bridge with DC-link capacitor and LCL filter, the power
   stage of `grid_following_dqctrl` and `grid_forming_dqctrl`. Gate commands in as a physical-signal
-  vector, measurements out in pu.
+  vector `G` [6×1], measurements out in pu, `M` [17×1] (`M(15:17)` = filter capacitor currents, added in
+  November 2026; `M(1:14)` unchanged). `afe_two_level_lcl_delta`: the same block with the filter
+  capacitors in delta (same ports and `M`; for the same filter divide `Cf` by 3 and multiply `Rcf` by 3).
+  `check_afe_lcl.py` (python3 + numpy, output committed) checks these two and the two T-type LCL blocks
+  of `afe_ttype_ssc`. Build with `ssc_build afe_ssc` from this folder (`afe_ssc_lib.slx`). Details in
+  [`pwr_electronics/+afe_ssc/README.md`](pwr_electronics/+afe_ssc/README.md).
 - **`afe_ttype_ssc`** — `afe_single_phase_ttype`: single-phase three-level T-type full bridge, the power
   stage of `afe_single_phase_ttype`: split DC link (two capacitor banks in series with their ESR, the
   neutral point internal, `Vdc0/2` on each bank at the start), two T-type legs of four switch +
@@ -98,9 +103,14 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   the neutral point), one inductor per line and the filter capacitor across the terminals. Gates `G`
   [8×1] in, measurements `M` [13×1] in pu out (currents on `ibez`, AC voltages on `ubez`, DC voltages
   on `udc_nom`). Same circuit as `single_phase_inverter_modA` of `sst_cllc_ttype_inv.slx` of
-  `pwr-control/solid-state-transformers` without the device and thermal model. Build with
-  `ssc_build afe_ttype_ssc` from this folder (`afe_ttype_ssc_lib.slx`, committed next to the package
-  once built).
+  `pwr-control/solid-state-transformers` without the device and thermal model.
+  `afe_three_level_ttype_lcl` and `afe_three_level_ttype_lcl_delta` (November 2026): three-phase
+  T-type versions of `afe_ssc.afe_two_level_lcl` and `afe_ssc.afe_two_level_lcl_delta`, star or delta
+  filter capacitors, split DC link with ESR (optional, `afe_ttype_ssc.onoff`), neutral point `np`
+  always a port, gate order `[Q1; Q2; Q3; Q4]` per leg (`G` [12×1]), `M` [22×1] = `M(1:17)` of the
+  two-level blocks + bank voltages, neutral-point current and bank currents. Build with
+  `ssc_build afe_ttype_ssc` from this folder (`afe_ttype_ssc_lib.slx`, committed next to the package;
+  rebuild it to add the two LCL blocks). Details in [`pwr_electronics/+afe_ttype_ssc/README.md`](pwr_electronics/+afe_ttype_ssc/README.md).
 - **`cllc_ssc`** — `cllc_dcx_single_phase`: CLLC resonant DC/DC stage (DC transformer, DCX), the power
   stage of `cllc_dcx`: DC choke and DC-link capacitor on each side, two full bridges of switch +
   antiparallel-diode pairs with optional output capacitance `Coss` (ZVS transitions driven by the tank

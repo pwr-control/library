@@ -203,8 +203,9 @@ Single-block AFEs: the two-level bridge with DC-link capacitor and LCL filter is
 component `afe_ssc.afe_two_level_lcl` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics),
 the whole control with the PWM is one MATLAB Function, so that one converter counts as a handful
 of nonvirtual blocks. Mask parameter `p`, one numeric struct (`p.hw`, `p.pwm`, `p.ctrl`); physical
-ports `ug_a/b/c` (AC, left) and `Udc(+)/Udc(-)` (DC, right), input `t_master`, outputs `m` (14×1
-measurements in pu) and `ctrl_log`. Description and user guide: the note
+ports `ug_a/b/c` (AC, left) and `Udc(+)/Udc(-)` (DC, right), input `t_master`, outputs `m` (17×1
+measurements in pu, `M` of `afe_two_level_lcl`; `m(15:17)` are the filter capacitor currents, added in
+November 2026, so a Demux of `m` needs 17 outputs) and `ctrl_log`. Description and user guide: the note
 [`../documentation/grid_forming_following_afe`](../documentation/grid_forming_following_afe), also the
 Help of the two masks (the Help button opens `grid_forming_following_afe.pdf` if it is on the MATLAB path,
 otherwise the copy on GitHub). Example parameter structures, 400 V, 250 kW, 50 Hz, 4 kHz with double
