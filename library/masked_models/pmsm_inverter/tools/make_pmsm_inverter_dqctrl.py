@@ -231,8 +231,11 @@ def make_system_1(s1):
     b['enc'] = inport('enc', SID['enc'], 3, '[-195, 532, -165, 546]', 22)
     b['ref_delay'] = unit_delay('ref_delay', SID['ref_delay'], '[-105, 476, -75, 506]', 23)
     b['enc_delay'] = unit_delay('enc_delay', SID['enc_delay'], '[-105, 524, -75, 554]', 24)
+    # port blocks in the order of their port numbers, as MATLAB saves them (checked on 2457 saved systems): the
+    # first version had the PMIOPorts as u, v, w, Udc(+), Udc(-) (ports 3, 4, 5, 1, 2) and MATLAB stopped with
+    # 'Failed to copy ports for subsystem block' when a model using the block was simulated
     order = ['t_master', 'ref', 'enc', 'ref_delay', 'enc_delay', 'mlf', 'gates', 'meas', 'meas_delay',
-             'power_stage', 'u', 'v', 'w', 'udc_p', 'udc_n', 'm', 'ctrl_log']
+             'power_stage', 'udc_p', 'udc_n', 'u', 'v', 'w', 'm', 'ctrl_log']
     S = SID
     lines = [line(1, '%d#out:1' % S['t_master'], '%d#in:2' % S['mlf']),
              ('  <Line>\n' + P('ZOrder', 2) + P('Src', '%d#out:1' % S['meas']) + P('Points', '[26, 0]')
@@ -425,6 +428,18 @@ def verify_package(z, src):
     return texts
 
 
+def port_order_ok(system_xml):
+    """True if the Inport, Outport and PMIOPort blocks of a system appear in the order of their port numbers."""
+    for kind in ('Inport', 'Outport', 'PMIOPort'):
+        nums = []
+        for m in re.finditer(r'^  <Block BlockType="%s" .*?^  </Block>' % kind, system_xml, re.S | re.M):
+            port = re.search(r'^    <P Name="Port">(\d+)</P>', m.group(0), re.M)
+            nums.append(int(port.group(1)) if port else 1)
+        if nums != list(range(1, len(nums) + 1)):
+            return False
+    return True
+
+
 def verify_systems(texts, src):
     root = texts['simulink/systems/system_root.xml']
     s1 = texts['simulink/systems/system_1.xml']
@@ -449,6 +464,8 @@ def verify_systems(texts, src):
     check('physical ports: Udc(+), Udc(-) left, u, v, w right, numbers 1..5',
           [k for k, _, _ in pm] == [1, 2, 3, 4, 5] and [n for _, s, n in pm if s == 'Left'] == LCONN
           and [n for _, s, n in pm if s == 'Right'] == RCONN)
+    check('port blocks written in the order of their port numbers (Inport, Outport, PMIOPort; system_1, system_3)',
+          all(port_order_ok(x) for x in (s1, texts['simulink/systems/system_3.xml'])))
     check('PortCounts of the top block match its ports', port_counts(top) == dict(
         **{'in': len(SIG_IN), 'out': len(SIG_OUT), 'lconn': len(LCONN), 'rconn': len(RCONN)}))
     labels = re.findall(r"port_label\(&apos;(\w+)&apos;, (\d+), &apos;([^&]*)&apos;\)", top)
