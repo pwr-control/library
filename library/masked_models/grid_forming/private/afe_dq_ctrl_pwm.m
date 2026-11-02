@@ -15,10 +15,11 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   derived from the carrier of the local clock, exactly as the triggered subsystem of the model.
 %
 %   Inputs
-%     M        measurement vector [14x1] in pu of the block afe_ssc.afe_two_level_lcl:
+%     M        measurement vector [17x1] in pu of the block afe_ssc.afe_two_level_lcl:
 %              M(1:3) is_abc converter current (positive out of the bridge), M(4:6) uc_abc filter
 %              capacitor voltage, M(7:9) ig_abc grid current (positive towards the grid),
-%              M(10:12) ug_abc grid voltage without zero sequence, M(13) vdc/udc_nom, M(14) ic/ibez
+%              M(10:12) ug_abc grid voltage without zero sequence, M(13) vdc/udc_nom, M(14) ic/ibez,
+%              M(15:17) filter capacitor currents (added November 2026, not used here)
 %     t_master master time [s] (Clock of "global timing"/time_afe3 with k = 1, i.e. simulation time)
 %     sync     [5x1] [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref] of the master (its output
 %              sync_out), read only in slave mode; on a master leave it unconnected or grounded

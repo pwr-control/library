@@ -203,8 +203,9 @@ Single-block AFEs: the two-level bridge with DC-link capacitor and LCL filter is
 component `afe_ssc.afe_two_level_lcl` of [`../foundation/pwr_electronics`](../foundation/pwr_electronics),
 the whole control with the PWM is one MATLAB Function, so that one converter counts as a handful
 of nonvirtual blocks. Mask parameter `p`, one numeric struct (`p.hw`, `p.pwm`, `p.ctrl`); physical
-ports `ug_a/b/c` (AC, left) and `Udc(+)/Udc(-)` (DC, right), input `t_master`, outputs `m` (14×1
-measurements in pu) and `ctrl_log`. Description and user guide: the note
+ports `ug_a/b/c` (AC, left) and `Udc(+)/Udc(-)` (DC, right), input `t_master`, outputs `m` (17×1
+measurements in pu, `M` of `afe_two_level_lcl`; `m(15:17)` are the filter capacitor currents, added in
+November 2026, so a Demux of `m` needs 17 outputs) and `ctrl_log`. Description and user guide: the note
 [`../documentation/grid_forming_following_afe`](../documentation/grid_forming_following_afe), also the
 Help of the two masks (the Help button opens `grid_forming_following_afe.pdf` if it is on the MATLAB path,
 otherwise the copy on GitHub). Example parameter structures, 400 V, 250 kW, 50 Hz, 4 kHz with double
@@ -242,6 +243,18 @@ runs at `p.pwm.tc` of the mask (until October 2026 it read `param.glb_time.tc` f
      Grid 3(2), 2012, doi:10.1109/TSG.2011.2181432.
   9. Teodorescu, Liserre, Rodríguez, *Grid Converters for Photovoltaic and Wind Power Systems*,
      Wiley-IEEE Press, 2011.
+- `grid_forming_dqctrl_delta.slx`, `grid_following_dqctrl_delta.slx` (November 2026) — the same two
+  blocks (`grid_forming_dqctrl_delta_mod1`, `grid_following_dqctrl_delta_mod1`) with the filter
+  capacitors in delta: power stage `afe_ssc.afe_two_level_lcl_delta`. Same ports, mask parameter `p`
+  and Help, so a block can be swapped with its star version. `p.hw.Cf` and `p.hw.Rcf` keep their
+  meaning (per-phase values of the star): the block puts `p.hw.Cf/3` and `3*p.hw.Rcf` in each delta
+  branch, so the same `p` gives the same filter and the same control behaviour. `m(15:17)` are the
+  currents of the three delta capacitors `[icf_ab; icf_bc; icf_ca]` (`icf_ab` from node a to node b;
+  line a takes `m(15) - m(17)`). The control is not copied: each block holds a library link to the
+  MATLAB Function of its star version, so a change of the control code (e.g. with
+  `update_grid_forming_dqctrl.m`) applies to both. The two libraries are made by
+  `grid_forming/tools/make_dqctrl_delta.py` (python3, no MATLAB) from the star libraries; run it again
+  after a change of the ports, mask or layout of a star block.
 
 ## `cllc_dcx`
 
