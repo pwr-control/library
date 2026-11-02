@@ -33,7 +33,6 @@ Run again after a change of the ports, the mask or the layout of a source block
 
 Rev. 00, 2026-11-02.
 """
-import datetime
 import html
 import io
 import json
@@ -224,7 +223,7 @@ def mlf_link(block_xml, source_block, lib_version):
     return '\n'.join(lines)
 
 
-def make(cfg, delta_link, delta_vars, now):
+def make(cfg, delta_link, delta_vars):
     zin = zipfile.ZipFile(cfg['src'])
     parts = {i.filename: (i, zin.read(i.filename)) for i in zin.infolist()}
     out = {}
@@ -277,8 +276,9 @@ def make(cfg, delta_link, delta_vars, now):
     bd = re.sub(r'%<AutoIncrement:[0-9.]+>', '%<AutoIncrement:1.0>', bd)
     out['simulink/blockDiagram.json'] = bd
     cp = parts['metadata/coreProperties.xml'][1].decode()
+    # dates: those of the source library (modified), so that a new run gives the same bytes
+    now = re.search(r'<dcterms:modified[^>]*>([^<]*)<', cp).group(1)
     cp = re.sub(r'(<dcterms:created[^>]*>)[^<]*(<)', r'\g<1>%s\2' % now, cp)
-    cp = re.sub(r'(<dcterms:modified[^>]*>)[^<]*(<)', r'\g<1>%s\2' % now, cp)
     cp = re.sub(r'<cp:revision>[^<]*</cp:revision>', '<cp:revision>1.0</cp:revision>', cp)
     out['metadata/coreProperties.xml'] = cp
 
@@ -395,9 +395,8 @@ def main():
     assert 'afe_ssc_lib/' + ssc_block_name('AFE Two-Level Bridge with LCL Filter') == STAR_LINK
     first = re.search(r'^component\s+\w+\s*\n%\s*(.*)$', open(DELTA_SSC).read(), re.M).group(1).strip()
     assert first == DELTA_TITLE, 'title of the delta .ssc changed: %r' % first
-    now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     for cfg in BLOCKS:
-        removed = make(cfg, delta_link, delta_vars, now)
+        removed = make(cfg, delta_link, delta_vars)
         verify(cfg, delta_link, delta_vars, delta_pars, removed)
     print('\n%d checks failed' % n_fail)
     return 0 if n_fail == 0 else 1
