@@ -25,6 +25,10 @@ function [tb, p_inv, mach] = pmsm_inverter_test_param(name)
     end
     tb.name = name;
 
+    % custom Simscape unit 'percent' of the library machine models (h5, h7 of pmsm_uvw_with_harmonics), as
+    % in init_model.m of the models of modelization-and-control
+    local_percent_unit();
+
     % ---- step, solver, logging
     tb.tc          = 1e-6;          % [s] step of the Simscape local solver = p_inv.pwm.tc
     tb.nonlin_iter = 3;             % fixed-cost nonlinear iterations of the local solver (as inv_psm)
@@ -91,6 +95,17 @@ function [tb, p_inv, mach] = pmsm_inverter_test_param(name)
 end
 
 % ------------------------------------------------------------------------------------------------------
+function local_percent_unit()
+%LOCAL_PERCENT_UNIT  Register the custom Simscape unit 'percent' (an error says so if it is already there).
+    try
+        pm_addunit('percent', 0.01, '1');
+    catch ME
+        if isempty(strfind(ME.message, 'percent'))   % already registered in this session: fine
+            rethrow(ME);
+        end
+    end
+end
+
 function [t, y] = local_profile(tk, yk, t_end, steps)
 %LOCAL_PROFILE  Breakpoints of a profile: value yk(k) from tk(k) (tk(1) = 0), held after the last point.
 %   steps = true: jumps (100 us ramps, the breakpoints of a lookup table must increase strictly);

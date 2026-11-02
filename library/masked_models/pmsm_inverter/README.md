@@ -191,7 +191,9 @@ they are solved by construction:
 `test/test_pmsm_inverter.slx`: DC source `tb.Vdc` with series `tb.Rdc` → inverter → library PMSM (one
 system of WindGen, 104 poles), shaft on an ideal angular velocity source (speed profile, filtered 10 ms).
 References from 1-D lookup tables of the time, encoder = `phase_elec` of the machine. Logged every 20 µs
-(`ctrl_log`, `m_log`, `mach_log`).
+(`ctrl_log`, `m_log`, `mach_log`). The machine model uses the custom Simscape unit `percent`:
+`pmsm_inverter_test_param` registers it (`pm_addunit('percent', 0.01, '1')`, as the `init_model.m` of the
+models of modelization-and-control).
 
 ```matlab
 pmsm_inverter_test_run                                           % all cases, table and plots

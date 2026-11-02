@@ -13,7 +13,8 @@
 % Requirements on the MATLAB path: library/masked_models/pmsm_inverter (with private/ and test/),
 % library/masked_models/electrical_machines (permanent_magnet_synchronous_machine.slx) and the compiled
 % Simscape libraries afe_ssc_lib (library/foundation/pwr_electronics) and pmsm_uvw_with_harmonics_lib
-% (library/foundation/electrical_machines).
+% (library/foundation/electrical_machines). The custom Simscape unit 'percent' of the machine model is
+% registered by pmsm_inverter_test_param (pm_addunit('percent', 0.01, '1')).
 %
 % Usage:  pmsm_inverter_test_run
 
