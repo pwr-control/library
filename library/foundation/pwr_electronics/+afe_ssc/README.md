@@ -16,7 +16,9 @@ links included).
 | `afe_three_level_ttype_lcl_delta.ssc` | `afe_ttype_ssc` | AFE Three-Level T-Type Bridge with LCL Filter, Delta Capacitors | three-level T-type, 12 switches | delta | `+`, `np`, `-` | [12x1] | [22x1] |
 
 `afe_two_level_lcl` is the power stage of the masked blocks `grid_forming_dqctrl` and
-`grid_following_dqctrl` (`masked_models/grid_forming`, `masked_models/grid_following`),
+`grid_following_dqctrl` (`masked_models/grid_forming`, `masked_models/grid_following`) and of the PMSM
+inverter `pmsm_inverter_dqctrl` (`masked_models/pmsm_inverter`, November 2026, L filter with `Rcf` very
+high or LC filter),
 `afe_two_level_lcl_delta` the one of their delta versions `grid_forming_dqctrl_delta` and
 `grid_following_dqctrl_delta`. The other three were added in November 2026. `afe_ttype_ssc` also holds `afe_single_phase_ttype` (single-phase
 T-type AFE with LC filter, see `foundation/README.md`). `onoff.m` in each package is the enumeration

@@ -89,7 +89,8 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   three-level PWM. Build with `ssc_build ideal_bridges` from this folder (`ideal_bridges_lib.slx`,
   committed next to the package). Details in [`pwr_electronics/+ideal_bridges/README.md`](pwr_electronics/+ideal_bridges/README.md).
 - **`afe_ssc`** — `afe_two_level_lcl`: two-level bridge with DC-link capacitor and LCL filter, the power
-  stage of `grid_following_dqctrl` and `grid_forming_dqctrl`. Gate commands in as a physical-signal
+  stage of `grid_following_dqctrl`, `grid_forming_dqctrl` and of the PMSM inverter `pmsm_inverter_dqctrl`
+  (L or LC output filter). Gate commands in as a physical-signal
   vector `G` [6×1], measurements out in pu, `M` [17×1] (`M(15:17)` = filter capacitor currents, added in
   November 2026; `M(1:14)` unchanged). `afe_two_level_lcl_delta`: the same block with the filter
   capacitors in delta (same ports and `M`; for the same filter divide `Cf` by 3 and multiply `Rcf` by 3).

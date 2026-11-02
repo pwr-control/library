@@ -256,6 +256,37 @@ runs at `p.pwm.tc` of the mask (until October 2026 it read `param.glb_time.tc` f
   `grid_forming/tools/make_dqctrl_delta.py` (python3, no MATLAB) from the star libraries; run it again
   after a change of the ports, mask or layout of a star block.
 
+## `pmsm_inverter`
+
+Single-block inverter for a permanent magnet synchronous machine (November 2026), the machine-side
+counterpart of the AFE blocks above: the power stage is the same Simscape component
+`afe_ssc.afe_two_level_lcl` (two-level bridge, DC-link capacitor, LCL filter), only the control is new,
+one MATLAB Function. The machine is not in the block: connect any machine model to `u`, `v`, `w`. Normal
+case L filter: `p.hw.Rcf` very high (1e5 Ω) and the second inductor reduced to a small leakage
+(`p.hw.Lls2` > 0); LC filter: `p.hw.Cf` with a real damping resistor `p.hw.Rcf`. Mask parameter `p`, one
+numeric struct (`p.hw`, `p.pwm`, `p.ctrl`; `p.hw.ubez`, `p.hw.ibez` are the bases of the machine);
+physical ports `Udc(+)/Udc(-)` (DC, left) and `u/v/w` (machine, right), inputs `t_master`, `ref`
+(`[enable; reference]`) and `enc` (electrical rotor angle of an encoder, grounded without encoder),
+outputs `m` (17×1 measurements in pu, as the AFE blocks) and `ctrl_log` (44×1, indices in
+`pmsm_inverter/pmsm_inverter_log_index.m`). User guide, checks and differences from the study model in
+[`pmsm_inverter/README.md`](pmsm_inverter/README.md), which is also the Help of the mask.
+
+- `pmsm_inverter_dqctrl.slx` — block `pmsm_inverter_dqctrl_mod1`. Field-oriented control of
+  `foundations_of_power_electronics/inv_psm` (pwr-control/modelization-and-control) with the issues found
+  in its design check corrected. Angle from the encoder, a back-EMF (active flux) observer or a five-state
+  extended Kalman filter, `p.ctrl.angle_src` 0/1/2 (all three always run and are logged); optional
+  hand-over from the encoder at low speed (`p.ctrl.omega_th`); flying start (the observers lock on the
+  terminal voltage while the gates are off). Torque reference, speed PI or torque curve of the speed
+  (generator), `p.ctrl.mode` 0/1/2; MTPA; dq current loop with feed-forward; SVPWM with dead-time
+  compensation. Example parameters, one 267 kW system of the wind generator of `inv_psm` (104 poles,
+  1070 V, 4 kHz with double update): `[p, mach] = pmsm_inverter_param_example(tc)` (L filter) or
+  `pmsm_inverter_param_example(tc, 'LC')`. The control code is `pmsm_inverter/private/pmsm_dq_ctrl_pwm.m`;
+  `pmsm_inverter/update_pmsm_inverter_dqctrl.m` loads it into the block. The library was made without
+  MATLAB by `pmsm_inverter/tools/make_pmsm_inverter_dqctrl.py` (python3) from `grid_forming_dqctrl.slx`.
+  Test bench `pmsm_inverter/test/test_pmsm_inverter.slx` (DC source, inverter, library PMSM, shaft on a
+  velocity source): `pmsm_inverter_test_run` runs and checks three cases (back-EMF observer and EKF on the
+  torque curve with flying start, torque steps with the LC filter).
+
 ## `cllc_dcx`
 
 Single-block CLLC-DCX (isolated resonant DC/DC stage, DC transformer), the DC/DC counterpart of the
