@@ -32,7 +32,7 @@ below.
 | `pmsm_inverter_param_example.m` | example parameter struct `p` (and machine data `mach`): one 267 kW system of the wind generator of `inv_psm` |
 | `pmsm_inverter_log_index.m` | indices of the output `ctrl_log` (44×1) |
 | `update_pmsm_inverter_dqctrl.m` | loads `private/pmsm_dq_ctrl_pwm.m` into the block (MATLAB) |
-| `tools/make_pmsm_inverter_dqctrl.py` | makes the library without MATLAB from `../grid_forming/grid_forming_dqctrl.slx` (python3), with 40 structure checks |
+| `tools/make_pmsm_inverter_dqctrl.py` | makes the library without MATLAB from `../grid_forming/grid_forming_dqctrl.slx` (python3), with 39 structure checks |
 | `tools/make_test_pmsm_inverter.py` | makes the test bench `test/test_pmsm_inverter.slx` (python3, uses `slxlib.py` of `../semiconductors_bridges/tools`) |
 | `test/test_pmsm_inverter.slx` | test bench: DC source, inverter, library PMSM, shaft on a velocity source |
 | `test/pmsm_inverter_test_param.m` | parameters of the test cases (`tb`, `p_inv`, `mach`) |
@@ -147,12 +147,13 @@ they are solved by construction:
 6. New: dead-time compensation, applied-voltage estimate from the duties and the measured vdc, flying start
    with the gates off, encoder hand-over at low speed.
 
-## Checks done (without MATLAB)
+## Checks done
 
 - **Library file.** `tools/make_pmsm_inverter_dqctrl.py` copies `grid_forming_dqctrl.slx` part by part and
-  runs 40 checks: package, ports and port counts, lines, unchanged power stage, the Stateflow id rules that
-  made MATLAB R2026b crash in an earlier hand-made library (chart id, instance id = chart id + objects + 1,
-  target id last, parameter after the port inputs, sorted S-Function parameters), script = source file.
+  runs 39 checks: package, ports, port order and port counts, lines, unchanged power stage, the Stateflow id
+  rules that made MATLAB R2026b crash in an earlier hand-made library (chart id, instance id = chart id +
+  objects + 1, target id last, parameter after the port inputs, sorted S-Function parameters), script = source
+  file.
 - **Control code.** `private/pmsm_dq_ctrl_pwm.m` runs in GNU Octave in a twin of the plant written in Python
   (switched ideal bridge with dead time, L or LC filter, PMSM in dq with `Lmu`, speed source or inertia):
   gates and logs of the MATLAB code and of the Python port agree to 1e-14 (back-EMF, EKF, LC, speed cases).
@@ -167,7 +168,19 @@ they are solved by construction:
   - the three cases of the test bench (below): all checks pass, angle error in the last 0.1 s 0.27°
     (back-EMF) and 0.12° (EKF), torque = reference, torque reference = curve within 0.003 pu, largest current
     0.88 pu (generator) and 1.04 pu (torque steps).
-- **Not done here:** compile and run in Simulink. Please run `test/pmsm_inverter_test_run.m`.
+- **Test bench in MATLAB R2026b** (`test/pmsm_inverter_test_run.m`, 2026-11-02): all checks pass, close to the
+  twin. Run time 57 s, 44 s and 23 s for 0.7 s, 0.7 s and 0.4 s of simulated time.
+
+  | Case | Angle error, last 0.1 s | Torque - reference | Reference - curve | DC-link error | Largest current |
+  |---|---|---|---|---|---|
+  | `generator_bemf` | 0.16° (twin 0.27°) | 0.0000 pu | 0.0020 pu | 0.0097 pu | 0.88 pu (twin 0.88) |
+  | `generator_ekf` | 0.17° (twin 0.12°) | 0.0000 pu | 0.0018 pu | 0.0097 pu | 0.89 pu (twin 0.88) |
+  | `torque_steps_lc` | encoder | 0.0001 pu at the end of each step | | | 1.04 pu (twin 1.04) |
+
+  The first run found two problems, both fixed: the connection ports were written in the `.slx` out of port
+  order (MATLAB stopped with "Failed to copy ports for subsystem block"; the generator now writes and checks
+  the port order), and the custom Simscape unit `percent` of the machine model was not registered (now done by
+  `pmsm_inverter_test_param`).
 
 ## Limits and advice
 
