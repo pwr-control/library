@@ -34,15 +34,16 @@
 }
 
 \newcommand{\DocAuthor}{Davide Bagnara}
-\newcommand{\DocRevision}{00}
-\newcommand{\DocDate}{October 2026}
+\newcommand{\DocRevision}{01}
+\newcommand{\DocDate}{November 2026}
 
 \newcommand{\DocAbstract}{%
-	The library \code{pwr-control/library} has two three-phase converters that fit in one Simulink block each: \code{grid\_forming\_dqctrl} and \code{grid\_following\_dqctrl}. Both are active front ends (AFE) built on the same power stage, a two-level bridge with a DC-link capacitor and an LCL filter written as one Simscape component, and both carry their whole digital control and PWM in one MATLAB Function. The grid-forming block makes the voltage and the frequency of an island: a free-running phase generator sets the frequency, a voltage loop on the positive sequence of the terminal voltage sets the amplitude, an optional loop cancels the negative-sequence voltage caused by unbalanced loads, and several blocks can feed one load as master and slaves. The grid-following block connects a DC link to an existing grid: a PLL finds the grid angle, a voltage loop keeps the DC link at its reference and a current loop sets the exchanged current. This note describes the two blocks in simple words, with their ports, measurement and gate vectors, parameter structure, control chain and control log, and gives a short user guide with two example parameter files.
+	The library \code{pwr-control/library} has two three-phase converters that fit in one Simulink block each: \code{grid\_forming\_dqctrl} and \code{grid\_following\_dqctrl}. Both are active front ends (AFE) built on the same power stage, a two-level bridge with a DC-link capacitor and an LCL filter written as one Simscape component, and both carry their whole digital control and PWM in one MATLAB Function. The grid-forming block makes the voltage and the frequency of an island: a free-running phase generator sets the frequency, a voltage loop on the positive sequence of the terminal voltage sets the amplitude, an optional loop cancels the negative-sequence voltage caused by unbalanced loads, an optional open-loop mode makes it a plain V/f source without regulators, and several blocks can feed one load as master and slaves. The grid-following block connects a DC link to an existing grid: a PLL finds the grid angle, a voltage loop keeps the DC link at its reference and a current loop sets the exchanged current. This note describes the two blocks in simple words, with their ports, measurement and gate vectors, parameter structure, control chain and control log, and gives a short user guide with two example parameter files.
 }
 
 \newcommand{\RevisionHistory}{%
 	00 & October 2026 & First issue: description of the two blocks, user guide, example parameter files. & \DocAuthor \\
+	01 & November 2026 & Open-loop V/f mode of the grid-forming block (Section~\ref{sec:open_loop}); the outputs of the current loop described as modulation index. & \DocAuthor \\
 }
 
 \newcommand{\MetaLabelA}{Project Repository}
@@ -99,7 +100,8 @@
 	SVPWM & space vector PWM: turns the voltage reference into the three duties \\
 	NSC & negative-sequence compensator of the grid-forming block \\
 	$M$, $G$ & measurement vector (14, pu) and gate vector (6, V) of the power stage \\
-	$m\ped{d}$, $m\ped{q}$ & outputs of the current loop: the voltage reference in pu of $u\ped{bez}$ (modulation index) \\
+	$u\ped{dc}$ & DC-link voltage \\
+	$m\ped{d}$, $m\ped{q}$ & modulation index in the rotating frame, outputs of the current loop: the bridge gives the peak phase voltage $\abs{m}\, u\ped{dc}/\sqrt{3}$ \\
 	$d\ped{a}$, $d\ped{b}$, $d\ped{c}$ & duties of the three legs on the carrier, between 0 and 1 \\
 \end{longtable}
 \addtocounter{table}{-1}
@@ -519,7 +521,7 @@ The modulator is a port of \code{sv\_pwm\_cm.c} of the library. It takes the vol
 \subsection{What it does}
 \label{sec:gfm_purpose}
 
-The grid-forming block makes a three-phase voltage of amplitude \code{p.ctrl.ug\_ref} (1 pu, that is $u\ped{bez}$ per phase) and frequency \code{p.ctrl.fgrid} at its terminals, whatever the load connected to them, within the current it can give. It behaves as a stiff voltage source at the fundamental: an increase of the load current is met by a higher converter current, not by a lower voltage. The DC side must be a source that supplies the active power of the load: the block does not regulate its DC-link voltage. Figure~\ref{fig:gfm_chain} shows the chain executed at every trigger.
+The grid-forming block makes a three-phase voltage of amplitude \code{p.ctrl.ug\_ref} (1 pu, that is $u\ped{bez}$ per phase) and frequency \code{p.ctrl.fgrid} at its terminals, whatever the load connected to them, within the current it can give. It behaves as a stiff voltage source at the fundamental: an increase of the load current is met by a higher converter current, not by a lower voltage. The DC side must be a source that supplies the active power of the load: the block does not regulate its DC-link voltage. In the open-loop mode (Section~\ref{sec:open_loop}) it is instead a voltage source behind its converter-side inductor, without regulators. Figure~\ref{fig:gfm_chain} shows the chain executed at every trigger.
 
 \begin{figure}[htbp]
 	\centering
@@ -567,7 +569,7 @@ The grid-forming block makes a three-phase voltage of amplitude \code{p.ctrl.ug\
 		\draw[->, thick] (gt.west) -- ++(-1.0,0) node[left] {$G$};
 	\end{tikzpicture}}
 	\captionsetup{width=0.9\textwidth, font=small}
-	\caption[Control chain of the grid-forming block.]{Control chain of the grid-forming block at every trigger. The dashed block and lines exist only with the negative-sequence compensator on (\code{p.ctrl.nsc\_enable = 1}).}
+	\caption[Control chain of the grid-forming block.]{Control chain of the grid-forming block at every trigger. The dashed block and lines exist only with the negative-sequence compensator on (\code{p.ctrl.nsc\_enable = 1}). In the open-loop mode (\code{p.ctrl.open\_loop = 1}, Section~\ref{sec:open_loop}) the three PIs are skipped and $m\ped{d}$, $m\ped{q}$ come from the voltage references.}
 	\label{fig:gfm_chain}
 \end{figure}
 
@@ -584,7 +586,7 @@ The positive sequence of the terminal voltage, rotated by $\theta$, gives $u_\xi
 \subsection{Current loop}
 \label{sec:gfm_current_loop}
 
-The converter currents $i\ped{s}$ (indices 1 to 3 of $M$) are rotated by $\theta$ and compared with the references. The current loop is a dq vector PI with the gains \code{kp\_i} (modulation index per pu of current) and \code{ki\_i} (\si{\per\second}) and the radius \code{u\_lim}, 1 in the example files: its outputs $m\ped{d}$, $m\ped{q}$ are the voltage reference in pu of $u\ped{bez}$, and the unit circle is the largest voltage the bridge can give at the rated DC-link voltage without over-modulation. There is no feed-forward of the terminal voltage: the integrators carry it. With the example values ($0.75$, \SI{35}{\per\second}) the loop crosses at about \SI{240}{\hertz} \cite{gfm_note}.
+The converter currents $i\ped{s}$ (indices 1 to 3 of $M$) are rotated by $\theta$ and compared with the references. The current loop is a dq vector PI with the gains \code{kp\_i} (modulation index per pu of current) and \code{ki\_i} (\si{\per\second}) and the radius \code{u\_lim}, 1 in the example files: its outputs $m\ped{d}$, $m\ped{q}$ are the modulation index in the rotating frame, with which the bridge gives the peak phase voltage $\abs{m}\, u\ped{dc}/\sqrt{3}$ (Section~\ref{sec:gates}), so the unit circle is the largest voltage it can give without over-modulation. There is no feed-forward of the terminal voltage: the integrators carry it. With the example values ($0.75$, \SI{35}{\per\second}) the loop crosses at about \SI{240}{\hertz} \cite{gfm_note}.
 
 \subsection{Master and slaves}
 \label{sec:master_slave}
@@ -628,6 +630,19 @@ An unbalanced load, for instance a single-phase load on a transformer, draws a n
 \end{itemize}
 
 \noindent The compensator is on with \code{p.ctrl.nsc\_enable = 1}; when the field is absent or 0 the block computes exactly what it computed before the compensator existed. All five fields are read when \code{nsc\_enable} is present. The design rule for the gain is $k\ped{r} = 2 k\ped{i,i}$ (\SI{70}{\per\second} with $k\ped{i,i} = \SI{35}{\per\second}$), which gives the negative-sequence current the same convergence rate as the positive-sequence one; the voltage PI of the compensator can take the gains of the main voltage loop. A slave takes the negative-sequence references of the master from \code{sync(4:5)}, so master and slaves need the same \code{nsc\_enable}.
+
+\subsection{Open-loop mode}
+\label{sec:open_loop}
+
+With \code{p.ctrl.open\_loop = 1} the block is a plain V/f source: the phase generator sets the angle and the frequency, and the amplitude goes straight to the modulator, without any regulator. It serves to compare the loops with a voltage source that has only the impedance of its filter, for instance on an unbalanced load. At every trigger the voltage loop, the compensator and the current loop are skipped, their states stay at rest, and the modulator gets
+\begin{equation}
+	m\ped{d} + j\, m\ped{q} = k\ped{r}\, \frac{\sqrt{3}\, u\ped{bez}}{U\ped{dc}} \left(u^{*}_\xi + j\, u^{*}_\eta\right),
+	\qquad k\ped{r} = \min\!\left(\frac{t\ped{master}}{t\ped{ramp}},\, 1\right),
+	\label{eq:open_loop}
+\end{equation}
+limited to the radius \code{u\_lim} with the clip flag \code{clip\_i}, where $u^{*}_\xi$, $u^{*}_\eta$ are \code{ug\_ref} and \code{ueta\_ref}, $t\ped{ramp}$ is \code{ol\_t\_ramp} ($k\ped{r} = 1$ when it is 0) and $U\ped{dc}$ is the DC-link voltage the amplitude refers to: with \code{ol\_udc\_comp = 1} the acquired one, $M(13)\, u\ped{dc,nom}$ (not below $0.5\, u\ped{dc,nom}$, which also covers the first trigger, when nothing has been acquired yet), with 0 the base $u\ped{dc,nom}$ (\code{p.hw.udc\_nom}). The bridge gives $\abs{m}\, u\ped{dc}/\sqrt{3}$ peak, so the average voltage of the bridge, that is the EMF behind the converter-side inductor, has the peak phase value \code{ug\_ref} $\cdot\, u\ped{bez}\, u\ped{dc}/U\ped{dc}$ at the angle $\theta$: \code{ug\_ref} $\cdot\, u\ped{bez}$ with the compensation, whatever the DC-link voltage and its ripple, and proportional to the DC-link voltage without it. The terminal voltage is this EMF less the drop on the filter and the effect of the dead time: it falls with the load, and with an unbalanced load it gets a negative-sequence component set by the impedance of the filter alone, about $\omega\ped{0} (L\ped{1} + L\ped{2})$ per phase, much lower than that of the current loop without the compensator (Section~\ref{sec:nsc}). Without the compensation of the DC link a ripple at $2 f\ped{grid}$, as with a single-phase load, also adds a negative-sequence component to the EMF.
+
+The FHT and the sequences still run, so the log keeps $u_\xi$, $u_\eta$ and the negative sequence $u_{\xi n}$, $u_{\eta n}$ of the terminal voltage that the load gives; the current references (indices 21, 22, 40, 41 of the log and \code{sync\_out}) are 0 and $m\ped{d}$, $m\ped{q}$ are the values of \eqref{eq:open_loop}. A slave in open loop takes only $\theta$ from \code{sync} and forms the same voltage as the master when the parameters are the same, so master and slaves need the same \code{open\_loop}; \code{nsc\_enable} is ignored. The mode is off when \code{open\_loop} is absent or 0, and the block then computes exactly what it computed before the mode existed; the three fields are read when \code{open\_loop} is present.
 
 \subsection{Ports and log}
 \label{sec:gfm_ports}
@@ -682,18 +697,18 @@ An unbalanced load, for instance a single-phase load on a transformer, draws a n
 	16, 17 & \code{u\_fhtsr\_alpha}, \code{u\_fhtsr\_beta} & positive sequence of the terminal voltage in $\alpha\beta$ \\
 	18 & \code{u\_grid\_mag} & its magnitude \\
 	19, 20 & \code{u\_xi}, \code{u\_eta} & positive sequence in the rotating frame (regulated voltage) \\
-	21, 22 & \code{i\_xi\_ref}, \code{i\_eta\_ref} & current references of the voltage loop (of the master, in a slave) \\
+	21, 22 & \code{i\_xi\_ref}, \code{i\_eta\_ref} & current references of the voltage loop (of the master, in a slave; 0 in open loop) \\
 	23 & \code{clip\_u} & clip flag of the voltage PI \\
 	24, 25 & \code{i\_xi}, \code{i\_eta} & converter current in the rotating frame \\
-	26, 27 & \code{m\_d}, \code{m\_q} & outputs of the current loop (voltage reference, pu) \\
-	28 & \code{clip\_i} & clip flag of the current PI \\
+	26, 27 & \code{m\_d}, \code{m\_q} & modulation index: outputs of the current loop, or the open-loop value \eqref{eq:open_loop} \\
+	28 & \code{clip\_i} & clip flag of the current PI (of the limiter of the modulation index in open loop) \\
 	29, 30 & \code{u\_alpha}, \code{u\_beta} & voltage reference in $\alpha\beta$ \\
 	31, 32, 33 & \code{d\_abc} & duties of the three legs \\
 	34, 35 & \code{u\_hat\_alpha}, \code{v\_hat\_alpha} & FHT output and quadrature on $\alpha$ \\
 	36, 37 & \code{u\_hat\_beta}, \code{v\_hat\_beta} & FHT output and quadrature on $\beta$ \\
 	38, 39 & \code{u\_xi\_n}, \code{u\_eta\_n} & negative sequence of the terminal voltage in the negative frame \\
-	40, 41 & \code{i\_xi\_n\_ref}, \code{i\_eta\_n\_ref} & negative-sequence current references (0 without the compensator) \\
-	42, 43 & \code{r\_d}, \code{r\_q} & resonant terms of the current loop (0 without the compensator) \\
+	40, 41 & \code{i\_xi\_n\_ref}, \code{i\_eta\_n\_ref} & negative-sequence current references (0 without the compensator and in open loop) \\
+	42, 43 & \code{r\_d}, \code{r\_q} & resonant terms of the current loop (0 without the compensator and in open loop) \\
 \end{longtable}
 \normalsize
 \rowcolors{1}{white}{white}
@@ -894,7 +909,7 @@ The mask of each block takes one structure \code{p} with three fields. \code{p.h
 \begin{table}[H]
 	\centering
 	\captionsetup{width=0.9\textwidth, font=small}
-	\caption[Field \code{p.ctrl} of the grid-forming block.]{Field \code{p.ctrl} of the grid-forming block. The fields marked (option) may be absent: the block then runs as a master without compensator.}
+	\caption[Field \code{p.ctrl} of the grid-forming block.]{Field \code{p.ctrl} of the grid-forming block. The fields marked (option) may be absent: the block then runs as a master without compensator, in closed loop.}
 	\label{tab:ctrl_gfm}
 	\rowcolors{2}{tableShade}{white}
 	\footnotesize
@@ -909,12 +924,14 @@ The mask of each block takes one structure \code{p} with three fields. \code{p.h
 		\code{fht\_omega}, \code{fht\_delta}, \code{fht\_l1}, \code{fht\_l2}, \code{fht\_t\_reset} & FHT: tracked pulsation, damping, observer gains, reset time & $2\pi\cdot 50$, 0.05, 0.180, 28.5, \SI{1}{\milli\second} \\
 		\code{ug\_ref}, \code{ueta\_ref} & voltage references on $\xi$ and $\eta$ [pu] & 1, 0 \\
 		\code{kp\_ug}, \code{ki\_ug}, \code{ixi\_lim}, \code{clip\_thr\_ug} & voltage PI: gains [pu/pu, \si{\per\second}], radius and clip threshold [pu] & 0.5, 18, 1.65, 1.65 \\
-		\code{kp\_i}, \code{ki\_i}, \code{u\_lim} & current PI: gains, radius (pu of $u\ped{bez}$) & 0.75, 35, 1 \\
+		\code{kp\_i}, \code{ki\_i}, \code{u\_lim} & current PI: gains, radius of the modulation index (1: linear limit of the modulator) & 0.75, 35, 1 \\
 		\code{clip\_release} & leak of the integrators while clipped [\si{\per\second}] & 0.001 \\
 		\code{u\_cm} & common-mode factor of the modulator (unused, $u_\gamma = 0$) & 0 \\
 		\code{slave} (option) & 0 master, 1 slave & 0 \\
 		\code{nsc\_enable} (option) & 1 switches the negative-sequence compensator on & 0 \\
 		\code{nsc\_kp\_ug}, \code{nsc\_ki\_ug}, \code{nsc\_i\_lim}, \code{nsc\_kr\_i} & compensator: voltage PI gains, radius, resonant gain [\si{\per\second}] & 0.5, 18, 1.65, 70 \\
+		\code{open\_loop} (option) & 1 switches the open-loop V/f mode on & 0 \\
+		\code{ol\_udc\_comp}, \code{ol\_t\_ramp} & open loop: amplitude divided by the acquired DC-link voltage (1) or not (0), start ramp & 1, \SI{0.1}{\second} \\
 		\bottomrule
 	\end{tabularx}
 	\rowcolors{1}{white}{white}
@@ -955,9 +972,9 @@ The mask of each block takes one structure \code{p} with three fields. \code{p.h
 
 \begin{itemize}[nosep]
 	\item \textbf{Losses and temperatures.} The switches are numerical: conduction through $R\ped{on}$, no switching losses, no thermal model. For the loss and thermal studies use the study models with the IGBT blocks of the library.
-	\item \textbf{Protections and start-up.} There is no overcurrent trip, no enable signal, no soft start and no pre-charge of the DC link. The blocks are made for the steady behaviour and the dynamics of the control, not for the start sequence of a real converter.
+	\item \textbf{Protections and start-up.} There is no overcurrent trip, no enable signal, no soft start (the open-loop mode has a ramp of its amplitude) and no pre-charge of the DC link. The blocks are made for the steady behaviour and the dynamics of the control, not for the start sequence of a real converter.
 	\item \textbf{Differences from the study models.} The duties change at the trigger without the first-order filters of the models; the switching instants are quantized to $t\ped{c}$ (the Simscape solver samples the gates at $t\ped{c}$ anyway); the arithmetic is double precision instead of the single precision of the C-Caller blocks.
-	\item \textbf{Dead-time compensation and voltage feed-forward.} Neither exists; the integrators of the current loop carry both.
+	\item \textbf{Dead-time compensation and voltage feed-forward.} Neither exists; the integrators of the current loop carry both. In the open-loop mode nothing compensates the dead time, which lowers the formed voltage by a few percent at full current.
 	\item \textbf{Code of the grid-following block.} Its MATLAB Function has no source file in the folder yet: edit it inside the block (the grid-forming block has \path{private/afe_dq_ctrl_pwm.m} and the update script).
 \end{itemize}
 
@@ -965,7 +982,7 @@ The mask of each block takes one structure \code{p} with three fields. \code{p.h
 \section{Conclusions}
 \label{sec:conclusions}
 
-The two blocks give, in one Simulink block each, a complete three-phase two-level AFE with its LCL filter and its digital control, at the cost of two nonvirtual blocks per converter. The grid-forming block forms the voltage of an island with a fixed frequency, a voltage loop on the positive sequence, an optional negative-sequence compensator and the master/slave mode for converters in parallel; the grid-following block hangs on an existing grid with a PLL, a DC-link voltage loop and a current loop. Both read one structure \code{p} from the mask, give the 14 measurements of the power stage in pu and a control log with every internal signal. The user guide of Section~\ref{sec:quickstart} and the two example parameter files are enough to run a first simulation; the design of the loops is in \cite{gfm_note}.
+The two blocks give, in one Simulink block each, a complete three-phase two-level AFE with its LCL filter and its digital control, at the cost of two nonvirtual blocks per converter. The grid-forming block forms the voltage of an island with a fixed frequency, a voltage loop on the positive sequence, an optional negative-sequence compensator, an optional open-loop V/f mode and the master/slave mode for converters in parallel; the grid-following block hangs on an existing grid with a PLL, a DC-link voltage loop and a current loop. Both read one structure \code{p} from the mask, give the 14 measurements of the power stage in pu and a control log with every internal signal. The user guide of Section~\ref{sec:quickstart} and the two example parameter files are enough to run a first simulation; the design of the loops is in \cite{gfm_note}.
 
 % =============================================================
 \appendix

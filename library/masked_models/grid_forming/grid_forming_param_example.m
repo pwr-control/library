@@ -109,6 +109,12 @@ function p = grid_forming_param_example(tc)
     ctrl.nsc_ki_ug  = 18;                       % [1/s]
     ctrl.nsc_i_lim  = 1.65;                     % [pu] radius and clip threshold of its current reference
     ctrl.nsc_kr_i   = 2*ctrl.ki_i;              % [1/s] resonant gain of the current loop at 2*fgrid (rule kr = 2*ki_i)
+
+    % open-loop V/f mode (optional fields: absent = off): no voltage, compensator or current loop, the modulator
+    % gets ug_ref/ueta_ref at the angle of the phase generator as the EMF of the bridge (same value in master and slaves)
+    ctrl.open_loop   = 0;                       % 1 switches the open-loop mode on
+    ctrl.ol_udc_comp = 1;                       % 1: amplitude divided by the acquired DC-link voltage (0: proportional to it)
+    ctrl.ol_t_ramp   = 0.1;                     % [s] linear ramp of the amplitude from t_master = 0 (0: full value at once)
     p.ctrl = ctrl;
 end
 

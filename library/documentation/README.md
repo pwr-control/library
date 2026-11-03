@@ -200,13 +200,14 @@ script with a sampled-data simulation of the controller as coded. Master copy in
 
 ### `grid_forming_following_afe`
 *Grid-forming and grid-following AFE blocks: two-level bridge with LCL filter, description and user
-guide* (Rev. 00, October 2026). The two single-block AFEs of `../masked_models/grid_forming` and
+guide* (Rev. 01, November 2026; Rev. 00, October 2026). The two single-block AFEs of `../masked_models/grid_forming` and
 `../masked_models/grid_following` in simple English: quick start (what you need, eight steps to a
 running model, checks before the first run, how to read `m` and `ctrl_log`), the power stage
 `afe_ssc.afe_two_level_lcl` (bridge, DC link, LCL filter, switch model, measurement and gate
 vectors), the control parts common to both blocks (clock and carrier, acquisitions, Clarke and Park,
 first harmonic tracker, vector PI, SVPWM and dead time), the grid-forming chain (phase generator,
-voltage and current loops, master/slave `sync` ports, negative-sequence compensator, 43-entry log),
+voltage and current loops, master/slave `sync` ports, negative-sequence compensator, open-loop V/f mode,
+43-entry log),
 the grid-following chain (PLL, DC-link loop, current and zero-sequence loops, 45-entry log), the
 parameter structure `p` with the values of `grid_forming_param_example.m` and
 `grid_following_param_example.m`, what the blocks do not model. All figures are TikZ. The PDF is the

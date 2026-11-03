@@ -26,7 +26,8 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %     p        parameter struct, scope "Parameter" in the Symbols pane of the block, built by
 %              private/afe_module_param.m (p.pwm.*, p.ctrl.*); p.ctrl.slave (optional, default 0)
 %              selects the slave mode, p.ctrl.nsc_* (optional, default off) the negative-sequence
-%              compensator
+%              compensator, p.ctrl.open_loop and ol_* (optional, default off) the open-loop V/f mode,
+%              which also reads p.hw.ubez and p.hw.udc_nom (bases of M)
 %   Outputs
 %     G        gate commands [6x1] in V, order [a+; a-; b+; b-; c+; c-] (Q1..Q6 of the PWM library
 %              block and G of the ssc block), p.pwm.gate_on / p.pwm.gate_off (15 V / -10 V)
@@ -65,6 +66,24 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   nsc_i_lim [pu] (radius of its output limiter and clip threshold, e.g. ixi_lim), nsc_kr_i [1/s] (gain
 %   kr of kr*s/(s^2 + (4*pi*fgrid)^2); 2*ki_i gives the envelope of the negative-sequence current the
 %   convergence that ki_i gives the positive-sequence one).
+%
+%   Open-loop mode (p.ctrl.open_loop = 1; off when the field is absent or 0, and then the block computes what
+%   it computed before): a V/f source without regulators, e.g. to compare a plain voltage source with the
+%   loops. The phase generator gives the angle theta (a slave takes that of the master from sync(1)) and the
+%   modulator gets the voltage [ug_ref; ueta_ref] (pu of ubez, peak phase) at the angle theta as the average
+%   voltage of the bridge, i.e. the EMF behind the converter-side inductor (not the terminal voltage that the
+%   voltage loop regulates): m = k_r*[ug_ref; ueta_ref]*ubez*sqrt(3)/(udc_nom*u_dc), the modulation index
+%   whose unit circle (linear limit) gives udc/sqrt(3) peak phase, limited to the radius u_lim (clip flag
+%   clip_i, log 28). The voltage loop, the compensator and the current loop are not computed: their states
+%   stay at rest and the current references (log 21, 22, 40, 41 and sync_out) are 0; nsc_enable is ignored.
+%   The FHT, the sequences of the terminal voltage and the converter current in the rotating frame are
+%   computed and logged as in closed loop, so the log shows the positive and negative sequences that the load
+%   gives. Fields (all needed when open_loop is present): open_loop; ol_udc_comp (1: u_dc is the acquired
+%   DC-link voltage M(13), not below 0.5 pu, so that the amplitude does not follow the DC-link voltage and its
+%   ripple; 0: u_dc = 1, the amplitude is proportional to the DC-link voltage); ol_t_ramp [s] (the amplitude
+%   rises linearly, k_r = t_master/ol_t_ramp, to the full value at ol_t_ramp; 0: k_r = 1 from the start).
+%   Master and slaves need the same open_loop: a slave forms its own voltage at the angle of the master, the
+%   same as the master when the parameters are the same.
 %
 %   References (negative-sequence compensator):
 %     [1] C. L. Fortescue, "Method of symmetrical co-ordinates applied to the solution of polyphase
@@ -116,7 +135,10 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %       current loop   dq vector PI on (i_xi, i_eta), unit-circle limiter   [current_ctrl]
 %       compensator    (nsc_enable) negative-sequence voltage PI, references in the positive frame,
 %                      resonant term at 2*fgrid in the current loop         [not in the model]
-%       SVPWM          port of sv_pwm_cm.c (inputs scaled by sqrt(3)/2, k_offset = (ugamma + 1)/2)
+%       open loop      (open_loop) in place of the voltage loop, the compensator and the current loop:
+%                      [ug_ref; ueta_ref] at theta as modulation index, ramp, DC-link compensation, limiter
+%                      u_lim                                                [not in the model]
+%       SVPWM         port of sv_pwm_cm.c (inputs scaled by sqrt(3)/2, k_offset = (ugamma + 1)/2)
 %                      [space_vector]
 %
 %   Differences from the block diagram (see README.md):
@@ -187,6 +209,17 @@ if trgo && ~trgo_z
         ki_n  = p.ctrl.nsc_ki_ug;
         lim_n = p.ctrl.nsc_i_lim;
         kr_i  = p.ctrl.nsc_kr_i;
+    end
+    ol    = false;                   % open-loop V/f mode, optional as well (p.ctrl.open_loop, ol_*)
+    ol_dc = false;
+    ol_tr = 0;
+    if isfield(p.ctrl, 'open_loop')
+        ol    = p.ctrl.open_loop ~= 0;
+        ol_dc = p.ctrl.ol_udc_comp ~= 0;
+        ol_tr = p.ctrl.ol_t_ramp;
+    end
+    if ol
+        nsc = false;                 % no loops in open loop, the compensator included
     end
 
     % ---- acquisitions: the control uses the samples of the previous trigger (Unit Delay after the
@@ -267,8 +300,12 @@ if trgo && ~trgo_z
     u_eta_n = u_n_alpha*sin(theta) + u_n_beta*cos(theta);
 
     % ---- voltage loop: dq vector PI -> current references (afe_control/dq_vector_pi); a slave takes
-    %      the references of the master and leaves its PI at rest
-    if slave
+    %      the references of the master and leaves its PI at rest; none in open loop
+    if ol
+        i_xi_ref  = 0;
+        i_eta_ref = 0;
+        clip_u    = 0;
+    elseif slave
         i_xi_ref  = sync(2);
         i_eta_ref = sync(3);
         clip_u    = 0;
@@ -316,9 +353,34 @@ if trgo && ~trgo_z
         [r_d, res_d] = resonant(i_xi_r - i_xi, res_d, kr_i, w_res, ts, p.ctrl.clip_release*ts_i, clip_i_z);
         [r_q, res_q] = resonant(i_eta_r - i_eta, res_q, kr_i, w_res, ts, p.ctrl.clip_release*ts_i, clip_i_z);
     end
-    [m_d, m_q, clip_i, xd_i, xq_i] = dq_vector_pi( ...
-        i_xi_r - i_xi, i_eta_r - i_eta, xd_i, xq_i, clip_i_z, ...
-        p.ctrl.kp_i, p.ctrl.ki_i*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.u_lim, p.ctrl.u_lim, r_d, r_q);
+    if ol
+        % ---- open loop (V/f): the voltage [ug_ref; ueta_ref] at the angle theta as modulation index
+        %      (unit circle = udc/sqrt(3) peak phase), with the start ramp and, with ol_udc_comp, divided by
+        %      the acquired DC-link voltage (the floor 0.5 pu also covers the first trigger, udcd = 0);
+        %      limiter of the current loop (radius u_lim, clip flag clip_i); the current PI stays at rest
+        k_r = 1;
+        if ol_tr > 0
+            k_r = min(t_master/ol_tr, 1);
+        end
+        u_dc = 1;
+        if ol_dc
+            u_dc = max(udcd, 0.5);
+        end
+        k_ol = k_r*p.hw.ubez*sqrt(3)/(p.hw.udc_nom*u_dc);
+        m_d = k_ol*p.ctrl.ug_ref;
+        m_q = k_ol*p.ctrl.ueta_ref;
+        mag = sqrt(m_d^2 + m_q^2);
+        clip_i = 0;
+        if mag >= p.ctrl.u_lim                         % as bounder1/2 of dq_vector_pi
+            m_d = m_d/mag*p.ctrl.u_lim;
+            m_q = m_q/mag*p.ctrl.u_lim;
+            clip_i = 1;
+        end
+    else
+        [m_d, m_q, clip_i, xd_i, xq_i] = dq_vector_pi( ...
+            i_xi_r - i_xi, i_eta_r - i_eta, xd_i, xq_i, clip_i_z, ...
+            p.ctrl.kp_i, p.ctrl.ki_i*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.u_lim, p.ctrl.u_lim, r_d, r_q);
+    end
     clip_i_z = clip_i;
     u_alpha = m_d*cos(theta) - m_q*sin(theta);         % xi_eta_to_alpha_beta
     u_beta  = m_d*sin(theta) + m_q*cos(theta);
