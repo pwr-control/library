@@ -287,6 +287,32 @@ outputs `m` (17×1 measurements in pu, as the AFE blocks) and `ctrl_log` (44×1,
   velocity source): `pmsm_inverter_test_run` runs and checks three cases (back-EMF observer and EKF on the
   torque curve with flying start, torque steps with the LC filter).
 
+## `afe_uvw_ctrl`
+
+AFE control in the uvw (per-phase) frame as MATLAB Function blocks (November 2026): the control
+subsystems of `foundations_of_power_electronics/afe_uvw_three_phase` (pwr-control/modelization-and-control),
+which take almost 1000 non-virtual blocks, rewritten as five masked blocks of 2 non-virtual blocks each,
+with readable MATLAB code in `afe_uvw_ctrl/src/` and one parameter struct `p` for all of them
+(`afe_uvw_ctrl_param_example.m`, the numbers of the model). All signals pu, angle and pulsation from the
+PLL; the blocks inherit the sample time and must run once per `p.ts` (the triggered control subsystem of
+the model, or a fixed-step discrete model). User guide, algorithms, parameter table and checks in
+[`afe_uvw_ctrl/README.md`](afe_uvw_ctrl/README.md), which is also the Help of the masks.
+
+- `afe_uvw_ctrl.slx` — blocks `grid_voltage_sequences` (Clarke, positive/negative frames, moving
+  average over half a grid period that follows the measured pulsation), `frt_vde4110` (fault
+  ride-through VDE-AR-N 4110: detection with voltage-rate observers and state machine, power limitation
+  flag, reactive current references from the voltage change against the pre-fault averages),
+  `grid_current_sequences_q_ctrl` (grid current sequences and three PI controllers with clamped
+  integrators that give the stack current references), `current_ctrl_uvw` (one resonant PI
+  `kp + ki*s/(s^2 + 2*delta*w*s + w^2)` per phase, forward Euler, vector limiter, zero-sequence PI) and
+  `islanding_detector` (new: passive detection with under/over-voltage, under/over-frequency, ROCOF and
+  5th/7th harmonic criteria, each with its on-delay, latched output). The code was checked without MATLAB
+  against a Python twin of the model's block diagrams (`tools/check_afe_uvw_ctrl.py`: PIs, FRT and
+  current control equal to 1e-13 with the same inputs, the averages differ only in the transients) and
+  the library was written by `tools/make_afe_uvw_ctrl.py`. Test bench `afe_uvw_ctrl/test/test_afe_uvw_ctrl.slx`
+  (the five blocks in the chain of the model, a test source with a dip and a frequency ramp, an RL
+  plant): `afe_uvw_ctrl_test_run` runs it and the same functions in a MATLAB loop, 15 checks.
+
 ## `cllc_dcx`
 
 Single-block CLLC-DCX (isolated resonant DC/DC stage, DC transformer), the DC/DC counterpart of the
