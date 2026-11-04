@@ -65,7 +65,10 @@ The class library. Every file is a `classdef` whose constructor takes plain numb
   impedance and the positive/negative sequence ξ/η voltage references used for fault injection.
 - `single_phase_transformer_setup`, `three_phase_transformer_setup` — winding resistances and
   leakage from the short-circuit voltage, magnetizing branch from the no-load current and iron
-  losses, core flux from the geometry.
+  losses, core flux from the geometry. The three-phase class returns the data of one coil of the
+  three single-phase transformers of the models: with a delta primary (`delta_star = 1`) the primary
+  coil gets 3 x the star-equivalent resistance and leakage and its magnetizing branch (`Lm1`, `Rfe1`,
+  `psi`) is referred to the line voltage; `i1m` is the line no-load current for both connections.
 
 **Power stages** — each stores rated power, voltages and currents, PWM frequency, filter and
 DC-link components and the normalization bases:
