@@ -48,6 +48,9 @@ out = sim(in);
 fprintf('%.0f s\n', toc(t0));
 t = out.tout(:);
 lg = out.tb_log;
+if ndims(lg) == 3                   % Array format of a 50 x 1 column signal: 50 x 1 x N (the explicit
+    lg = reshape(lg, size(lg, 1), []).';   % [N 1] port sizes of the blocks make the Mux output a column)
+end
 if size(lg, 1) ~= numel(t)
     lg = lg.';
 end
