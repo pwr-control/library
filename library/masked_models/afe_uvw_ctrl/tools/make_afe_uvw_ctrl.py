@@ -76,6 +76,23 @@ TAIL = (' Source src/{src} of library/masked_models/afe_uvw_ctrl (update_afe_uvw
         'folder).')
 
 # ---------------------------------------------------------------------------- the five blocks
+# Port sizes, written into the chart data (Stateflow "Size": 1 = scalar, [N 1] = column vector). The
+# ports are declared explicitly because an inherited size (-1) is resolved from the connected signal:
+# in afe_rst_ctrl.slx the scalar i_xi_ref of current_ctrl_uvw was not resolved in time and Simulink
+# stopped with "does not fully set the dimensions of output i_abc_ref" (R2026b, 2026-11-04).
+PORT_SIZES = {
+    'grid_voltage_sequences': {'ug_abc': '[3 1]', 'theta': 1, 'omega_pu': 1,
+                               'v_seq_avg': '[4 1]', 'v_seq': '[4 1]', 'ug_ab': '[2 1]'},
+    'frt_vde4110': {'v_seq_avg': '[4 1]', 'i_react_ref': '[2 1]', 'enable': 1, 'reset': 1,
+                    'i_grid_ref': '[3 1]', 'frt_active': 1, 'pwr_lim_enable': 1, 'frt_log': '[10 1]'},
+    'grid_current_sequences_q_ctrl': {'ig_abc': '[3 1]', 'theta': 1, 'omega_pu': 1, 'i_grid_ref': '[3 1]',
+                                      'i_stack_ref': '[3 1]', 'i_seq_avg': '[4 1]', 'i_seq': '[4 1]'},
+    'current_ctrl_uvw': {'i_xi_ref': 1, 'i_stack_ref': '[3 1]', 'is_abc': '[3 1]', 'theta': 1,
+                         'u_abg': '[3 1]', 'i_abc_ref': '[3 1]', 'is_xe': '[2 1]'},
+    'islanding_detector': {'ug_ab': '[2 1]', 'theta': 1, 'omega_pu': 1, 'enable': 1,
+                           'island': 1, 'crit': 1, 'idet_log': '[8 1]'},
+}
+
 BLOCKS = [
     dict(name='grid_voltage_sequences', src='grid_voltage_sequences.m',
          inputs=['ug_abc', 'theta', 'omega_pu'], outputs=['v_seq_avg', 'v_seq', 'ug_ab'],
@@ -159,14 +176,21 @@ BLOCKS = [
              'ROCOF [Hz/s]; longest running criterion [s]; time since detection [s]]. New block: the model only '
              'measures the 7th harmonic.')),
 ]
+for _b in BLOCKS:
+    _b['sizes'] = PORT_SIZES[_b['name']]
+    assert set(_b['sizes']) == set(_b['inputs']) | set(_b['outputs']), _b['name']
+del _b
 LIB_PORTS = {b['name']: (len(b['inputs']), len(b['outputs'])) for b in BLOCKS}
 
 # the two MATLAB Functions of the test bench
 TEST_MLF = dict(
     source=dict(name='test_source', src='afe_uvw_ctrl_test_source.m', inputs=['t'],
+                sizes={'t': 1, 'ug_abc': '[3 1]', 'theta': 1, 'omega_pu': 1, 'enable': 1, 'reset': 1,
+                       'i_xi_ref': 1, 'i_react_ref': '[2 1]'},
                 outputs=['ug_abc', 'theta', 'omega_pu', 'enable', 'reset', 'i_xi_ref', 'i_react_ref'],
                 params=['tb']),
     plant=dict(name='rl_plant', src='afe_uvw_ctrl_test_plant.m', inputs=['u_abg', 'ug_abc'],
+               sizes={'u_abg': '[3 1]', 'ug_abc': '[3 1]', 'is_abc': '[3 1]'},
                outputs=['is_abc'], params=['tb']),
 )
 # the 50 logged signals (Mux inputs): (signal name, width) - the same order in afe_uvw_ctrl_test_run.m
@@ -233,9 +257,9 @@ class Charts:
     def __init__(self):
         self.items = []
 
-    def add(self, path, fname, script, inputs, outputs, params):
+    def add(self, path, fname, script, inputs, outputs, params, sizes=None):
         self.items.append(dict(path=path, fname=fname, script=script, inputs=inputs, outputs=outputs,
-                               params=params, file_number=len(self.items) + 1))
+                               params=params, sizes=sizes or {}, file_number=len(self.items) + 1))
         return self.items[-1]
 
 
@@ -330,13 +354,13 @@ class System:
         self.children[sid] = child
         return self.add(xml, sid)
 
-    def mlf(self, name, path, position, src_path, inputs, outputs, params):
+    def mlf(self, name, path, position, src_path, inputs, outputs, params, sizes=None):
         """A MATLAB Function block: the atomic subsystem, its inner system (Inports, ' SFunction ',
         ' Demux ', ' Terminator ', Outports) and the Stateflow chart of its code."""
         script = read_function(src_path, os.path.splitext(os.path.basename(src_path))[0], inputs, outputs,
                                params)
         chart = self.charts.add(path, os.path.splitext(os.path.basename(src_path))[0], script, inputs,
-                                outputs, params)
+                                outputs, params, sizes)
         sid = self.sids()
         nin, nout = len(inputs), len(outputs)
         xml = (f'  <Block BlockType="SubSystem" Name="{esc_attr(name)}" SID="{sid}">\n'
@@ -487,7 +511,7 @@ def mask_xml(spec):
 
 
 # ---------------------------------------------------------------------------- Stateflow
-def _data_xml(ssid, name, scope):
+def _data_xml(ssid, name, scope, size=-1):
     if scope == 'OUTPUT_DATA':
         type_extra, frame = '', 'SF_FRAME_NO'
     else:
@@ -495,7 +519,7 @@ def _data_xml(ssid, name, scope):
         frame = 'SF_FRAME_INHERITED'
     return (f'    <data SSID="{ssid}" name="{esc_attr(name)}">\n'
             + P('scope', scope, '      ')
-            + '      <props>\n        <array>\n' + P('size', -1, '          ') + '        </array>\n'
+            + '      <props>\n        <array>\n' + P('size', size, '          ') + '        </array>\n'
             '        <type>\n' + P('method', 'SF_INHERITED_TYPE', '          ')
             + P('primitive', 'SF_DOUBLE_TYPE', '          ') + type_extra + '        </type>\n'
             + P('complexity', 'SF_COMPLEX_INHERITED', '        ') + P('frame', frame, '        ')
@@ -522,7 +546,7 @@ def chart_xml(chart_id, c):
          + '      <eml>\n' + P('isEML', 1, '        ') + P('script', c['script'], '        ')
          + P('vectorOutputs1D', 1, '        ') + '      </eml>\n    </state>\n')
     for i, (name, scope) in enumerate(data):
-        x += _data_xml(4 + i, name, scope)
+        x += _data_xml(4 + i, name, scope, c.get('sizes', {}).get(name, -1))
     x += ('    <transition SSID="2">\n'
           + P('labelString', '{eML_blk_kernel();}', '      ')
           + P('labelPosition', '[28.125 13.875 102.544 14.964]', '      ') + P('fontSize', 12, '      ')
@@ -881,7 +905,8 @@ def build_library():
         in_sids = [inner.inport(n, k + 1, f'[40, {60 + 40*k + mh//max(nin, nout)//2 - 7}, 70, {60 + 40*k + mh//max(nin, nout)//2 + 7}]')
                    for k, n in enumerate(spec['inputs'])]
         mlf = inner.mlf(spec['name'], f"{spec['name']}/{spec['name']}", f'[200, 60, 420, {60 + mh}]',
-                        os.path.join(SRC, spec['src']), spec['inputs'], spec['outputs'], [MASK_PARAM[0]])
+                        os.path.join(SRC, spec['src']), spec['inputs'], spec['outputs'], [MASK_PARAM[0]],
+                        spec['sizes'])
         out_sids = [inner.outport(n, k + 1, f'[520, {60 + 40*k + mh//max(nin, nout)//2 - 7}, 550, {60 + 40*k + mh//max(nin, nout)//2 + 7}]')
                     for k, n in enumerate(spec['outputs'])]
         for k, s in enumerate(in_sids):
@@ -902,7 +927,7 @@ def build_test():
 
     clk = s.digital_clock('t', 'tb.ts', '[40, 190, 70, 210]')
     so = s.mlf(src['name'], src['name'], '[130, 60, 300, 340]', os.path.join(TEST, src['src']),
-               src['inputs'], src['outputs'], src['params'])
+               src['inputs'], src['outputs'], src['params'], src['sizes'])
     vseq = s.library_ref('grid_voltage_sequences', f'{LIB}/grid_voltage_sequences', 3, 3, '[420, 60, 640, 180]',
                          [('p', 'p')])
     frt = s.library_ref('frt_vde4110', f'{LIB}/frt_vde4110', 4, 4, '[760, 60, 980, 210]', [('p', 'p')])
@@ -913,7 +938,7 @@ def build_test():
     isl = s.library_ref('islanding_detector', f'{LIB}/islanding_detector', 4, 3, '[760, 420, 980, 540]',
                         [('p', 'p')])
     plant = s.mlf(pl['name'], pl['name'], '[1440, 300, 1660, 380]', os.path.join(TEST, pl['src']),
-                  pl['inputs'], pl['outputs'], pl['params'])
+                  pl['inputs'], pl['outputs'], pl['params'], pl['sizes'])
     ud = s.unit_delay('is_delay', 'zeros(3, 1)', '[1520, 430, 1580, 470]', mirror=True)
     neg = s.gain('ig = -is', '-1', '[1180, 430, 1230, 470]', mirror=True)
     mux = s.mux('log', len(LOG), f'[1760, 60, 1765, {60 + 30*len(LOG)}]')
@@ -1120,6 +1145,10 @@ def check_file(path, is_library, src_dirs, lib_ports=None):
         data = collections.defaultdict(list)
         for d in chart.find('Children').findall('data'):
             data[P_of(d, 'scope')].append(d.get('name'))
+            if P_of(d, 'scope') in ('INPUT_DATA', 'OUTPUT_DATA'):
+                arr = d.find('props/array')
+                if arr is None or P_of(arr, 'size') in (None, '-1'):
+                    err(f'{path}: port {d.get("name")} has an inherited size (-1): declare it')
         ins = [n for _, n in sorted((int(P_of(x, 'Port') or 1), x.get('Name')) for x in slx.blocks(msys)
                                     if x.get('BlockType') == 'Inport')]
         outs = [n for _, n in sorted((int(P_of(x, 'Port') or 1), x.get('Name')) for x in slx.blocks(msys)
@@ -1181,7 +1210,8 @@ def check_file(path, is_library, src_dirs, lib_ports=None):
     # library: the five masked blocks; test: the references and their ports
     root_blocks = slx.blocks('system_root')
     if is_library:
-        if [b.get('Name') for b in root_blocks] != [s['name'] for s in BLOCKS]:
+        # (MATLAB re-saves the root blocks in alphabetical order: compare as sets)
+        if sorted(b.get('Name') for b in root_blocks) != sorted(s['name'] for s in BLOCKS):
             err('root blocks of the library are not the five blocks')
         for b in root_blocks:
             if b.find('Mask') is None or [m.get('Name') for m in b.findall('Mask/MaskParameter')] != [MASK_PARAM[0]]:

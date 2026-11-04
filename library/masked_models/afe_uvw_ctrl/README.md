@@ -1,7 +1,9 @@
 # afe_uvw_ctrl — AFE control in the uvw frame as MATLAB Function blocks
 
-Rev. 01, 2026-11-04: the section "Using the blocks in afe_uvw_three_phase" describes the model
-`afe_rst_ctrl.slx` and the init section that builds `param.afe.uvw` (rev. 00 the same day: first version).
+Rev. 02, 2026-11-04: the port sizes of the five blocks are declared explicitly in the charts (1 or [N 1])
+after a compile error in `afe_rst_ctrl.slx` ("does not fully set the dimensions of output i_abc_ref"). Rev. 01
+the same day: the section "Using the blocks in afe_uvw_three_phase" describes the model `afe_rst_ctrl.slx` and
+the init section that builds `param.afe.uvw`; rev. 00: first version.
 
 Five masked Simulink blocks, one MATLAB Function each, that replace the control subsystems of the
 model `foundations_of_power_electronics/afe_uvw_three_phase` (`afe_uvw_ctrl.slx`, renamed
@@ -337,8 +339,12 @@ Edit the file in `src/`, then either run `update_afe_uvw_ctrl` in MATLAB (loads 
 blocks of the library and of the test bench and saves both) or run `python3 tools/make_afe_uvw_ctrl.py`
 (rewrites both files from scratch and checks them: use it after a change of the ports or of the
 masks). Keep the function signature as `function [outputs] = name(inputs, p)`: the port inputs first,
-the mask parameter last, as Simulink requires for a parameter of a MATLAB Function block. Commit the
-source together with the `.slx`.
+the mask parameter last, as Simulink requires for a parameter of a MATLAB Function block. The size of
+every port is declared in the chart (`PORT_SIZES` in the generator: 1 for a scalar, `[N 1]` for a column
+vector), not inherited: a port whose size depends on an unresolved upstream signal makes Simulink stop
+with "does not fully set the dimensions of output". A new port or a changed width needs the same change
+in `PORT_SIZES` (or in the Ports and Data Manager of the block). Commit the source together with the
+`.slx`.
 
 ## Test bench
 
