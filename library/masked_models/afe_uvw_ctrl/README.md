@@ -1,10 +1,11 @@
 # afe_uvw_ctrl — AFE control in the uvw frame as MATLAB Function blocks
 
-Rev. 00, 2026-11-04.
+Rev. 01, 2026-11-04: the section "Using the blocks in afe_uvw_three_phase" describes the model
+`afe_rst_ctrl.slx` and the init section that builds `param.afe.uvw` (rev. 00 the same day: first version).
 
 Five masked Simulink blocks, one MATLAB Function each, that replace the control subsystems of the
-model `foundations_of_power_electronics/afe_uvw_three_phase` (`afe_uvw_ctrl.slx`,
-pwr-control/modelization-and-control): the grid voltage and grid current sequence measurements, the
+model `foundations_of_power_electronics/afe_uvw_three_phase` (`afe_uvw_ctrl.slx`, renamed
+`afe_rst_ctrl.slx` once the blocks were in; pwr-control/modelization-and-control): the grid voltage and grid current sequence measurements, the
 reactive current control, the fault ride-through of VDE-AR-N 4110 and the per-phase resonant current
 control, plus a new passive islanding detector. The model needs almost 1000 non-virtual blocks for
 these functions; here each block costs 2 (the atomic subsystem and the S-function of the MATLAB
@@ -316,14 +317,19 @@ and the check "blocks = functions" need MATLAB.
 
 ## Using the blocks in afe_uvw_three_phase
 
-Inside `afe_control`: `grid_voltage_sequences` takes `ug_abc` (pu), `phase_grid_pll` and
-`omega_grid_pll_pu`; `frt_vde4110` takes its `v_seq_avg`, `[i_react_pos_ref; i_react_neg_ref]`,
-the FRT enable step and the reset pulse, and gives `pwr_lim_enable` to the DC-link controller;
-`grid_current_sequences_q_ctrl` takes `ig_abc`, the same angle and pulsation and `i_grid_ref`;
-`current_ctrl_uvw` takes the xi reference of the DC-link controller, `i_stack_ref`, `is_abc` and the
-angle, and its `u_abg` replaces `ualpha_afe`, `ubeta_afe`, `ugamma_afe` at the modulator. The mask
-parameter of every block is one struct, e.g. `param.afe.uvw = afe_uvw_ctrl_param_example(param.glb_time.ts_afe,
-param.grid.fgrid)` in the init. The swap of the model itself is not part of this revision.
+The model `afe_rst_ctrl.slx` of `foundations_of_power_electronics/afe_uvw_three_phase`
+(pwr-control/modelization-and-control) uses the five blocks inside `afe_control`, all with the mask
+parameter `param.afe.uvw`: `grid_voltage_sequences` takes `ugd_abc_pu`, `phase_grid_pll` and
+`omega_grid_pll_pu` (absolute value limited to 0.1...2 pu); `frt_vde4110` takes its `v_seq_avg`,
+`[i_react_pos_ref; i_react_neg_ref]`, the enable step at `param.frt.data.settle_time` and a reset
+pulse at 25 ms, and gives `pwr_lim_enable` to the DC-link controller; `grid_current_sequences_q_ctrl`
+takes `ig_abc_pu`, the same angle and pulsation and `i_grid_seq_ref`; `current_ctrl_uvw` takes the xi
+reference of the DC-link controller, `i_stack_ref` = `[i_stack_pos_eta_ref; i_stack_neg_xi_ref;
+i_stack_neg_eta_ref]`, `isd_abc_pu` and the angle, and its `u_abg` goes to the modulator. The section
+"Control in uvw" of `init_model.m` builds `param.afe.uvw` field by field from the numbers of the model
+(`param.afe.ctrl` from `ctrl_afe_setup`, `param.frt.data`, `param.ctrl`); they are the same numbers as
+`afe_uvw_ctrl_param_example(param.glb_time.ts_afe, param.grid.fgrid)`, which can be used instead as a
+start.
 
 ## Changing the code
 
