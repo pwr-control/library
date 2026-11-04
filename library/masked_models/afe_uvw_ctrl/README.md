@@ -3,7 +3,8 @@
 Rev. 03, 2026-11-04: the resonator of `current_ctrl_uvw` is integrated with forward-backward Euler (the
 new `x1` in the update of `x2`), so its poles are inside the unit circle for any `delta_res > 0`, where the
 forward Euler of the model has them outside for `delta_res < omega*ts/2` = 0.0196; the default `delta_res`
-becomes 0.005, which gives the same gain at the grid frequency as the model's resonator with 0.015. New
+becomes 0.005, which gives about the same gain at the grid frequency (11.1 instead of 10.8) as the model's
+resonator with 0.015. New
 MATLAB-free loader `tools/load_sources_into_slx.py` (code-only changes). Rev. 02 the same day: the port
 sizes of the five blocks are declared explicitly in the charts (1 or [N 1]) after a compile error in
 `afe_rst_ctrl.slx` ("does not fully set the dimensions of output i_abc_ref"); rev. 01: the section "Using
@@ -178,8 +179,8 @@ for the negative xi too, the example keeps that (1.0).
    period) and its gain at `w` is 10.8 instead of `ki/(2*delta*w)` = 3.7. The loop with the plant is
    stable in both cases (the plant pulls the poles inside: crossover 300 Hz, phase margin 69°, 41 dB of
    attenuation of the 50 Hz error). With the new discretization the damping means what it says, and
-   `delta = 0.005` (default of the example) gives the same gain 10.8 at `w` as the model's resonator
-   with 0.015, i.e. the same loop. The forward Euler version can still be compared with
+   `delta = 0.005` (default of the example) gives about the same gain at `w` (11.1) as the model's
+   resonator with 0.015 (10.8), i.e. the same loop (0.0052 would be the exact match). The forward Euler version can still be compared with
    `tools/check_afe_uvw_ctrl.py --model-resonator`.
 3. Vector limiter: the three outputs are divided by the length of the previous alpha/beta output,
    limited to `[mag_lim, mag_scale_max]` (the `antiwind_up` of the model: a soft scaling, not a hard

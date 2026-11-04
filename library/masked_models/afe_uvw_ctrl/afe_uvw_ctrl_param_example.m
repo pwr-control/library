@@ -97,7 +97,7 @@ function p = afe_uvw_ctrl_param_example(ts, f_nom)
                                     % 0.015 for its forward Euler resonator, whose poles are outside the unit
                                     % circle (gain 10.8 at w instead of 3.7); the block integrates the
                                     % resonator with forward-backward Euler (poles inside the circle), and
-                                    % 0.005 gives it the same gain 10.8 at w: same loop as the model
+                                    % 0.005 gives it about the same gain at w (11.1): same loop as the model
     p.ictrl.omega_res = p.omega_nom;    % [rad/s] resonance pulsation
     p.ictrl.mag_lim   = 1;          % [pu] length of the alpha/beta output vector above which it is scaled
     p.ictrl.mag_scale_max = 10;     % largest scaling factor

@@ -23,8 +23,8 @@ function [u_abg, i_abc_ref, is_xe] = current_ctrl_uvw(i_xi_ref, i_stack_ref, is_
 %        (0.0196 at 125 us): with the model's delta = 0.015 that resonator alone is a growing
 %        oscillator and its gain at w is 10.8 instead of ki/(2*delta*w) = 3.7. The loop with the plant
 %        was still stable (the plant pulls the poles inside), but the damping now means what it says:
-%        delta = 0.005 gives the same gain at w (10.8) as the model's resonator with 0.015, which is
-%        the default of afe_uvw_ctrl_param_example.m;
+%        delta = 0.005 gives about the same gain at w (11.1 against 10.8) as the model's resonator with
+%        0.015, and is the default of afe_uvw_ctrl_param_example.m;
 %     3. vector limiter: the three outputs are divided by scale = |u_alpha_beta| of the previous
 %        step, limited to [p.ictrl.mag_lim, p.ictrl.mag_scale_max] (the model's "antiwind_up"), so
 %        that the voltage vector stays inside the unit circle; then abc -> alpha, beta (the zero
