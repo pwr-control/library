@@ -93,7 +93,11 @@ function p = afe_uvw_ctrl_param_example(ts, f_nom)
     % ---------------------------------------------------------------- current_ctrl_uvw
     p.ictrl.kp        = 0.6;        % resonant PI: proportional gain (res_pi.kp_rpi, LVRT setting of init_model)
     p.ictrl.ki        = 35;         % [1/s] resonant gain (res_pi.ki_rpi)
-    p.ictrl.delta_res = 0.015;      % damping of the resonator (res_pi.delta_res; 0 = ideal resonator)
+    p.ictrl.delta_res = 0.005;      % damping of the resonator (0 = ideal resonator). The model's class has
+                                    % 0.015 for its forward Euler resonator, whose poles are outside the unit
+                                    % circle (gain 10.8 at w instead of 3.7); the block integrates the
+                                    % resonator with forward-backward Euler (poles inside the circle), and
+                                    % 0.005 gives it the same gain 10.8 at w: same loop as the model
     p.ictrl.omega_res = p.omega_nom;    % [rad/s] resonance pulsation
     p.ictrl.mag_lim   = 1;          % [pu] length of the alpha/beta output vector above which it is scaled
     p.ictrl.mag_scale_max = 10;     % largest scaling factor

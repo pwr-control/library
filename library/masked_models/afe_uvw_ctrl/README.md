@@ -1,9 +1,14 @@
 # afe_uvw_ctrl — AFE control in the uvw frame as MATLAB Function blocks
 
-Rev. 02, 2026-11-04: the port sizes of the five blocks are declared explicitly in the charts (1 or [N 1])
-after a compile error in `afe_rst_ctrl.slx` ("does not fully set the dimensions of output i_abc_ref"). Rev. 01
-the same day: the section "Using the blocks in afe_uvw_three_phase" describes the model `afe_rst_ctrl.slx` and
-the init section that builds `param.afe.uvw`; rev. 00: first version.
+Rev. 03, 2026-11-04: the resonator of `current_ctrl_uvw` is integrated with forward-backward Euler (the
+new `x1` in the update of `x2`), so its poles are inside the unit circle for any `delta_res > 0`, where the
+forward Euler of the model has them outside for `delta_res < omega*ts/2` = 0.0196; the default `delta_res`
+becomes 0.005, which gives the same gain at the grid frequency as the model's resonator with 0.015. New
+MATLAB-free loader `tools/load_sources_into_slx.py` (code-only changes). Rev. 02 the same day: the port
+sizes of the five blocks are declared explicitly in the charts (1 or [N 1]) after a compile error in
+`afe_rst_ctrl.slx` ("does not fully set the dimensions of output i_abc_ref"); rev. 01: the section "Using
+the blocks in afe_uvw_three_phase" describes the model `afe_rst_ctrl.slx` and the init section that builds
+`param.afe.uvw`; rev. 00: first version.
 
 Five masked Simulink blocks, one MATLAB Function each, that replace the control subsystems of the
 model `foundations_of_power_electronics/afe_uvw_three_phase` (`afe_uvw_ctrl.slx`, renamed
@@ -162,9 +167,20 @@ for the negative xi too, the example keeps that (1.0).
    `(neg_xi, neg_eta)` by `-theta`, summed in alpha/beta and transformed to abc.
 2. One resonant PI per phase on `e = i_ref - i_meas`:
    `d = kp*e + ki*s/(s^2 + 2*delta*w*s + w^2)*e`, `w = p.ictrl.omega_res`, `delta = p.ictrl.delta_res`
-   (0.015 in the model; 0 is the ideal resonator). State space `x1' = x2`,
-   `x2' = -w^2*x1 - 2*delta*w*x2 + ki*e`, output `x2`, forward Euler with `ts` (the model:
-   `Aresd = I + A*ts`, `Bresd = B*ts`).
+   (0 is the ideal resonator). State space `x1' = x2`, `x2' = -w^2*x1 - 2*delta*w*x2 + ki*e`, output
+   `x2`, integrated with the step `ts` as forward Euler on `x1` and backward Euler on `x2` (the new `x1`
+   is used in the update of `x2`): `x1+ = x1 + ts*x2`, `x2+ = x2 + ts*(-w^2*x1+ - 2*delta*w*x2 + ki*e)`.
+   The discrete poles have `|z|^2 = 1 - 2*delta*w*ts`: on the unit circle for `delta = 0`, inside it for
+   `delta > 0`, resonance at `w`. The model integrates the same state space with plain forward Euler
+   (`Aresd = I + A*ts`, `Bresd = B*ts`; the block did the same up to rev. 02), which gives
+   `|z|^2 = 1 - 2*delta*w*ts + (w*ts)^2`: poles outside the unit circle for `delta < w*ts/2` = 0.0196 at
+   125 µs, so with the model's `delta = 0.015` the resonator alone is a growing oscillator (3 % per
+   period) and its gain at `w` is 10.8 instead of `ki/(2*delta*w)` = 3.7. The loop with the plant is
+   stable in both cases (the plant pulls the poles inside: crossover 300 Hz, phase margin 69°, 41 dB of
+   attenuation of the 50 Hz error). With the new discretization the damping means what it says, and
+   `delta = 0.005` (default of the example) gives the same gain 10.8 at `w` as the model's resonator
+   with 0.015, i.e. the same loop. The forward Euler version can still be compared with
+   `tools/check_afe_uvw_ctrl.py --model-resonator`.
 3. Vector limiter: the three outputs are divided by the length of the previous alpha/beta output,
    limited to `[mag_lim, mag_scale_max]` (the `antiwind_up` of the model: a soft scaling, not a hard
    limit), then abc → alpha/beta (the zero sequence of the three outputs is dropped). The model
@@ -246,7 +262,7 @@ model, change the numbers, keep the field names. The names in brackets are those
 | `frt.lim_pos_eta`, `lim_neg_xi`, `lim_neg_eta`, `lim_*_red` | 1, 0.5, 0.5, 0.1 | limits of the references (`i_grid_*_lim`, `i_grid_*_red_lim`) |
 | `frt.f_lpf_ref` | 161 | low pass of the references [Hz] (`g0_161Hz`) |
 | `ictrl.kp`, `ictrl.ki` | 0.6, 35 | resonant PI (`res_pi.kp_rpi`, `ki_rpi`, the LVRT setting of `init_model.m`) |
-| `ictrl.delta_res`, `omega_res` | 0.015, ω | damping and pulsation of the resonator |
+| `ictrl.delta_res`, `omega_res` | 0.005, ω | damping and pulsation of the resonator (the model: 0.015 with forward Euler, see `current_ctrl_uvw` step 2) |
 | `ictrl.mag_lim`, `mag_scale_max` | 1, 10 | vector limiter |
 | `ictrl.out_delay` | 1 | one-step output delay as the model (0: none) |
 | `ictrl.kp_z`, `ki_z`, `u_z_lim`, `iz_ref` | 0.5, 18, 1, 0 | zero-sequence current PI (`kp_is_z`, `ki_is_z`) |
@@ -269,8 +285,9 @@ there).
 **Against the model, without MATLAB** (`tools/check_afe_uvw_ctrl.py`): a Python twin of the block
 diagrams of the model (`dmavgflt_process`, `LVRT_detector`, `linear_double_integrator_observer`,
 `avg_flt`, `u_161Hz_flt`, the resonant PIs, `antiwind_up`, `zero_sequence_current_ctrl`, written block
-by block from the `.slx` and the library sources) and the five functions (GNU Octave) run on the same
-inputs for 1.2 s: 50.2 Hz grid with 2 % 7th and 1.5 % 5th harmonic, a dip to 0.55 pu with 0.25 pu
+by block from the `.slx` and the library sources; its resonator is the forward-backward Euler of the
+block, `--model-resonator` switches it to the forward Euler of the model with `delta_res` 0.015) and the
+five functions (GNU Octave) run on the same inputs for 1.2 s: 50.2 Hz grid with 2 % 7th and 1.5 % 5th harmonic, a dip to 0.55 pu with 0.25 pu
 negative sequence at 0.75–0.90 s, grid current and reference steps. The comparison is done twice: in
 the chain (each implementation on its own signals, as the model) and block by block (the twin reads
 the signals of the new code at the block borders, so that each block sees the same inputs).
@@ -283,14 +300,14 @@ the signals of the new code at the block borders, so that each block sees the sa
 | `frt_active`, `pwr_lim_enable` | same edges (0.75488 s and 0.90813 s) | |
 | `i_grid_ref` | 5e-4 (pos_eta), 5e-8 (neg) | pre-fault average one sample apart |
 | `i_stack_ref` (PIs) | 4e-14 | |
-| `u_abg`, `i_abc_ref` (current control) | 4e-13 | |
+| `u_abg`, `i_abc_ref` (current control) | 2e-13 | |
 
 In the chain the small differences of the averages propagate: 5e-3 on `i_grid_ref` at the dip edges,
 and the PI integrators of the open-loop scenario keep a 9e-3 offset from the start-up until the first
 saturation. Figure: `check_afe_uvw_ctrl.png` (project files of the thread).
 
-**The test bench in a loop** (`test/afe_uvw_ctrl_test_loop.m`, run in GNU Octave 8.4): the 14
-behaviour checks of `afe_uvw_ctrl_test_run.m` pass (fault detected 5 ms after the dip start and
+**The test bench in a loop** (`test/afe_uvw_ctrl_test_loop.m`, run in GNU Octave 8.4, forward-backward
+resonator with `delta_res` 0.005): the 14 behaviour checks of `afe_uvw_ctrl_test_run.m` pass (fault detected 5 ms after the dip start and
 released 8 ms after its end, power limitation set, FRT reference −0.80 pu reached within 3e-3, grid
 eta current on its reference within 5e-5 before the dip and within 0.02 at the end of the dip, xi stack
 current on −0.85 within 6e-3, zero-sequence current 7e-13, islanding detected 0.14 s after the start of
@@ -335,10 +352,15 @@ start.
 
 ## Changing the code
 
-Edit the file in `src/`, then either run `update_afe_uvw_ctrl` in MATLAB (loads the sources into the
-blocks of the library and of the test bench and saves both) or run `python3 tools/make_afe_uvw_ctrl.py`
-(rewrites both files from scratch and checks them: use it after a change of the ports or of the
-masks). Keep the function signature as `function [outputs] = name(inputs, p)`: the port inputs first,
+Edit the file in `src/`, then load it into the blocks: `update_afe_uvw_ctrl` in MATLAB (loads the
+sources into the blocks of the library and of the test bench and saves both), or without MATLAB
+`python3 tools/load_sources_into_slx.py` (replaces the script of each MATLAB Function block of
+`afe_uvw_ctrl.slx` with the file of the same name in `src/`, in place, and leaves the rest of the
+MATLAB-saved file as it is: for code-only changes), or `python3 tools/make_afe_uvw_ctrl.py` (rewrites
+both files from scratch and checks them: use it after a change of the ports or of the masks; a file
+rewritten this way is not the MATLAB-saved one, so prefer the loader for a file that MATLAB has already
+saved). After any of the three run the checks of `make_afe_uvw_ctrl.py` (`--check` only) and
+`tools/check_afe_uvw_ctrl.py`. Keep the function signature as `function [outputs] = name(inputs, p)`: the port inputs first,
 the mask parameter last, as Simulink requires for a parameter of a MATLAB Function block. The size of
 every port is declared in the chart (`PORT_SIZES` in the generator: 1 for a scalar, `[N 1]` for a column
 vector), not inherited: a port whose size depends on an unresolved upstream signal makes Simulink stop

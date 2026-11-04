@@ -11,9 +11,20 @@ function [u_abg, i_abc_ref, is_xe] = current_ctrl_uvw(i_xi_ref, i_stack_ref, is_
 %     2. one resonant PI per phase on e = i_ref - i_meas:
 %            d = kp*e + ki * s/(s^2 + 2*delta*w*s + w^2) * e
 %        with w = p.ictrl.omega_res (the grid pulsation) and the damping delta = p.ictrl.delta_res
-%        (0 gives the ideal resonator kp + ki*s/(s^2 + w^2); the model uses 0.015). The resonator is
-%        in state-space form x = [x1; x2], x1' = x2, x2' = -w^2*x1 - 2*delta*w*x2 + ki*e, output x2,
-%        discretized with the forward Euler step ts (as the model: Aresd = I + A*ts, Bresd = B*ts);
+%        (0 gives the ideal resonator kp + ki*s/(s^2 + w^2)). The resonator is in state-space form
+%        x = [x1; x2], x1' = x2, x2' = -w^2*x1 - 2*delta*w*x2 + ki*e, output x2, and is discretized
+%        with the step ts as forward Euler on x1 and backward Euler on x2 (the NEW x1 is used in the
+%        update of x2):
+%            x1+ = x1 + ts*x2,   x2+ = x2 + ts*(-w^2*x1+ - 2*delta*w*x2 + ki*e).
+%        The discrete poles then have |z|^2 = 1 - 2*delta*w*ts: on the unit circle for delta = 0 and
+%        inside it for delta > 0, with the resonance at w. The plain forward Euler of the model
+%        (Aresd = I + A*ts, Bresd = B*ts, used by this block up to library rev. 02) has instead
+%        |z|^2 = 1 - 2*delta*w*ts + (w*ts)^2, i.e. poles OUTSIDE the unit circle when delta < w*ts/2
+%        (0.0196 at 125 us): with the model's delta = 0.015 that resonator alone is a growing
+%        oscillator and its gain at w is 10.8 instead of ki/(2*delta*w) = 3.7. The loop with the plant
+%        was still stable (the plant pulls the poles inside), but the damping now means what it says:
+%        delta = 0.005 gives the same gain at w (10.8) as the model's resonator with 0.015, which is
+%        the default of afe_uvw_ctrl_param_example.m;
 %     3. vector limiter: the three outputs are divided by scale = |u_alpha_beta| of the previous
 %        step, limited to [p.ictrl.mag_lim, p.ictrl.mag_scale_max] (the model's "antiwind_up"), so
 %        that the voltage vector stays inside the unit circle; then abc -> alpha, beta (the zero
@@ -62,17 +73,17 @@ function [u_abg, i_abc_ref, is_xe] = current_ctrl_uvw(i_xi_ref, i_stack_ref, is_
                  -0.5*alpha_ref + sqrt(3)/2*beta_ref;
                  -0.5*alpha_ref - sqrt(3)/2*beta_ref];
 
-    % ---- 2. resonant PI per phase (forward Euler)
+    % ---- 2. resonant PI per phase (forward Euler on x1, backward Euler on x2)
     w = p.ictrl.omega_res;
     kp = p.ictrl.kp;
     ki = p.ictrl.ki;
     delta = p.ictrl.delta_res;
     e = i_abc_ref - is_abc;                                 % [3x1]
     d_abc = kp*e + x_res(2, :)';                            % output: P + resonator state x2
-    x1 = x_res(1, :);
-    x2 = x_res(2, :);
-    x_res(1, :) = x1 + ts*x2;
-    x_res(2, :) = x2 + ts*(-w^2*x1 - 2*delta*w*x2 + ki*e');
+    x1 = x_res(1, :) + ts*x_res(2, :);                      % new x1 ...
+    x2 = x_res(2, :) + ts*(-w^2*x1 - 2*delta*w*x_res(2, :) + ki*e');   % ... used in the update of x2
+    x_res(1, :) = x1;
+    x_res(2, :) = x2;
 
     % ---- 3. vector limiter on the previous output, abc -> alpha/beta, output delay
     scale = min(max(sqrt(u_ab_d(1)^2 + u_ab_d(2)^2), p.ictrl.mag_lim), p.ictrl.mag_scale_max);

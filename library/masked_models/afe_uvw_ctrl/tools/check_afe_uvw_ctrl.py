@@ -49,9 +49,13 @@ SRC = os.path.join(PKG, 'src')
 TS = 125e-6
 F_NOM = 50.0
 W_NOM = 2*math.pi*F_NOM
+# resonator of the twin: 'fb' = forward Euler on x1, backward on x2, as the block since rev. 03 (poles
+# inside the unit circle); 'fe' = plain forward Euler Aresd = I + A*ts of the model (poles outside the
+# circle for delta < w*ts/2). --model-resonator selects 'fe' with the model's delta 0.015 on both sides.
+RESONATOR = 'fb'
 PAR = dict(
     # ctrl_afe_setup / init_model.m
-    kp_rpi=0.6, ki_rpi=35.0, delta_res=0.015,
+    kp_rpi=0.6, ki_rpi=35.0, delta_res=0.005,     # delta_res: 0.005 of the package (0.015 in the model's class)
     kp_rc_pos=0.25, ki_rc_pos=35.0, kp_rc_neg=0.25, ki_rc_neg=35.0,
     ieta_pos_ref_lim=1.0, ieta_neg_ref_lim=0.5,
     i_grid_pos_eta_lim=1.0, i_grid_neg_xi_lim=0.5, i_grid_neg_eta_lim=0.5,
@@ -287,10 +291,13 @@ class OriginalTwin:
         self.lvrt = LvrtDetector()
         self.avg500 = [AvgFlt(ts, 2*math.pi/0.5) for _ in range(4)]
         self.lpf = [Lpf1(par['g0_161']) for _ in range(3)]
-        # resonant PI (resonant_pi of ctrl_afe_setup)
+        # resonant PI (resonant_pi of ctrl_afe_setup: forward Euler; 'fb': the new x1 in the update of x2)
         w0, d = W_NOM, par['delta_res']
         A = np.array([[0.0, 1.0], [-w0**2, -2*d*w0]])
-        self.Aresd = np.eye(2) + A*ts
+        if RESONATOR == 'fe':
+            self.Aresd = np.eye(2) + A*ts
+        else:
+            self.Aresd = np.array([[1.0, ts], [-w0**2*ts, 1.0 - (w0*ts)**2 - 2*d*w0*ts]])
         self.Bresd = np.array([0.0, 1.0])*ts
         self.Cresd = np.array([0.0, 1.0])
         self.x_res = [np.zeros(2) for _ in range(3)]
@@ -463,6 +470,7 @@ OCTAVE_DRIVER = r"""
 addpath('%(pkg)s'); addpath('%(src)s');
 clear functions
 p = afe_uvw_ctrl_param_example(%(ts)g, %(f_nom)g);
+p.ictrl.delta_res = %(delta)g;
 in = csvread('%(inputs)s');
 n = size(in, 1);
 out = zeros(n, %(ncol)d);
@@ -497,7 +505,7 @@ def run_new(sc, keep=None):
     f_drv = os.path.join(d, 'run_new.m')
     np.savetxt(f_in, inputs, delimiter=',', fmt='%.17g')
     open(f_drv, 'w').write(OCTAVE_DRIVER % dict(pkg=PKG, src=SRC, ts=TS, f_nom=F_NOM, inputs=f_in,
-                                                outputs=f_out, ncol=ncol))
+                                                outputs=f_out, ncol=ncol, delta=PAR['delta_res']))
     r = subprocess.run(['octave-cli', '--no-gui', '-q', f_drv], capture_output=True, text=True)
     sys.stdout.write(r.stdout)
     if r.returncode != 0:
@@ -586,7 +594,15 @@ def main():
     ap.add_argument('--plot', default=None, help='write a comparison figure (PNG)')
     ap.add_argument('--t-end', type=float, default=1.2)
     ap.add_argument('--keep', default=None, help='folder for the CSV files and the Octave driver')
+    ap.add_argument('--model-resonator', action='store_true',
+                    help="twin with the model's forward Euler resonator and delta 0.015 (both sides): shows the "
+                         'difference of the current controller from the model')
     a = ap.parse_args()
+    global RESONATOR
+    if a.model_resonator:
+        RESONATOR = 'fe'
+        PAR['delta_res'] = 0.015
+    print('twin resonator: %s, delta_res %g' % (RESONATOR, PAR['delta_res']))
     sc = scenario(a.t_end)
     print('scenario: %d steps of %g us, dip 0.75..0.90 s (pos 0.55, neg 0.25), 7th harmonic 2 %%, 5th 1.5 %%'
           % (len(sc['t']), TS*1e6))
