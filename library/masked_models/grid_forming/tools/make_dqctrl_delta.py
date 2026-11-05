@@ -71,7 +71,7 @@ BLOCKS = [
              'Control and PWM: library link to the MATLAB Function of grid_forming_dqctrl (source '
              'private/afe_dq_ctrl_pwm.m, loaded by update_grid_forming_dqctrl.m): a change of the control code '
              'there applies to this block too. Measurements to the control through a Unit Delay of one tc. '
-             'Ports: ug_a/b/c left, Udc(+)/Udc(-) right, t_master and sync in, m (17x1 pu), ctrl_log (43x1) and '
+             'Ports: ug_a/b/c left, Udc(+)/Udc(-) right, t_master and sync in, m (17x1 pu), ctrl_log (55x1) and '
              'sync_out out. m(1:14) as in grid_forming_dqctrl (m(4:6) = capacitor node voltages without zero '
              'sequence, the voltages of the equivalent star); m(15:17) = currents of the three delta capacitors '
              '[icf_ab; icf_bc; icf_ca] in pu of ibez, icf_ab from node a to node b; the current from line a into '
