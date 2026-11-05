@@ -111,8 +111,9 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   the reference of the current loop, and the current loop gets the feedforward of u_c as modulation index (the
 %   scaling of the open-loop mode, acquired DC-link voltage not below 0.5 pu): the cascade of [10], [14].
 %   Start: until droop_t_sync the module follows the terminal voltage (angle of the FHT output, when its magnitude
-%   is at least 0.5 pu) with zero current reference; at droop_t_sync the droop starts and the parameter parts of P*
-%   and Q* ramp from 0 in droop_t_ramp. With a dead bus at droop_t_sync (FHT magnitude below 0.5 pu) the module
+%   is at least 0.5 pu) with zero current reference, the power filters and the low-pass of i_o following their
+%   inputs; at droop_t_sync the droop starts from there and the parameter parts of P* and Q* ramp from 0 in
+%   droop_t_ramp. With a dead bus at droop_t_sync (FHT magnitude below 0.5 pu) the module
 %   makes a black start: its angle runs free from theta0 and E ramps from 0 in droop_t_ramp. droop_t_sync must
 %   leave the FHT time to lock after fht_t_reset (some 20 ms). The FHT, the sequences and the current loop run as
 %   in closed loop; the slave mode, the compensator and the open-loop mode are ignored. Log 44:55: p, q, P_f,
@@ -429,8 +430,10 @@ if trgo && ~trgo_z
             k_dr = min(max((t_master - dr_tsync)/dr_tramp, 0), 1);
         end
         if dr_state == 0
-            % synchronization: zero current reference, filters and voltage PI at rest
-            dr_pf = 0; dr_qf = 0; dr_lpd = 0; dr_lpq = 0;
+            % synchronization: zero current reference, voltage PI at rest; the power filters and the low-pass
+            % of i_o follow their inputs, so that the droop starts from the operating point without a step (from
+            % zero, the capacitor current that the bus supplies before the start passed whole through r_t)
+            dr_pf = p_k; dr_qf = q_k; dr_lpd = io_xi; dr_lpq = io_eta;
             xd_u = 0; xq_u = 0;
             e_ref = u_grid_mag;
             i_xi_ref  = 0;
