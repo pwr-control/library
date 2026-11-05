@@ -111,11 +111,12 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   the reference of the current loop, and the current loop gets the feedforward of u_c as modulation index (the
 %   scaling of the open-loop mode, acquired DC-link voltage not below 0.5 pu): the cascade of [10], [14].
 %   Start: until droop_t_sync the module follows the terminal voltage (angle of the FHT output, when its magnitude
-%   is at least 0.5 pu) with zero current reference, the power filters and the low-pass of i_o following their
-%   inputs; at droop_t_sync the droop starts from there and the parameter parts of P* and Q* ramp from 0 in
-%   droop_t_ramp. With a dead bus at droop_t_sync (FHT magnitude below 0.5 pu) the module
-%   makes a black start: its angle runs free from theta0 and E ramps from 0 in droop_t_ramp. droop_t_sync must
-%   leave the FHT time to lock after fht_t_reset (some 20 ms). The FHT, the sequences and the current loop run as
+%   is at least 0.5 pu, turned onto the sampled u_c) with zero current reference, the power filters and the
+%   low-pass of i_o following their inputs; at droop_t_sync the droop starts from there without a step and the
+%   parameter parts of P* and Q* ramp from 0 in droop_t_ramp. With a dead bus at droop_t_sync (FHT magnitude
+%   below 0.5 pu) the module makes a black start: its angle runs free from theta0 and E ramps from 0 in
+%   droop_t_ramp. droop_t_sync must leave the FHT time to lock after fht_t_reset (some 20 ms) and the frame
+%   time to turn onto u_c (5 ms time constant). The FHT, the sequences and the current loop run as
 %   in closed loop; the slave mode, the compensator and the open-loop mode are ignored. Log 44:55: p, q, P_f,
 %   Q_f, w, E, u_c and i_o in the frame (xi, eta), dx, state (0 synchronization, 1 droop, 2 black start).
 %   Fields (all needed when droop is present): droop, droop_mp [pu/pu], droop_nq [pu/pu], droop_tau_p [s],
@@ -211,7 +212,7 @@ NLOG = 55;
 
 persistent initialized trgo_z corr_z x_align ug_z is_z ig_z udc_z ...
            fht_s1 fht_s2 fht_out th xd_u xq_u clip_u_z xd_i xq_i clip_i_z d_abc logv sync_z ...
-           xd_n xq_n clip_n_z res_d res_q uc_z dr_pf dr_qf dr_lpd dr_lpq dr_state
+           xd_n xq_n clip_n_z res_d res_q uc_z dr_pf dr_qf dr_lpd dr_lpq dr_state dr_dth
 
 if isempty(initialized)
     initialized = true;
@@ -238,6 +239,7 @@ if isempty(initialized)
     dr_pf = 0; dr_qf = 0;            % droop mode: filtered active and reactive power
     dr_lpd = 0; dr_lpq = 0;          % low-pass of the output current (transient virtual resistance)
     dr_state = 0;                    % 0 synchronization, 1 droop, 2 droop after a black start
+    dr_dth = 0;                      % synchronization: angle of the sampled u_c from the FHT angle
 end
 
 m = M(:);
@@ -383,7 +385,7 @@ if trgo && ~trgo_z
         theta = sync(1);
     end
     if dr && dr_state == 0 && t_master < dr_tsync && u_grid_mag >= 0.5
-        theta = mod(atan2(u_fhtsr_beta, u_fhtsr_alpha), 2*pi);   % droop mode, synchronization: follow ug
+        theta = mod(atan2(u_fhtsr_beta, u_fhtsr_alpha) + dr_dth, 2*pi);   % droop mode, synchronization: follow ug
     end
     th = mod(theta + 2*pi*p.ctrl.fgrid*ts, 2*pi);       % droop mode: advanced again below with w
     if th >= 2*pi
@@ -431,9 +433,13 @@ if trgo && ~trgo_z
         end
         if dr_state == 0
             % synchronization: zero current reference, voltage PI at rest; the power filters and the low-pass
-            % of i_o follow their inputs, so that the droop starts from the operating point without a step (from
-            % zero, the capacitor current that the bus supplies before the start passed whole through r_t)
+            % of i_o follow their inputs, and the frame turns onto the sampled u_c: the FHT output leads the
+            % samples (about 0.07 rad at 8 kHz), and a droop started in that frame pulls u_c forward by as much
+            % (a kick of some 0.3 pu of power on the grid). Tracking with a time constant of 5 ms.
             dr_pf = p_k; dr_qf = q_k; dr_lpd = io_xi; dr_lpq = io_eta;
+            if u_grid_mag >= 0.5
+                dr_dth = min(max(dr_dth + ts/5e-3*atan2(uc_eta, uc_xi), -0.5), 0.5);
+            end
             xd_u = 0; xq_u = 0;
             e_ref = u_grid_mag;
             i_xi_ref  = 0;
