@@ -25,8 +25,9 @@ function res = grid_forming_droop_test_run(cases, do_plot)
 %     T5           450 kW + 150 kvar, island at 1.0 s, trip of module 3 at 1.5 s
 %     black        no grid: black start of the three modules on 600 kW + 200 kvar
 %   Checks (window: last 0.2 s): equal sharing (P within 0.01 pu, Q within 0.02 pu among the running modules),
-%   frequency = 50*(1 + mp*(P* - P)) within 0.01 Hz, peak-to-peak of P below 0.01 pu (damped), converter current
-%   below droop_i_max + 0.05 pu after the start; T1: P of module 1 at 0.8 pu within 0.01 pu.
+%   frequency = 50*(1 + mp*(P* - P)) within 0.01 Hz, peak-to-peak of the filtered P below 0.01 pu (damped; the
+%   unfiltered p on the stiff grid carries the noise of the ADC quantization, about 0.01 pu), converter current
+%   below droop_i_max + 0.05 pu after the start; on the grid P = P* within 0.01 pu (T1: module 1 at 0.8 pu).
 %
 %   Requirements on the MATLAB path: library/masked_models/grid_forming (grid_forming_param_example.m).
 %   See also grid_forming_param_example, update_grid_forming_dqctrl.
@@ -275,8 +276,8 @@ function [chk, pass] = local_checks(t, lg, pl, p, tb)
     f_law = 50*(1 + c.droop_mp*(pref(run_k) - P(run_k)) - c.droop_md*0);
     chk(end + 1, :) = local_check(sprintf('f = 50(1 + mp(P* - P)) (f %.3f Hz, error %.4f Hz)', mean(f(run_k)), ...
         max(abs(f(run_k) - f_law))), max(abs(f(run_k) - f_law)) < 0.01);
-    pp = max(max(lg(w, 44, run_k)) - min(lg(w, 44, run_k)));
-    chk(end + 1, :) = local_check(sprintf('damped: peak-to-peak of P %.4f pu', pp), pp < 0.01);
+    pp = max(max(lg(w, 46, run_k)) - min(lg(w, 46, run_k)));
+    chk(end + 1, :) = local_check(sprintf('damped: peak-to-peak of P_f %.4f pu', pp), pp < 0.01);
     a = t > c.droop_t_sync + 0.02;
     imax = max(max(pl(a, 3:5)));
     chk(end + 1, :) = local_check(sprintf('converter current below i_max + 0.05 (max %.3f pu)', imax), ...
