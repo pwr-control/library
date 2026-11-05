@@ -22,17 +22,20 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %              M(15:17) filter capacitor currents (added November 2026, not used here)
 %     t_master master time [s] (Clock of "global timing"/time_afe3 with k = 1, i.e. simulation time)
 %     sync     [5x1] [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref] of the master (its output
-%              sync_out), read only in slave mode; on a master leave it unconnected or grounded
+%              sync_out), read only in slave mode; on a master leave it unconnected or grounded. In the
+%              droop mode it carries [unused; dP*; dQ*; dU*; dw*] instead (setpoint offsets, 0 when grounded)
 %     p        parameter struct, scope "Parameter" in the Symbols pane of the block, built by
 %              private/afe_module_param.m (p.pwm.*, p.ctrl.*); p.ctrl.slave (optional, default 0)
 %              selects the slave mode, p.ctrl.nsc_* (optional, default off) the negative-sequence
 %              compensator, p.ctrl.open_loop and ol_* (optional, default off) the open-loop V/f mode,
-%              which also reads p.hw.ubez and p.hw.udc_nom (bases of M)
+%              which also reads p.hw.ubez and p.hw.udc_nom (bases of M), p.ctrl.droop and droop_*
+%              (optional, default off) the droop mode, which also reads p.hw.Cf, ubez, ibez, udc_nom
 %   Outputs
 %     G        gate commands [6x1] in V, order [a+; a-; b+; b-; c+; c-] (Q1..Q6 of the PWM library
 %              block and G of the ssc block), p.pwm.gate_on / p.pwm.gate_off (15 V / -10 V)
-%     ctrl_log control signals [43x1], indices in afe_log_index.m (held between two triggers,
-%              t_loc, ramp and trgo updated every step); 38:43 are the negative-sequence signals
+%     ctrl_log control signals [55x1], indices in afe_log_index.m (held between two triggers,
+%              t_loc, ramp and trgo updated every step); 38:43 are the negative-sequence signals,
+%              44:55 the droop signals (0 out of the droop mode, w = 1)
 %     sync_out [5x1] [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref] of the last control step
 %              (held between two triggers): connect it to the sync input of the slave(s)
 %
@@ -85,6 +88,41 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   Master and slaves need the same open_loop: a slave forms its own voltage at the angle of the master, the
 %   same as the master when the parameters are the same.
 %
+%   Droop mode (p.ctrl.droop = 1; off when the field is absent or 0, and then the block computes what it computed
+%   before): power sharing among grid-forming modules in parallel, on the grid and in an island after the loss of
+%   the grid, without communication (control V1 of the design note repos_doc/parallel_of_gfms of
+%   pwr-control/repositories-documentation). Each module is a voltage source whose angle and amplitude follow its
+%   own power. The active and reactive power p, q at the terminals (samples u_g, i_g of the previous trigger in the
+%   frame theta, pu of the module) pass low-pass filters (droop_tau_p, droop_tau_q -> P_f, Q_f) and give
+%     w = 1 + sync(5) + droop_mp*(P* - P_f) - droop_md*(p - P_f)    [pu of fgrid; the phase generator advances
+%                                                                    by w*2*pi*fgrid*ts]
+%     E = ug_ref + sync(4) + droop_nq*(Q* - Q_f)                    [pu, amplitude of the formed voltage]
+%   with P* = droop_p_ref + sync(2), Q* = droop_q_ref + sync(3): a P-f droop with a low-pass filter, that is a
+%   virtual synchronous machine with 2H = droop_tau_p/droop_mp and damping 1/droop_mp [11], with a lead term on the
+%   unfiltered power (droop_md), and a Q-V droop. A virtual impedance on the voltage reference decouples the
+%   modules [12], damps the electromagnetic modes and limits the current:
+%     u_ref = E - (R_v + j*X_v)*i_o - droop_rt*(i_o - i_o,lp),   i_o,lp = low-pass of i_o (droop_tau_hp),
+%     X_v = droop_xv + dx, R_v = droop_rv + dx/droop_x_r, dx = droop_kx*max(|i_o| - droop_i_thr, 0)
+%   (quasi-static R_v, X_v in the frame; droop_rt is a transient resistance on the high-pass part of the output
+%   current i_o, with no effect in steady state; dx is the threshold virtual impedance of [13]). A dq vector PI
+%   (droop_kp_u, droop_ki_u) regulates the filter-capacitor voltage u_c (M(4:6), not the terminal voltage) to u_ref
+%   with the feedforward of i_o and of j*b*u_c (the capacitor current at fgrid, b = 2*pi*fgrid*Cf*ubez/ibez); its
+%   output, limited to the radius droop_i_max (clip flag at the same radius, integrators held while clipped), is
+%   the reference of the current loop, and the current loop gets the feedforward of u_c as modulation index (the
+%   scaling of the open-loop mode, acquired DC-link voltage not below 0.5 pu): the cascade of [10], [14].
+%   Start: until droop_t_sync the module follows the terminal voltage (angle of the FHT output, when its magnitude
+%   is at least 0.5 pu) with zero current reference; at droop_t_sync the droop starts and the parameter parts of P*
+%   and Q* ramp from 0 in droop_t_ramp. With a dead bus at droop_t_sync (FHT magnitude below 0.5 pu) the module
+%   makes a black start: its angle runs free from theta0 and E ramps from 0 in droop_t_ramp. droop_t_sync must
+%   leave the FHT time to lock after fht_t_reset (some 20 ms). The FHT, the sequences and the current loop run as
+%   in closed loop; the slave mode, the compensator and the open-loop mode are ignored. Log 44:55: p, q, P_f,
+%   Q_f, w, E, u_c and i_o in the frame (xi, eta), dx, state (0 synchronization, 1 droop, 2 black start).
+%   Fields (all needed when droop is present): droop, droop_mp [pu/pu], droop_nq [pu/pu], droop_tau_p [s],
+%   droop_tau_q [s], droop_md [pu/pu], droop_p_ref [pu], droop_q_ref [pu], droop_rv [pu], droop_xv [pu],
+%   droop_rt [pu], droop_tau_hp [s], droop_i_thr [pu], droop_kx [pu/pu], droop_x_r [-], droop_i_max [pu],
+%   droop_kp_u [pu/pu], droop_ki_u [1/s], droop_t_sync [s], droop_t_ramp [s] (0: no ramp). The tuning (Rev. 01
+%   of the design note) comes from a discrete-time small-signal model with the one-step delay of the block.
+%
 %   References (negative-sequence compensator):
 %     [1] C. L. Fortescue, "Method of symmetrical co-ordinates applied to the solution of polyphase
 %         networks," Trans. AIEE, vol. 37, part II, pp. 1027-1140, 1918.
@@ -114,6 +152,22 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %     [9] R. Teodorescu, M. Liserre, P. Rodriguez, "Grid Converters for Photovoltaic and Wind Power
 %         Systems," Wiley-IEEE Press, 2011, ISBN 978-0-470-05751-3.
 %
+%   References (droop mode):
+%     [10] N. Pogaku, M. Prodanovic, T. C. Green, "Modeling, analysis and testing of autonomous operation of an
+%          inverter-based microgrid," IEEE Trans. Power Electron., vol. 22, no. 2, pp. 613-625, Mar. 2007,
+%          doi:10.1109/TPEL.2006.890003.
+%     [11] S. D'Arco, J. A. Suul, "Equivalence of virtual synchronous machines and frequency-droops for
+%          converter-based microgrids," IEEE Trans. Smart Grid, vol. 5, no. 1, pp. 394-395, Jan. 2014,
+%          doi:10.1109/TSG.2013.2288000.
+%     [12] J. M. Guerrero, L. Garcia de Vicuna, J. Matas, M. Castilla, J. Miret, "Output impedance design of
+%          parallel-connected UPS inverters with wireless load-sharing control," IEEE Trans. Ind. Electron.,
+%          vol. 52, no. 4, pp. 1126-1135, Aug. 2005.
+%     [13] A. D. Paquette, D. M. Divan, "Virtual impedance current limiting for inverters in microgrids with
+%          synchronous generators," IEEE Trans. Ind. Appl., vol. 51, no. 2, pp. 1630-1638, Mar./Apr. 2015.
+%     [14] S. D'Arco, J. A. Suul, O. B. Fosso, "A virtual synchronous machine implementation for distributed
+%          control of power converters in SmartGrids," Electr. Power Syst. Res., vol. 122, pp. 180-197, 2015,
+%          doi:10.1016/j.epsr.2015.01.001.
+%
 %   Chain reproduced (names of the blocks of grid_forming_dq.slx in brackets):
 %     every step tc
 %       local clock    t_loc = t_master*k_time*(1 + corr)              [global timing/time_afe1]
@@ -138,6 +192,9 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %       open loop      (open_loop) in place of the voltage loop, the compensator and the current loop:
 %                      [ug_ref; ueta_ref] at theta as modulation index, ramp, DC-link compensation, limiter
 %                      u_lim                                                [not in the model]
+%       droop          (droop) power of the terminals, P-f / Q-V droops, phase generator at w, virtual
+%                      impedance, voltage PI on u_c with feedforward in place of the voltage loop, feedforward
+%                      of u_c in the current loop                           [not in the model]
 %       SVPWM         port of sv_pwm_cm.c (inputs scaled by sqrt(3)/2, k_offset = (ugamma + 1)/2)
 %                      [space_vector]
 %
@@ -149,11 +206,11 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   The code follows grid_forming_dq.slx at commit e61afe1 (PR #1): positive-sequence gains +1/2 and
 %   clip threshold of the voltage loop equal to its limiter radius (clip_thr_ug = ixi_lim).
 
-NLOG = 43;
+NLOG = 55;
 
 persistent initialized trgo_z corr_z x_align ug_z is_z ig_z udc_z ...
            fht_s1 fht_s2 fht_out th xd_u xq_u clip_u_z xd_i xq_i clip_i_z d_abc logv sync_z ...
-           xd_n xq_n clip_n_z res_d res_q
+           xd_n xq_n clip_n_z res_d res_q uc_z dr_pf dr_qf dr_lpd dr_lpq dr_state
 
 if isempty(initialized)
     initialized = true;
@@ -176,6 +233,10 @@ if isempty(initialized)
     xd_n = 0; xq_n = 0; clip_n_z = 0;      % negative-sequence voltage PI (compensator)
     res_d = zeros(2,1);              % resonant term of the current loop at 2*fgrid, axis xi: [output; quadrature]
     res_q = zeros(2,1);              % axis eta
+    uc_z     = zeros(3,1);           % one-step delay of the capacitor voltage (droop mode)
+    dr_pf = 0; dr_qf = 0;            % droop mode: filtered active and reactive power
+    dr_lpd = 0; dr_lpq = 0;          % low-pass of the output current (transient virtual resistance)
+    dr_state = 0;                    % 0 synchronization, 1 droop, 2 droop after a black start
 end
 
 m = M(:);
@@ -221,6 +282,38 @@ if trgo && ~trgo_z
     if ol
         nsc = false;                 % no loops in open loop, the compensator included
     end
+    dr = false;                      % droop mode, optional as well (p.ctrl.droop, droop_*)
+    dr_mp = 0; dr_nq = 0; dr_tp = 1; dr_tq = 1; dr_md = 0; dr_p = 0; dr_q = 0; dr_rv = 0; dr_xv = 0;
+    dr_rt = 0; dr_thp = 1; dr_ithr = 0; dr_kx = 0; dr_xr = 1; dr_imax = 0; dr_kpu = 0; dr_kiu = 0;
+    dr_tsync = 0; dr_tramp = 0; b_cf = 0;
+    if isfield(p.ctrl, 'droop')
+        dr       = p.ctrl.droop ~= 0;
+        dr_mp    = p.ctrl.droop_mp;
+        dr_nq    = p.ctrl.droop_nq;
+        dr_tp    = p.ctrl.droop_tau_p;
+        dr_tq    = p.ctrl.droop_tau_q;
+        dr_md    = p.ctrl.droop_md;
+        dr_p     = p.ctrl.droop_p_ref;
+        dr_q     = p.ctrl.droop_q_ref;
+        dr_rv    = p.ctrl.droop_rv;
+        dr_xv    = p.ctrl.droop_xv;
+        dr_rt    = p.ctrl.droop_rt;
+        dr_thp   = p.ctrl.droop_tau_hp;
+        dr_ithr  = p.ctrl.droop_i_thr;
+        dr_kx    = p.ctrl.droop_kx;
+        dr_xr    = p.ctrl.droop_x_r;
+        dr_imax  = p.ctrl.droop_i_max;
+        dr_kpu   = p.ctrl.droop_kp_u;
+        dr_kiu   = p.ctrl.droop_ki_u;
+        dr_tsync = p.ctrl.droop_t_sync;
+        dr_tramp = p.ctrl.droop_t_ramp;
+        b_cf     = 2*pi*p.ctrl.fgrid*p.hw.Cf*p.hw.ubez/p.hw.ibez;   % filter capacitor at fgrid [pu]
+    end
+    if dr
+        slave = false;               % the droop mode replaces the master/slave chain
+        nsc   = false;
+        ol    = false;
+    end
 
     % ---- acquisitions: the control uses the samples of the previous trigger (Unit Delay after the
     %      Quantizer), the delay states take the samples of this trigger
@@ -228,11 +321,13 @@ if trgo && ~trgo_z
     isd  = is_z;
     igd  = ig_z;
     udcd = udc_z;
+    ucd  = uc_z;
     q = p.ctrl.adc_q;
     ug_z  = q*round(m(10:12)/q);
     is_z  = q*round(m(1:3)/q);
     ig_z  = -q*round(m(7:9)/q);      % Gain -1 after the delay ("ig afe quantizzation and one step delay")
     udc_z = q*round(m(13)/q);
+    uc_z  = q*round(m(4:6)/q);
 
     % ---- alignment of the local clock to the master time (phase_compensation_1/alignment_eval_afe1/pi)
     e_al = t_master - t_loc;         % u_ref - u with u_ref = 0, u = -(master - local)
@@ -286,7 +381,10 @@ if trgo && ~trgo_z
     if slave
         theta = sync(1);
     end
-    th = mod(theta + 2*pi*p.ctrl.fgrid*ts, 2*pi);
+    if dr && dr_state == 0 && t_master < dr_tsync && u_grid_mag >= 0.5
+        theta = mod(atan2(u_fhtsr_beta, u_fhtsr_alpha), 2*pi);   % droop mode, synchronization: follow ug
+    end
+    th = mod(theta + 2*pi*p.ctrl.fgrid*ts, 2*pi);       % droop mode: advanced again below with w
     if th >= 2*pi
         th = 0;
     end
@@ -299,9 +397,79 @@ if trgo && ~trgo_z
     u_xi_n  = u_n_alpha*cos(theta) - u_n_beta*sin(theta);
     u_eta_n = u_n_alpha*sin(theta) + u_n_beta*cos(theta);
 
+    % ---- droop mode: power at the terminals, droops, virtual impedance, voltage PI on the filter capacitor
+    %      with feedforward (in place of the voltage loop below); feedforward of u_c for the current loop
+    p_k = 0; q_k = 0; w_pu = 1; e_ref = 0; uc_xi = 0; uc_eta = 0; io_xi = 0; io_eta = 0; dx = 0;
+    ffm_d = 0; ffm_q = 0;
+    i_xi_ref = 0; i_eta_ref = 0; clip_u = 0;           % defined on every path (code generation)
+    if dr
+        c_th = cos(theta);
+        s_th = sin(theta);
+        uc_alpha = 2/3*(ucd(1) - 1/2*ucd(2) - 1/2*ucd(3));             % capacitor voltage (previous trigger)
+        uc_beta  = 1/sqrt(3)*(ucd(2) - ucd(3));
+        uc_xi  =  uc_alpha*c_th + uc_beta*s_th;
+        uc_eta = -uc_alpha*s_th + uc_beta*c_th;
+        io_alpha = -2/3*(igd(1) - 1/2*igd(2) - 1/2*igd(3));            % output current towards the grid: -igd
+        io_beta  = -1/sqrt(3)*(igd(2) - igd(3));
+        io_xi  =  io_alpha*c_th + io_beta*s_th;
+        io_eta = -io_alpha*s_th + io_beta*c_th;
+        ugs_xi  =  ug_alpha*c_th + ug_beta*s_th;                       % terminal voltage, sample (not the FHT)
+        ugs_eta = -ug_alpha*s_th + ug_beta*c_th;
+        p_k = ugs_xi*io_xi + ugs_eta*io_eta;                           % power at the terminals [pu]
+        q_k = ugs_eta*io_xi - ugs_xi*io_eta;
+        if dr_state == 0 && t_master >= dr_tsync
+            if u_grid_mag >= 0.5
+                dr_state = 1;                                          % energized bus: droop from the followed angle
+            else
+                dr_state = 2;                                          % dead bus: black start
+            end
+        end
+        k_dr = 1;                                                      % start ramp of P*, Q* (and E after a black start)
+        if dr_tramp > 0
+            k_dr = min(max((t_master - dr_tsync)/dr_tramp, 0), 1);
+        end
+        if dr_state == 0
+            % synchronization: zero current reference, filters and voltage PI at rest
+            dr_pf = 0; dr_qf = 0; dr_lpd = 0; dr_lpq = 0;
+            xd_u = 0; xq_u = 0;
+            e_ref = u_grid_mag;
+            i_xi_ref  = 0;
+            i_eta_ref = 0;
+            clip_u    = 0;
+        else
+            w_pu  = 1 + sync(5) + dr_mp*(dr_p*k_dr + sync(2) - dr_pf) - dr_md*(p_k - dr_pf);
+            e_ref = p.ctrl.ug_ref + sync(4) + dr_nq*(dr_q*k_dr + sync(3) - dr_qf);
+            if dr_state == 2
+                e_ref = e_ref*k_dr;
+            end
+            dr_pf = dr_pf + ts/dr_tp*(p_k - dr_pf);
+            dr_qf = dr_qf + ts/dr_tq*(q_k - dr_qf);
+            dx  = dr_kx*max(sqrt(io_xi^2 + io_eta^2) - dr_ithr, 0);      % threshold virtual impedance
+            r_v = dr_rv + dx/dr_xr;
+            x_v = dr_xv + dx;
+            u_ref_xi  = e_ref - (r_v*io_xi - x_v*io_eta) - dr_rt*(io_xi - dr_lpd);
+            u_ref_eta =       - (r_v*io_eta + x_v*io_xi) - dr_rt*(io_eta - dr_lpq);
+            dr_lpd = dr_lpd + ts/dr_thp*(io_xi - dr_lpd);
+            dr_lpq = dr_lpq + ts/dr_thp*(io_eta - dr_lpq);
+            [i_xi_ref, i_eta_ref, clip_u, xd_u, xq_u] = dq_vector_pi( ...
+                u_ref_xi - uc_xi, u_ref_eta - uc_eta, xd_u, xq_u, clip_u_z, ...
+                dr_kpu, dr_kiu*ts_i, p.ctrl.clip_release*ts_i, dr_imax, dr_imax, ...
+                io_xi - b_cf*uc_eta, io_eta + b_cf*uc_xi);              % feedforward of i_o + j*b*u_c
+        end
+        th = mod(theta + 2*pi*p.ctrl.fgrid*w_pu*ts, 2*pi);             % phase generator at the droop frequency
+        if th >= 2*pi
+            th = 0;
+        end
+        k_ff = p.hw.ubez*sqrt(3)/(p.hw.udc_nom*max(udcd, 0.5));        % u_c as modulation index
+        ffm_d = k_ff*uc_xi;
+        ffm_q = k_ff*uc_eta;
+    end
+
     % ---- voltage loop: dq vector PI -> current references (afe_control/dq_vector_pi); a slave takes
     %      the references of the master and leaves its PI at rest; none in open loop
-    if ol
+    if dr
+        % references from the droop branch above
+    elseif ol
         i_xi_ref  = 0;
         i_eta_ref = 0;
         clip_u    = 0;
@@ -379,7 +547,8 @@ if trgo && ~trgo_z
     else
         [m_d, m_q, clip_i, xd_i, xq_i] = dq_vector_pi( ...
             i_xi_r - i_xi, i_eta_r - i_eta, xd_i, xq_i, clip_i_z, ...
-            p.ctrl.kp_i, p.ctrl.ki_i*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.u_lim, p.ctrl.u_lim, r_d, r_q);
+            p.ctrl.kp_i, p.ctrl.ki_i*ts_i, p.ctrl.clip_release*ts_i, p.ctrl.u_lim, p.ctrl.u_lim, ...
+            r_d + ffm_d, r_q + ffm_q);                     % ffm: feedforward of u_c in the droop mode, else 0
     end
     clip_i_z = clip_i;
     u_alpha = m_d*cos(theta) - m_q*sin(theta);         % xi_eta_to_alpha_beta
@@ -423,6 +592,18 @@ if trgo && ~trgo_z
     logv(41) = i_eta_n_ref;
     logv(42) = r_d;
     logv(43) = r_q;
+    logv(44) = p_k;                                    % droop mode (0 otherwise)
+    logv(45) = q_k;
+    logv(46) = dr_pf;
+    logv(47) = dr_qf;
+    logv(48) = w_pu;
+    logv(49) = e_ref;
+    logv(50) = uc_xi;
+    logv(51) = uc_eta;
+    logv(52) = io_xi;
+    logv(53) = io_eta;
+    logv(54) = dx;
+    logv(55) = dr_state;
 
     % ---- references for the slave(s)
     sync_z = [theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref];

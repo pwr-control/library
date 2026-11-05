@@ -115,6 +115,33 @@ function p = grid_forming_param_example(tc)
     ctrl.open_loop   = 0;                       % 1 switches the open-loop mode on
     ctrl.ol_udc_comp = 1;                       % 1: amplitude divided by the acquired DC-link voltage (0: proportional to it)
     ctrl.ol_t_ramp   = 0.1;                     % [s] linear ramp of the amplitude from t_master = 0 (0: full value at once)
+
+    % droop mode (optional fields: absent = off): power sharing among grid-forming modules in parallel, on the grid
+    % and in an island (P-f / Q-V droops, virtual impedance, voltage PI on the filter capacitor with feedforward, the
+    % current loop above with the feedforward of the capacitor voltage); ug_ref is the voltage setpoint U*. Values of
+    % the design note repos_doc/parallel_of_gfms (pwr-control/repositories-documentation), Rev. 01: damping ratio
+    % above 0.3 on a stiff grid, on a weak grid (SCR 3) and in the island with this filter and with 690 V / 500 uH /
+    % 200 uF / 80 uH, from the discrete-time small-signal model of the block
+    ctrl.droop        = 0;                      % 1 switches the droop mode on (sync then carries [-; dP*; dQ*; dU*; dw*])
+    ctrl.droop_mp     = 0.02;                   % [pu/pu] P-f droop: 2 % of fgrid at 1 pu of power
+    ctrl.droop_nq     = 0.05;                   % [pu/pu] Q-V droop: 5 % of the voltage at 1 pu of reactive power
+    ctrl.droop_tau_p  = 0.05;                   % [s] low-pass of the active power (inertia 2H = tau_p/mp = 2.5 s)
+    ctrl.droop_tau_q  = 0.05;                   % [s] low-pass of the reactive power
+    ctrl.droop_md     = 0.01;                   % [pu/pu] lead term on the unfiltered power (damping of the swing modes)
+    ctrl.droop_p_ref  = 0;                      % [pu] active power setpoint P* (plus sync(2))
+    ctrl.droop_q_ref  = 0;                      % [pu] reactive power setpoint Q* (plus sync(3))
+    ctrl.droop_rv     = 0.05;                   % [pu] virtual resistance
+    ctrl.droop_xv     = 0.10;                   % [pu] virtual reactance at fgrid
+    ctrl.droop_rt     = 0.15;                   % [pu] transient virtual resistance on the high-pass part of i_o
+    ctrl.droop_tau_hp = 0.005;                  % [s] time constant of that high-pass
+    ctrl.droop_i_thr  = 1.0;                    % [pu] threshold virtual impedance: threshold on |i_o|
+    ctrl.droop_kx     = 1.0;                    % [pu/pu] its reactance per pu of current above the threshold
+    ctrl.droop_x_r    = 5;                      % [-] its X/R ratio
+    ctrl.droop_i_max  = 1.2;                    % [pu] radius of the converter current reference
+    ctrl.droop_kp_u   = 0.8;                    % [pu/pu] voltage PI on the filter capacitor
+    ctrl.droop_ki_u   = 80;                     % [1/s]
+    ctrl.droop_t_sync = 0.05;                   % [s] until this time the module follows ug with zero current
+    ctrl.droop_t_ramp = 0.1;                    % [s] ramp of P*, Q* (and of the voltage after a black start)
     p.ctrl = ctrl;
 end
 
