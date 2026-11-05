@@ -112,8 +112,8 @@ function [G, ctrl_log, sync_out] = afe_dq_ctrl_pwm(M, t_master, sync, p)
 %   scaling of the open-loop mode, acquired DC-link voltage not below 0.5 pu): the cascade of [10], [14].
 %   Start: until droop_t_sync the module follows the terminal voltage (angle of the FHT output, when its magnitude
 %   is at least 0.5 pu, turned onto the sampled u_c) with zero current reference, the power filters and the
-%   low-pass of i_o following their inputs; at droop_t_sync the droop starts from there without a step and the
-%   parameter parts of P* and Q* ramp from 0 in droop_t_ramp. With a dead bus at droop_t_sync (FHT magnitude
+%   low-pass of i_o running; at droop_t_sync the droop starts from there without a step and the parameter parts
+%   of P* and Q* ramp from 0 in droop_t_ramp. With a dead bus at droop_t_sync (FHT magnitude
 %   below 0.5 pu) the module makes a black start: its angle runs free from theta0 and E ramps from 0 in
 %   droop_t_ramp. droop_t_sync must leave the FHT time to lock after fht_t_reset (some 20 ms) and the frame
 %   time to turn onto u_c (5 ms time constant). The FHT, the sequences and the current loop run as
@@ -433,10 +433,13 @@ if trgo && ~trgo_z
         end
         if dr_state == 0
             % synchronization: zero current reference, voltage PI at rest; the power filters and the low-pass
-            % of i_o follow their inputs, and the frame turns onto the sampled u_c: the FHT output leads the
-            % samples (about 0.07 rad at 8 kHz), and a droop started in that frame pulls u_c forward by as much
-            % (a kick of some 0.3 pu of power on the grid). Tracking with a time constant of 5 ms.
-            dr_pf = p_k; dr_qf = q_k; dr_lpd = io_xi; dr_lpq = io_eta;
+            % of i_o run, and the frame turns onto the sampled u_c: the FHT output leads the samples (about
+            % 0.07 rad at 8 kHz), and a droop started in that frame pulls u_c forward by as much (a kick of some
+            % 0.3 pu of power on the grid). Tracking with a time constant of 5 ms.
+            dr_pf  = dr_pf + ts/dr_tp*(p_k - dr_pf);
+            dr_qf  = dr_qf + ts/dr_tq*(q_k - dr_qf);
+            dr_lpd = dr_lpd + ts/dr_thp*(io_xi - dr_lpd);
+            dr_lpq = dr_lpq + ts/dr_thp*(io_eta - dr_lpq);
             if u_grid_mag >= 0.5
                 dr_dth = min(max(dr_dth + ts/5e-3*atan2(uc_eta, uc_xi), -0.5), 0.5);
             end
