@@ -23,13 +23,17 @@
 
 % two simple calculation:
 % Lm1 = (n1^2 * mu0 * mur * core_area) / core_length;
-% Lm1 = u1_nom/sqrt(3)/i1m/(2*pi*f_nom);
-% i1m = u1_nom/sqrt(3)/Lm1/(2*pi*f_nom);
+% i1m = sqrt(3)*u1_nom/Lm1/(2*pi*f_nom);   % line no-load current, delta primary (the coil sees the line voltage)
+% i1m = u1_nom/sqrt(3)/Lm1/(2*pi*f_nom);   % star primary
 % delta_star = 1;
 
 % grid_emu = grid_three_phase_emulator(name, delta_star, pwr_nom, application, u1_nom, u2_nom, f_nom, ...
 %               eq_grid_inductance, eq_grid_resistance, eta, ucc, i1m, p_iron, n1, n2, ...
 %               core_area, core_length, mur, 1,0,0,0);
+% grid_emu = grid_three_phase_emulator(..., 1,0,0,0, lm0_pu); % optional: zero-sequence magnetizing inductance
+%               of the transformer [pu] (three-limb core, e.g. 0.5); default lm0 = lm. The transformer data in SI
+%               and in pu are in grid_emu.trafo (three_phase_transformer_setup): grid_emu.trafo.pu.* are the
+%               parameters of the block configurable_trafo.
 
 %% class definition
 classdef grid_three_phase_emulator
@@ -75,8 +79,11 @@ classdef grid_three_phase_emulator
 
         function obj = grid_three_phase_emulator(name, delta_star, pwr_nom, application_voltage, us1, us2, fgrid, ...
                 eq_grid_inductance, eq_grid_resistance, eta, ucc, i1m, p_iron, n1, n2, core_area, core_length, mur, ...
-                up_xi_pu_ref, up_eta_pu_ref, un_xi_pu_ref, un_eta_pu_ref)
+                up_xi_pu_ref, up_eta_pu_ref, un_xi_pu_ref, un_eta_pu_ref, lm0_pu)
             if nargin > 0
+                if nargin < 23
+                    lm0_pu = [];        % zero-sequence magnetizing inductance [pu] of the transformer: default lm0 = lm
+                end
                 obj.name = name;
                 obj.application_voltage = application_voltage;
                 obj.pwr_nom = pwr_nom;
@@ -89,7 +96,7 @@ classdef grid_three_phase_emulator
                 obj.eq_grid_inductance = eq_grid_inductance;
                 obj.eq_grid_resistance = eq_grid_resistance;
                 obj.trafo =  three_phase_transformer_setup(name, delta_star, pwr_nom, us1, us2, fgrid, eta, ...
-                ucc, i1m, p_iron, n1, n2, core_area, core_length, mur);
+                ucc, i1m, p_iron, n1, n2, core_area, core_length, mur, lm0_pu);
 
                 obj.u1bez =  obj.us_primary_nom * sqrt(2/3);
                 obj.i1bez =  obj.is_primary_nom * sqrt(2);

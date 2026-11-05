@@ -69,6 +69,12 @@ The class library. Every file is a `classdef` whose constructor takes plain numb
   three single-phase transformers of the models: with a delta primary (`delta_star = 1`) the primary
   coil gets 3 x the star-equivalent resistance and leakage and its magnetizing branch (`Lm1`, `Rfe1`,
   `psi`) is referred to the line voltage; `i1m` is the line no-load current for both connections.
+  Both classes also give the per-unit values (`Rd1_pu`, `Ld1_pu`, `Lm1_pu`, `Rfe1_pu`, `Rd2_pu`,
+  `Ld2_pu`, bases `Zbase1`, `Zbase2`, coil bases `Zcoil1`, `Zcoil2`: `V^2/Sr` for a star coil,
+  `3 V^2/Sr` for a delta coil, as the Simscape components) and a struct `pu` with the parameters of the
+  pu transformer blocks: for the three-phase class those of `configurable_trafo` with one primary
+  (`Sr`, `V1`, `V3`, `fr`, `r1`, `l1`, `r3`, `l3`, `lm`, `lm0`, `rfe`, `clock3`; the clock number is
+  read from a name such as `Dyn11`, and `lm0` is the optional last argument, default `lm`).
 
 **Power stages** — each stores rated power, voltages and currents, PWM frequency, filter and
 DC-link components and the normalization bases:
