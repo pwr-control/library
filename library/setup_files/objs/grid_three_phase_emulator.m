@@ -46,8 +46,8 @@ classdef grid_three_phase_emulator
         is_primary_nom      double {mustBePositive} % Transformer nominal primary side current [A]
         us_secondary_nom    double {mustBePositive} % Transformer nominal secondary side voltage [V]
         is_secondary_nom    double {mustBePositive} % Transformer nominal secondary side current [A]
-        n1                  double {mustBePositive} % Transformer nominal secondary side current [A]
-        n2                  double {mustBePositive} % Transformer nominal secondary side current [A]
+        n1                  double {mustBePositive} % Transformer turns of the primary winding
+        n2                  double {mustBePositive} % Transformer turns of the secondary winding
         fgrid_nom           double {mustBePositive} % Nominal frequency [Hz]
         eq_grid_inductance  double {mustBePositive} % Equivalent Grid Inductance [H]
         eq_grid_resistance  double {mustBePositive} % Equivalent Grid Resistance [Ohm]
@@ -85,6 +85,9 @@ classdef grid_three_phase_emulator
                     lm0_pu = [];        % zero-sequence magnetizing inductance [pu] of the transformer: default lm0 = lm
                 end
                 obj.name = name;
+                obj.delta_star = delta_star;
+                obj.n1 = n1;
+                obj.n2 = n2;
                 obj.application_voltage = application_voltage;
                 obj.pwr_nom = pwr_nom;
                 obj.us_primary_nom = us1;

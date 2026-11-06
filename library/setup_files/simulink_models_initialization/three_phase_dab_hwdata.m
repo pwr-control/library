@@ -33,7 +33,7 @@ function three_phase_dab = three_phase_dab_hwdata(application_voltage, pwr_nom, 
     RCdc_dc1 = 1e-3; 
     RCdc1_dc1 = RCdc_dc1/2; RCdc2_dc1 = RCdc_dc1/2;
     RCdc_dc2 = 1e-3; 
-    RCdc1_dc2 = Cdc_dc2/2; RCdc2_dc2 = RCdc_dc2/2;   
+    RCdc1_dc2 = RCdc_dc2/2; RCdc2_dc2 = RCdc_dc2/2;   
     
     Ldc_dc1 = 250e-6; 
     RLdc_dc1 = 157*0.05*Ldc_dc1; 

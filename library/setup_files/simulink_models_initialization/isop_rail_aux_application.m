@@ -25,7 +25,7 @@ function isop_rail = isop_rail_aux_application(application_voltage, pwr_nom, fpw
     RCdc_dc1 = 1e-3; 
     RCdc1_dc1 = RCdc_dc1/2; RCdc2_dc1 = RCdc_dc1/2;
     RCdc_dc2 = 1e-4; 
-    RCdc1_dc2 = Cdc_dc2/2; RCdc2_dc2 = RCdc_dc2/2;   
+    RCdc1_dc2 = RCdc_dc2/2; RCdc2_dc2 = RCdc_dc2/2;   
     
     Ldc_dc1 = 1e-3; 
     RLdc_dc1 = 157*0.02*Ldc_dc1; 

@@ -26,7 +26,7 @@ function single_phase_cllc = single_phase_cllc_hwdata(application_voltage, pwr_n
     RCdc_dc1 = 1e-3; 
     RCdc1_dc1 = RCdc_dc1/2; RCdc2_dc1 = RCdc_dc1/2;
     RCdc_dc2 = 1e-3; 
-    RCdc1_dc2 = Cdc_dc2/2; RCdc2_dc2 = RCdc_dc2/2;   
+    RCdc1_dc2 = RCdc_dc2/2; RCdc2_dc2 = RCdc_dc2/2;   
     
     Ldc_dc1 = 250e-6; 
     RLdc_dc1 = 157*0.05*Ldc_dc1; 
