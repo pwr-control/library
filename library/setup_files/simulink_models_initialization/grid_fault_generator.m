@@ -35,7 +35,7 @@ switch input.test_index
                 P_load_norm = 0.5;
                 Q_load_norm = 0;
                 k_lvrt = 2;
-            case 3
+            % (test 25.3 is not defined: subindex 3 ends in otherwise)
             case 4
                 % Test 25.4: 75% dip - two-phase - full load
                 [Voltage_LVRT, delta_phi] = asymmetric_error(0.75, input.asymmetric_error_type);

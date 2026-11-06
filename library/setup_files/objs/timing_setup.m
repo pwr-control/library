@@ -1,26 +1,36 @@
 %% Example
-
+% 
 % fpwm = 4e3;
 % fpwm_afe = fpwm; % for PWM
 % trgo_afe = 1; % double update
 % fpwm_inv = 6 * fpwm; % for MPC
 % trgo_inv = 0; % double update
+% fpwm_single_phase_inv = fpwm;
+% trgo_single_phase_inv = 1; % double update
 % fpwm_dab = 3 * fpwm;
 % trgo_dab = 0; % double update
+% fpwm_psfbc = 3 * fpwm;
+% trgo_psfbc = 0; % double update
+% fpwm_isop_rail = 3 * fpwm;
+% trgo_isop_rail = 0; % double update
 % fpwm_cllc = 5 * fpwm;
 % trgo_cllc = 0; % double update
 % t_measure = 0.6;
 % tc_factor = 100; % tc is ts_afe / tc_factor
-% tc_decimation = 1
+% tc_decimation = 1;
 % delay_pwm = 0;
 % dead_time_afe = 0;
 % dead_time_inv = 0;
+% dead_time_single_phase_inv = 0;
 % dead_time_dab = 2e-6;
+% dead_time_psfbc = 3e-6;
+% dead_time_isop_rail = 3e-6;
 % dead_time_cllc = 2e-6;
 % 
-% glb_time = timing_setup(fpwm_afe, trgo_afe, fpwm_inv, trgo_inv, fpwm_dab, trgo_dab, ...
-%                 fpwm_cllc, trgo_cllc, t_measure, tc_factor, tc_decimation, delay_pwm, dead_time_afe, ...
-%                 dead_time_inv, dead_time_dab, dead_time_cllc);
+% glb_time = timing_setup(fpwm_afe, trgo_afe, fpwm_inv, trgo_inv, fpwm_single_phase_inv, trgo_single_phase_inv, ...
+%                 fpwm_dab, trgo_dab, fpwm_psfbc, trgo_psfbc, fpwm_isop_rail, trgo_isop_rail, fpwm_cllc, trgo_cllc, ...
+%                 t_measure, tc_factor, tc_decimation, delay_pwm, dead_time_afe, dead_time_inv, ...
+%                 dead_time_single_phase_inv, dead_time_dab, dead_time_psfbc, dead_time_isop_rail, dead_time_cllc);
 
 
 

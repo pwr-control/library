@@ -16,8 +16,8 @@ filters.afe.tc = tc;
     
     fcut = 50;
     
-    filters.afe.SOF_50Hz = fof_setup(fcut, ts_afe);
-    filters.inv.SOF_50Hz = fof_setup(fcut, ts_inv);
+    filters.afe.FOF_50Hz = fof_setup(fcut, ts_afe);
+    filters.inv.FOF_50Hz = fof_setup(fcut, ts_inv);
 
     %% SOF 10Hz in state space
     
@@ -26,7 +26,7 @@ filters.afe.tc = tc;
     filters.afe.SOF_10Hz = sof_setup(fcut, ts_afe);
     filters.inv.SOF_10Hz = sof_setup(fcut, ts_inv);
     
-    %% SOF 10Hz in state space
+    %% SOF 50Hz in state space
     
     fcut = 50;
     
