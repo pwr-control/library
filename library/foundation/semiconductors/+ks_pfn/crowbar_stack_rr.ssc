@@ -1,0 +1,92 @@
+component crowbar_stack_rr
+% Crowbar stack, 4 levels (Lauritzen-Ma) : 1.0
+% Series stack of four levels. Each level is the equivalent of n_p devices
+% in parallel (one RR Diode, Lauritzen-Ma, with Is, Cj0 multiplied and Rs,
+% Rr divided by n_p, done in init_model.m / stack_lm_params.m), with its
+% grading resistor Rb and its RC snubber Rsn + Lsn + Csn (Lsn: capacitor
+% ESL and wiring of the snubber loop).
+% Level 1 (next to the anode) is the unbalanced one: lifetime and transit
+% time multiplied by sqrt(1 - u), i.e. Qrr*(1 - u) in the long-ramp limit,
+% same forward characteristic. It recovers first.
+% Initial state: every level reverse biased at vsn0 (snubber and junction).
+% Requires the pwr-control Simscape library (C:\github\library) on the path (startup_secom): diode_rr.diode_rr.
+
+nodes
+    a = foundation.electrical.electrical; % A:left
+    k = foundation.electrical.electrical; % K:right
+end
+
+parameters
+    Is  = {1e-9,   'A'  }; % Level saturation current, Is
+    N   = {3,      '1'  }; % Emission coefficient, N
+    Vt  = {34.3e-3,'V'  }; % Thermal voltage, kT/q
+    tau = {46e-6,  's'  }; % Carrier lifetime, tau
+    TM  = {17e-6,  's'  }; % Transit time, TM
+    Rs  = {20e-6,  'Ohm'}; % Level series resistance, Rs
+    Rr  = {1e12,   'Ohm'}; % Level leakage resistance, Rr
+    Cj0 = {25e-9,  'F'  }; % Level depletion capacitance, Cj0
+    u   = {0.3,    '1'  }; % Qrr unbalance of level 1, u
+    Rb  = {220e3,  'Ohm'}; % Grading resistor per level, Rb
+    Rsn = {2,      'Ohm'}; % Snubber resistor per level, Rsn
+    Csn = {2e-6,   'F'  }; % Snubber capacitor per level, Csn
+    vsn0 = {2500,  'V'  }; % Initial snubber voltage per level, vsn0
+    Lsn = {1e-9,   'H'  }; % Snubber loop inductance per level, Lsn
+end
+
+parameters(Access=private)
+    tau_u = tau*sqrt(1 - u);
+    TM_u  = TM*sqrt(1 - u);
+end
+
+nodes(Access=protected)
+    m1 = foundation.electrical.electrical;
+    m2 = foundation.electrical.electrical;
+    m3 = foundation.electrical.electrical;
+    s1 = foundation.electrical.electrical;
+    s2 = foundation.electrical.electrical;
+    s3 = foundation.electrical.electrical;
+    s4 = foundation.electrical.electrical;
+end
+
+components(ExternalAccess=observe)
+    D1 = diode_rr.diode_rr(Is=Is, N=N, Vt=Vt, tau=tau_u, TM=TM_u, Rs=Rs, Rr=Rr, Cj0=Cj0, mg=0, vj={value=vsn0, priority=priority.high});
+    D2 = diode_rr.diode_rr(Is=Is, N=N, Vt=Vt, tau=tau,   TM=TM,   Rs=Rs, Rr=Rr, Cj0=Cj0, mg=0, vj={value=vsn0, priority=priority.high});
+    D3 = diode_rr.diode_rr(Is=Is, N=N, Vt=Vt, tau=tau,   TM=TM,   Rs=Rs, Rr=Rr, Cj0=Cj0, mg=0, vj={value=vsn0, priority=priority.high});
+    D4 = diode_rr.diode_rr(Is=Is, N=N, Vt=Vt, tau=tau,   TM=TM,   Rs=Rs, Rr=Rr, Cj0=Cj0, mg=0, vj={value=vsn0, priority=priority.high});
+    Rb1 = foundation.electrical.elements.resistor(R=Rb);
+    Rb2 = foundation.electrical.elements.resistor(R=Rb);
+    Rb3 = foundation.electrical.elements.resistor(R=Rb);
+    Rb4 = foundation.electrical.elements.resistor(R=Rb);
+    Rs1 = foundation.electrical.elements.resistor(R=Rsn);
+    Rs2 = foundation.electrical.elements.resistor(R=Rsn);
+    Rs3 = foundation.electrical.elements.resistor(R=Rsn);
+    Rs4 = foundation.electrical.elements.resistor(R=Rsn);
+    C1 = foundation.electrical.elements.capacitor(c=Csn, vc={value=vsn0, priority=priority.high});
+    C2 = foundation.electrical.elements.capacitor(c=Csn, vc={value=vsn0, priority=priority.high});
+    C3 = foundation.electrical.elements.capacitor(c=Csn, vc={value=vsn0, priority=priority.high});
+    C4 = foundation.electrical.elements.capacitor(c=Csn, vc={value=vsn0, priority=priority.high});
+    L1 = foundation.electrical.elements.inductor(l=Lsn);
+    L2 = foundation.electrical.elements.inductor(l=Lsn);
+    L3 = foundation.electrical.elements.inductor(l=Lsn);
+    L4 = foundation.electrical.elements.inductor(l=Lsn);
+end
+
+connections
+    % level 1: a -> m1
+    connect(a, D1.p, Rb1.p, Rs1.p);
+    connect(Rs1.n, L1.p);  connect(L1.n, s1);  connect(s1, C1.p);
+    connect(D1.n, Rb1.n, C1.n, m1);
+    % level 2: m1 -> m2
+    connect(m1, D2.p, Rb2.p, Rs2.p);
+    connect(Rs2.n, L2.p);  connect(L2.n, s2);  connect(s2, C2.p);
+    connect(D2.n, Rb2.n, C2.n, m2);
+    % level 3: m2 -> m3
+    connect(m2, D3.p, Rb3.p, Rs3.p);
+    connect(Rs3.n, L3.p);  connect(L3.n, s3);  connect(s3, C3.p);
+    connect(D3.n, Rb3.n, C3.n, m3);
+    % level 4: m3 -> k
+    connect(m3, D4.p, Rb4.p, Rs4.p);
+    connect(Rs4.n, L4.p);  connect(L4.n, s4);  connect(s4, C4.p);
+    connect(D4.n, Rb4.n, C4.n, k);
+end
+end

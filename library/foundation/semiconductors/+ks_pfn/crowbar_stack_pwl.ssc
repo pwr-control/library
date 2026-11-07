@@ -1,0 +1,43 @@
+component crowbar_stack_pwl
+% Crowbar stack, lumped PWL : 1.0
+% Whole stack as one piecewise-linear diode (Vf, Ron, Goff) with the
+% series equivalent of the four level networks across it: grading 4*Rb,
+% snubber 4*Rsn + 4*Lsn + Csn/4. No reverse recovery. Used for the stacks that do
+% not turn off under high current (D3..D8).
+
+nodes
+    a = foundation.electrical.electrical; % A:left
+    k = foundation.electrical.electrical; % K:right
+end
+
+parameters
+    Vf   = {5,      'V'  }; % Stack forward voltage, Vf
+    Ron  = {1e-4,   'Ohm'}; % Stack on resistance, Ron
+    Goff = {1e-8,   '1/Ohm'}; % Stack off conductance, Goff
+    Rb   = {220e3,  'Ohm'}; % Grading resistor per level, Rb
+    Rsn  = {2,      'Ohm'}; % Snubber resistor per level, Rsn
+    Csn  = {2e-6,   'F'  }; % Snubber capacitor per level, Csn
+    vsn0 = {-2500,  'V'  }; % Initial snubber voltage per level, vsn0
+    nl   = {4,      '1'  }; % Number of levels, nl
+    Lsn  = {1e-9,   'H'  }; % Snubber loop inductance per level, Lsn
+end
+
+nodes(Access=protected)
+    s = foundation.electrical.electrical;
+    s0 = foundation.electrical.electrical;
+end
+
+components(ExternalAccess=observe)
+    D  = foundation.electrical.elements.pwl_diode(Vf=Vf, Ron=Ron, Goff=Goff);
+    RB = foundation.electrical.elements.resistor(R=nl*Rb);
+    RS = foundation.electrical.elements.resistor(R=nl*Rsn);
+    CS = foundation.electrical.elements.capacitor(c=Csn/nl, vc={value=nl*vsn0, priority=priority.high});
+    LS = foundation.electrical.elements.inductor(l=nl*Lsn);
+end
+
+connections
+    connect(a, D.p, RB.p, RS.p);
+    connect(RS.n, s0);  connect(s0, LS.p);  connect(LS.n, s);  connect(s, CS.p);
+    connect(D.n, RB.n, CS.n, k);
+end
+end
