@@ -23,12 +23,13 @@ function idx = interleaved_buck_3legs_log_index()
     idx.i_L2      = 10;   % [pu]  leg 2
     idx.i_L3      = 11;   % [pu]  leg 3
     idx.i_sum     = 12;   % [pu]  sum of the three acquired currents
-    idx.u_out     = 13;   % [pu]  acquired output voltage (one control step behind, quantized)
-    idx.udc       = 14;   % [pu]  acquired DC-link voltage
+    idx.u_out     = 13;   % [pu]  acquired output voltage (after the low-pass fc_u_meas, one control step behind, quantized)
+    idx.udc       = 14;   % [pu]  acquired DC-link voltage (after the low-pass fc_u_meas)
     idx.u_out_ref = 15;   % [pu]  ramped output voltage reference (mode 0, else 0)
     idx.e_u       = 16;   % [pu]  error of the voltage loop (mode 0, else 0)
-    idx.i_ref     = 17;   % [pu]  total current reference (output of the voltage PI, or the ramped p.ctrl.i_ref in mode 1)
-    idx.sat_u     = 18;   %       saturation flag of the voltage PI
+    idx.i_ref     = 17;   % [pu]  total current reference (output of the voltage PI, the ramped p.ctrl.i_ref in mode 1, or the
+                          %       reference of the master in a slave)
+    idx.sat_u     = 18;   %       saturation flag of the voltage PI (in a slave: reference of the master limited at i_lim)
     idx.i_leg_ref = 19;   % [pu]  current reference of each leg, i_ref/3
     idx.m_cmd_1   = 20;   %       duty of leg 1 computed at the control step
     idx.m_cmd_2   = 21;   %       leg 2
@@ -37,7 +38,7 @@ function idx = interleaved_buck_3legs_log_index()
     idx.m_2       = 24;   %       duty applied to leg 2 (loaded at the extremes of carrier 2)
     idx.m_3       = 25;   %       duty applied to leg 3
     idx.enable    = 26;   %       gates enabled (from the first control step with t_master >= p.pwm.t_enable)
-    idx.mode      = 27;   %       p.ctrl.mode
+    idx.mode      = 27;   %       p.ctrl.mode, or 2 in a slave (p.ctrl.slave = 1)
     idx.i_hold_1  = 28;   % [pu]  current of leg 1 held at the extremes of its carrier (every step)
     idx.i_hold_2  = 29;   % [pu]  leg 2
     idx.i_hold_3  = 30;   % [pu]  leg 3
