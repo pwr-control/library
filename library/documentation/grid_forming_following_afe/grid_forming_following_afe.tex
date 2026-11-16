@@ -34,16 +34,17 @@
 }
 
 \newcommand{\DocAuthor}{Davide Bagnara}
-\newcommand{\DocRevision}{01}
+\newcommand{\DocRevision}{02}
 \newcommand{\DocDate}{November 2026}
 
 \newcommand{\DocAbstract}{%
-	The library \code{pwr-control/library} has two three-phase converters that fit in one Simulink block each: \code{grid\_forming\_dqctrl} and \code{grid\_following\_dqctrl}. Both are active front ends (AFE) built on the same power stage, a two-level bridge with a DC-link capacitor and an LCL filter written as one Simscape component, and both carry their whole digital control and PWM in one MATLAB Function. The grid-forming block makes the voltage and the frequency of an island: a free-running phase generator sets the frequency, a voltage loop on the positive sequence of the terminal voltage sets the amplitude, an optional loop cancels the negative-sequence voltage caused by unbalanced loads, an optional open-loop mode makes it a plain V/f source without regulators, and several blocks can feed one load as master and slaves. The grid-following block connects a DC link to an existing grid: a PLL finds the grid angle, a voltage loop keeps the DC link at its reference and a current loop sets the exchanged current. This note describes the two blocks in simple words, with their ports, measurement and gate vectors, parameter structure, control chain and control log, and gives a short user guide with two example parameter files.
+	The library \code{pwr-control/library} has two three-phase converters that fit in one Simulink block each: \code{grid\_forming\_dqctrl} and \code{grid\_following\_dqctrl}. Both are active front ends (AFE) built on the same power stage, a two-level bridge with a DC-link capacitor and an LCL filter written as one Simscape component, and both carry their whole digital control and PWM in one MATLAB Function. The grid-forming block makes the voltage and the frequency of an island: a free-running phase generator sets the frequency, a voltage loop on the positive sequence of the terminal voltage sets the amplitude, an optional loop cancels the negative-sequence voltage caused by unbalanced loads and an optional open-loop mode makes it a plain V/f source without regulators. The grid-following block connects a DC link to an existing grid: a PLL finds the grid angle, a voltage loop keeps the DC link at its reference and a current loop sets the exchanged current. Several blocks of either kind can work in parallel as master and slaves. This note describes the two blocks in simple words, with their ports, measurement and gate vectors, parameter structure, control chain and control log, and gives a short user guide with two example parameter files.
 }
 
 \newcommand{\RevisionHistory}{%
 	00 & October 2026 & First issue: description of the two blocks, user guide, example parameter files. & \DocAuthor \\
 	01 & November 2026 & Open-loop V/f mode of the grid-forming block (Section~\ref{sec:open_loop}); the outputs of the current loop described as modulation index. & \DocAuthor \\
+	02 & November 2026 & Grid-following master/slave mode. & \DocAuthor \\
 }
 
 \newcommand{\MetaLabelA}{Project Repository}
@@ -185,7 +186,7 @@ This note describes the blocks and tells how to use them. It does not repeat the
 		\code{p = grid\_forming\_param\_example();} \qquad \code{p = grid\_following\_param\_example();}
 	\end{center}
 	Type \code{p} in the mask, or the name of your own structure (the study models use \code{param.afe\_mod(1)} and \code{param.afe\_follower(1)}). For another converter, copy the example file next to your model, change the numbers and keep the field names.
-	\item \textbf{Grid-forming only: the \code{sync} ports.} A master ignores the input \code{sync}: connect a Ground block to it and a Terminator to \code{sync\_out}, so that Simulink does not warn about unconnected ports. For converters in parallel, connect \code{sync\_out} of the master to \code{sync} of every slave and set \code{p.ctrl.slave = 1} in the slaves (Section~\ref{sec:master_slave}).
+	\item \textbf{The \code{sync} ports.} Both blocks have them. A master ignores the input \code{sync}: connect a Ground block to it and a Terminator to \code{sync\_out}, so that Simulink does not warn about unconnected ports. For converters in parallel, connect \code{sync\_out} of the master to \code{sync} of every slave and set \code{p.ctrl.slave = 1} in the slaves (Section~\ref{sec:master_slave} for the grid-forming block, Section~\ref{sec:gfl_master_slave} for the grid-following one).
 	\item \textbf{Run and look at the outputs.} The output \code{m} is the measurement vector of the power stage (14 values in pu, Table~\ref{tab:meas}); \code{ctrl\_log} is the control log (43 or 45 values, Tables~\ref{tab:log_gfm} and~\ref{tab:log_gfl}). Log them with To Workspace blocks and plot them with the indices of the tables.
 \end{enumerate}
 
@@ -197,7 +198,7 @@ This note describes the blocks and tells how to use them. It does not repeat the
 		sl/.style={draw, thick, align=center, fill=blue!6, minimum height=0.55cm, minimum width=1.5cm},
 		ref/.style={draw, thick, align=center, fill=white, minimum height=0.55cm}]
 		% (a) grid-forming
-		\node[blk] (gfm) at (0,0) {\code{grid\_forming\_dqctrl\_mod1}\\[2pt]mask: \code{p}};
+		\node[blk, minimum height=2.5cm] (gfm) at (0,-0.25) {\code{grid\_forming\_dqctrl\_mod1}\\[2pt]mask: \code{p}};
 		\node[el] (load) at (-5.4,0.5) {three-phase\\RL load};
 		\node[el] (bat) at (5.4,0.5) {DC source\\$+$ series $R$};
 		\node[sl] (clk) at (-5.4,-0.4) {Clock};
@@ -215,15 +216,20 @@ This note describes the blocks and tells how to use them. It does not repeat the
 		\draw[thick] (sc.north) -- (er.south);
 		\node[font=\small\bfseries] at (0,1.55) {(a) grid-forming: the block feeds a load};
 		% (b) grid-following
-		\node[blk] (gfl) at (0,-5.7) {\code{grid\_following\_dqctrl\_mod1}\\[2pt]mask: \code{p}};
+		\node[blk, minimum height=2.5cm] (gfl) at (0,-5.95) {\code{grid\_following\_dqctrl\_mod1}\\[2pt]mask: \code{p}};
 		\node[el] (grid) at (-5.4,-5.2) {three-phase source\\$+$ series $L$ (grid)};
 		\node[el] (dcl) at (5.4,-5.2) {DC load or source\\resistor, current source};
 		\node[sl] (clk2) at (-5.4,-6.1) {Clock};
+		\node[sl] (gnd2) at (-5.4,-7.0) {Ground};
 		\node[ref] (er2) at (5.4,-6.7) {Electrical Reference};
 		\node[ref] (sc2) at (5.4,-7.7) {Solver Configuration\\local solver, step \code{p.pwm.tc}};
+		\node[sl] (term2) at (5.4,-8.8) {Terminator};
 		\draw[thick] (grid.east) -- (gfl.west |- grid.east) node[midway, above] {ug\_a/b/c};
 		\draw[thick] (gfl.east |- dcl.west) -- (dcl.west) node[midway, above] {Udc(+)/($-$)};
 		\draw[->, thick] (clk2.east) -- (gfl.west |- clk2.east) node[midway, above] {t\_master};
+		\draw[->, thick] (gnd2.east) -- (gfl.west |- gnd2.east) node[midway, above] {sync};
+		\draw[->, thick] ([yshift=-0.6cm]gfl.east) -- ++(0.7,0) |- (term2.west);
+		\node[above right] at ([yshift=-0.6cm]gfl.east) {sync\_out};
 		\draw[thick] (er2.north) -- (dcl.south);
 		\draw[thick] (sc2.north) -- (er2.south);
 		\node[font=\small\bfseries] at (0,-4.15) {(b) grid-following: the block hangs on a grid};
@@ -245,6 +251,7 @@ This note describes the blocks and tells how to use them. It does not repeat the
 	\item The first harmonic tracker is held at zero while $t <$ \code{p.ctrl.fht\_t\_reset}. Keep this time short (a few control periods).
 	\item The structure \code{p} must exist in the base workspace (or in the model workspace) when the model is updated: run the example file, or your initialization script, first.
 	\item Grid-forming, converters in parallel: master and slaves need the same \code{p.ctrl.k\_time}, the same carrier phase \code{p.pwm.phase}, the same \code{p.pwm.double\_update} and the same \code{p.ctrl.nsc\_enable}.
+	\item Grid-following, converters in parallel on one DC link: one block is the master, the others need \code{p.ctrl.slave = 1} and their \code{sync} connected to \code{sync\_out} of the master. Two masters on one DC link share the current badly (Section~\ref{sec:gfl_master_slave}); a slave with \code{sync} unconnected gets zero references and carries no current.
 \end{itemize}
 \end{mybox}
 
@@ -405,18 +412,18 @@ Figure~\ref{fig:block} shows the inside of the two masked blocks. Besides the Si
 		\draw[thick] (dcm) -- (dcm -| ssc.east);
 		\node[port] (tm) at (-6.7,-4.6) {t\_master};
 		\draw[->, thick] (tm) -- (tm -| ctrl.west);
-		\node[port] (sy) at (-6.7,-5.4) {sync (GFM)};
+		\node[port] (sy) at (-6.7,-5.4) {sync};
 		\draw[->, thick] (sy) -- (sy -| ctrl.west);
 		\node[port] (m) at (5.7,-2.6) {m [14]};
 		\draw[->, thick] (meas.east) -- (m);
 		\node[port] (log) at (4.6,-5.3) {ctrl\_log [43 / 45]};
 		\draw[->, thick] (ctrl.east |- log) -- (log);
-		\node[port] (so) at (4.6,-5.9) {sync\_out (GFM)};
+		\node[port] (so) at (4.6,-5.9) {sync\_out};
 		\draw[->, thick] (ctrl.east |- so) -- (so);
 		\node[font=\footnotesize, align=center] at (0,1.85) {\code{grid\_forming\_dqctrl\_mod1} / \code{grid\_following\_dqctrl\_mod1}\\mask parameter \code{p} (\code{p.hw}, \code{p.pwm}, \code{p.ctrl})};
 	\end{tikzpicture}
 	\captionsetup{width=0.85\textwidth, font=small}
-	\caption[Structure of the blocks.]{Structure of the two blocks: one Simscape component for the power stage, one MATLAB Function for the control and the PWM, the two domain converters and the one-step delay of the measurements. The \code{sync} ports exist in the grid-forming block only.}
+	\caption[Structure of the blocks.]{Structure of the two blocks: one Simscape component for the power stage, one MATLAB Function for the control and the PWM, the two domain converters and the one-step delay of the measurements. The \code{sync} ports carry five values in the grid-forming block and two in the grid-following one.}
 	\label{fig:block}
 \end{figure}
 
@@ -720,7 +727,7 @@ The FHT and the sequences still run, so the log keeps $u_\xi$, $u_\eta$ and the 
 \subsection{What it does}
 \label{sec:gfl_purpose}
 
-The grid-following block connects its DC link to an AC network that already has a voltage. It finds the angle of the terminal voltage with a PLL, keeps the DC-link voltage at the reference \code{p.ctrl.udc\_norm\_ref} (1 pu, that is $u\ped{dc,nom}$) and injects the current that this needs: if a load takes power from the DC link, the converter draws it from the grid; if a source feeds the DC link, the converter pushes it into the grid. The reactive current is set by \code{p.ctrl.ieta\_ref} (0 in the example files). Figure~\ref{fig:gfl_chain} shows the chain.
+The grid-following block connects its DC link to an AC network that already has a voltage. It finds the angle of the terminal voltage with a PLL, keeps the DC-link voltage at the reference \code{p.ctrl.udc\_norm\_ref} (1 pu, that is $u\ped{dc,nom}$) and injects the current that this needs: if a load takes power from the DC link, the converter draws it from the grid; if a source feeds the DC link, the converter pushes it into the grid. The reactive current is set by \code{p.ctrl.ieta\_ref} (0 in the example files). Several blocks can hang on one DC link as master and slaves (Section~\ref{sec:gfl_master_slave}). Figure~\ref{fig:gfl_chain} shows the chain.
 
 \begin{figure}[htbp]
 	\centering
@@ -746,6 +753,8 @@ The grid-following block connects its DC link to an AC network that already has 
 		\node[o] (iz) at (4.8,-4.7) {zero-sequence loop\\$i_z = \tfrac{1}{3}\sum i\ped{s}$ (acquired)\\PI $\to u_\gamma$};
 		\node[b] (is) at (10.7,-4.7) {$i\ped{s}$ (acquired)\\$abc \to \alpha\beta \to \xi\eta$ ($\gamma$)};
 		\node[align=center] (udcin) at (14.2,-4.7) {$u\ped{dc}$ (acquired)};
+		\node[draw, thick, fill=white, inner sep=2pt] (syo) at (17.1,-2.25) {\code{sync\_out}};
+		\node[draw, thick, fill=white, inner sep=2pt] (syi) at (17.1,-2.95) {\code{sync}};
 		\draw[->, thick] (-1.6,0) node[left] {$M$} -- (acq);
 		\draw[->, thick] (acq) -- (clk);
 		\draw[->, thick] (clk) -- (fht);
@@ -754,6 +763,8 @@ The grid-following block connects its DC link to an AC network that already has 
 		\draw[->, thick] (plla) -- (pllb);
 		\draw[->, thick] (pllb.east) -- ++(0.6,0) node[right, align=left] {$\gamma$ to the\\rotations};
 		\draw[->, thick] (udcin) -- (udc);
+		\draw[->, thick] (udc.east |- syo) -- (syo);
+		\draw[->, thick] (syi) -- (udc.east |- syi);
 		\draw[->, thick] (is) -- (cpi);
 		\draw[->, thick] (udc) -- (cpi) node[midway, above] {$i^{*}_\xi$, $i^{*}_\eta$};
 		\draw[->, thick] (cpi) -- (inv) node[midway, above, inner sep=1.5pt] {$m\ped{d}$, $m\ped{q}$};
@@ -763,7 +774,7 @@ The grid-following block connects its DC link to an AC network that already has 
 		\draw[->, thick] (gt.west) -- ++(-1.0,0) node[left] {$G$};
 	\end{tikzpicture}}
 	\captionsetup{width=0.9\textwidth, font=small}
-	\caption[Control chain of the grid-following block.]{Control chain of the grid-following block at every trigger. The acquired DC-link voltage feeds the DC-link loop; the acquired converter currents feed the current loop and the zero-sequence loop.}
+	\caption[Control chain of the grid-following block.]{Control chain of the grid-following block at every trigger. The acquired DC-link voltage feeds the DC-link loop; the acquired converter currents feed the current loop and the zero-sequence loop. The two current references also go out on \code{sync\_out}; a slave (\code{p.ctrl.slave = 1}, Section~\ref{sec:gfl_master_slave}) takes them from \code{sync} instead of its DC-link PI.}
 	\label{fig:gfl_chain}
 \end{figure}
 
@@ -777,12 +788,21 @@ Two sign fields deserve a note. The study model had the positive-sequence gain $
 \subsection{DC-link voltage loop}
 \label{sec:udc_loop}
 
-The reference is a step of \code{p.ctrl.udc\_norm\_ref} at the time \code{p.ctrl.udc\_t\_step} (\SI{1}{\milli\second}), smoothed by a first-order low-pass filter with the time constant \code{p.ctrl.udc\_tau} (\SI{20}{\milli\second}). A PI with the gains \code{kp\_udc} (pu/pu) and \code{ki\_udc} (\si{\per\second}) works on the error between this reference and the acquired DC-link voltage; its output is limited to $\pm$\code{ixi\_lim} with back-calculation anti-windup, and the $\xi$ current reference is \emph{minus} this output. The sign is a convention: a positive $i_\xi$ is a converter current out of the bridge, in phase with the grid voltage, that is active power from the DC link to the grid; to raise the DC-link voltage the converter needs the opposite. With the example values ($0.85$, \SI{35}{\per\second}) and the DC-link time constant $C\ped{dc} u\ped{dc,nom}/i\ped{bez} = \SI{8.4}{\milli\second}$, the loop crosses at about \SI{16}{\hertz}, well below the current loop. The log index 28 (\code{sat\_udc}) says when the PI output is limited.
+The reference is a step of \code{p.ctrl.udc\_norm\_ref} at the time \code{p.ctrl.udc\_t\_step} (\SI{1}{\milli\second}), smoothed by a first-order low-pass filter with the time constant \code{p.ctrl.udc\_tau} (\SI{20}{\milli\second}). A PI with the gains \code{kp\_udc} (pu/pu) and \code{ki\_udc} (\si{\per\second}) works on the error between this reference and the acquired DC-link voltage; its output is limited to $\pm$\code{ixi\_lim} with back-calculation anti-windup, and the $\xi$ current reference is \emph{minus} this output. The sign is a convention: a positive $i_\xi$ is a converter current out of the bridge, in phase with the grid voltage, that is active power from the DC link to the grid; to raise the DC-link voltage the converter needs the opposite. With the example values ($0.85$, \SI{35}{\per\second}) and the DC-link time constant $C\ped{dc} u\ped{dc,nom}/i\ped{bez} = \SI{8.4}{\milli\second}$, the loop crosses at about \SI{16}{\hertz}, well below the current loop. The log index 28 (\code{sat\_udc}) says when the PI output is limited. In a slave this PI stays at rest (Section~\ref{sec:gfl_master_slave}).
 
 \subsection{Current loop and zero-sequence loop}
 \label{sec:gfl_current_loop}
 
 The current loop is the dq vector PI of Section~\ref{sec:vector_pi}, in the frame of the PLL angle $\gamma$, with the gains \code{kp\_i}, \code{ki\_i} and the radius \code{u\_lim}; it has no resonant term. In addition, the block has a zero-sequence current loop: the mean of the three converter currents $i_z = (i_{sa} + i_{sb} + i_{sc})/3$ is regulated to \code{iz\_ref} (0) by a PI (\code{kp\_iz}, \code{ki\_iz}, limit $\pm$\code{iz\_lim}) whose output, scaled by \code{iz\_out\_gain} and \code{u\_cm}, becomes the common-mode component $u_\gamma$ of the modulator (Section~\ref{sec:gates}). With the floating star point of the LCL filter no zero-sequence current can flow, so $i_z$ is zero and the loop stays at rest; it matters only when the converter has a path for it. The example file keeps \code{u\_cm = 0}, that is the standard SVPWM.
+
+\subsection{Master and slaves}
+\label{sec:gfl_master_slave}
+
+Several grid-following converters can hang on one DC link, for instance two modules in parallel between the same grid and the same DC bus. If each of them ran its own DC-link loop, the PIs would regulate the same voltage and together they would fix only the sum of the currents: a difference $\delta$ between two voltage acquisitions (an offset or a gain error) is integrated with opposite signs by the two PIs, whose outputs move apart at the rate \code{ki\_udc}$\,\delta$ until one of them reaches its limit. With the example gain of \SI{35}{\per\second}, a difference of \SI{0.1}{\percent} gives \SI{0.035}{\pu} per second: nothing in a short simulation of identical blocks, a wrong sharing in a real converter.
+
+For this reason one block is the master and runs the whole chain, and the others are slaves (\code{p.ctrl.slave = 1}): a slave takes the two current references $i^{*}_\xi$, $i^{*}_\eta$ of the master, read from the input \code{sync}, instead of the output of its own DC-link PI. It keeps its own PLL, current loop, zero-sequence loop and modulator. The references are in pu, so identical converters carry the same current and converters of different size share in proportion to their $i\ped{bez}$. The slave limits $i^{*}_\xi$ to $\pm$\code{ixi\_lim}, with the log index 28 at 1 while it does, and takes $i^{*}_\eta$ as it is; its DC-link PI stays at rest, while the filtered reference and the DC-link error are still computed for the log (indices 24 and 25). The gains of the DC-link PI stay those of one converter: every block brings its own DC-link capacitor and gets the same reference, so the loop sees the time constant $C\ped{dc} u\ped{dc,nom}/i\ped{bez}$ of one block.
+
+The wiring is that of Figure~\ref{fig:master_slave}, with the blocks on one grid and one DC link: \code{sync\_out} of the master to \code{sync} of every slave, and the same parameter structure except \code{p.ctrl.slave}. In the same step $t\ped{c}$ Simulink computes the master before the slave, because of the data dependency, so with the same clock (\code{k\_time}, \code{phase}, \code{double\_update}) the slave uses the references of the same trigger. Unlike the grid-forming slaves, which take an angle from the master, the grid-following ones take only constants in the frame of their own PLL: the carriers of the blocks may be shifted (interleaving), and a slave then uses the references of the last trigger of the master. The \code{sync} input has a fixed size of two, so an unconnected or grounded \code{sync} is accepted on a master.
 
 \subsection{Ports and log}
 \label{sec:gfl_ports}
@@ -800,8 +820,10 @@ The current loop is the dq vector PI of Section~\ref{sec:vector_pi}, in the fram
 		\code{ug\_a}, \code{ug\_b}, \code{ug\_c} & physical, left & AC terminals after the LCL filter \\
 		\code{Udc(+)}, \code{Udc($-$)} & physical, right & DC link (the capacitor is inside) \\
 		\code{t\_master} & input 1 & master time [\si{\second}] \\
+		\code{sync} & input 2, $2 \times 1$ & $[i^{*}_\xi;\, i^{*}_\eta]$ of the master, read in slave mode only (ground it on a master) \\
 		\code{M} & output 1, $14 \times 1$ & measurement vector $M$ (Table~\ref{tab:meas}) \\
 		\code{ctrl\_log} & output 2, $45 \times 1$ & control log (Table~\ref{tab:log_gfl}) \\
+		\code{sync\_out} & output 3, $2 \times 1$ & the same two values, from the last control step, for the slaves \\
 		\bottomrule
 	\end{tabularx}
 	\rowcolors{1}{white}{white}
@@ -840,8 +862,8 @@ The current loop is the dq vector PI of Section~\ref{sec:vector_pi}, in the fram
 	23 & \code{pll\_i1} & integrator of the PLL PI, pu of \code{omega\_nom} \\
 	24 & \code{udc\_ref} & filtered DC-link reference \\
 	25 & \code{e\_udc} & DC-link error \\
-	26, 27 & \code{i\_xi\_ref}, \code{i\_eta\_ref} & current references \\
-	28 & \code{sat\_udc} & 1 while the DC-link PI output is limited \\
+	26, 27 & \code{i\_xi\_ref}, \code{i\_eta\_ref} & current references (of the master, in a slave) \\
+	28 & \code{sat\_udc} & 1 while the DC-link PI output is limited (in a slave: while $i^{*}_\xi$ of the master is limited to $\pm$\code{ixi\_lim}) \\
 	29, 30 & \code{i\_xi}, \code{i\_eta} & converter current in the PLL frame \\
 	31, 32 & \code{m\_d}, \code{m\_q} & outputs of the current loop (voltage reference, pu) \\
 	33 & \code{clip\_i} & clip flag of the current PI \\
@@ -940,7 +962,7 @@ The mask of each block takes one structure \code{p} with three fields. \code{p.h
 \begin{table}[H]
 	\centering
 	\captionsetup{width=0.9\textwidth, font=small}
-	\caption[Field \code{p.ctrl} of the grid-following block.]{Field \code{p.ctrl} of the grid-following block.}
+	\caption[Field \code{p.ctrl} of the grid-following block.]{Field \code{p.ctrl} of the grid-following block. The field marked (option) may be absent: the block then runs as a master.}
 	\label{tab:ctrl_gfl}
 	\rowcolors{2}{tableShade}{white}
 	\footnotesize
@@ -961,6 +983,7 @@ The mask of each block takes one structure \code{p} with three fields. \code{p.h
 		\code{ieta\_ref} & reactive current reference [pu] & 0 \\
 		\code{kp\_i}, \code{ki\_i}, \code{u\_lim}, \code{clip\_release} & current PI: gains, radius, leak while clipped & 0.75, 35, 1, 0.001 \\
 		\code{iz\_ref}, \code{kp\_iz}, \code{ki\_iz}, \code{iz\_lim}, \code{iz\_out\_gain}, \code{u\_cm} & zero-sequence current loop and its path to the modulator & 0, 0.5, 18, 1, 1, 0 \\
+		\code{slave} (option) & 0 master, 1 slave & 0 \\
 		\bottomrule
 	\end{tabularx}
 	\rowcolors{1}{white}{white}
@@ -982,7 +1005,7 @@ The mask of each block takes one structure \code{p} with three fields. \code{p.h
 \section{Conclusions}
 \label{sec:conclusions}
 
-The two blocks give, in one Simulink block each, a complete three-phase two-level AFE with its LCL filter and its digital control, at the cost of two nonvirtual blocks per converter. The grid-forming block forms the voltage of an island with a fixed frequency, a voltage loop on the positive sequence, an optional negative-sequence compensator, an optional open-loop V/f mode and the master/slave mode for converters in parallel; the grid-following block hangs on an existing grid with a PLL, a DC-link voltage loop and a current loop. Both read one structure \code{p} from the mask, give the 14 measurements of the power stage in pu and a control log with every internal signal. The user guide of Section~\ref{sec:quickstart} and the two example parameter files are enough to run a first simulation; the design of the loops is in \cite{gfm_note}.
+The two blocks give, in one Simulink block each, a complete three-phase two-level AFE with its LCL filter and its digital control, at the cost of two nonvirtual blocks per converter. The grid-forming block forms the voltage of an island with a fixed frequency, a voltage loop on the positive sequence, an optional negative-sequence compensator, an optional open-loop V/f mode and the master/slave mode for converters in parallel; the grid-following block hangs on an existing grid with a PLL, a DC-link voltage loop and a current loop, and has its own master/slave mode for converters in parallel on one DC link. Both read one structure \code{p} from the mask, give the 14 measurements of the power stage in pu and a control log with every internal signal. The user guide of Section~\ref{sec:quickstart} and the two example parameter files are enough to run a first simulation; the design of the loops is in \cite{gfm_note}.
 
 % =============================================================
 \appendix
