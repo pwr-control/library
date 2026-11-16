@@ -118,6 +118,10 @@ function p = grid_following_param_example(tc)
     ctrl.iz_out_gain = 1;                       % [-] gain from the PI output to u_gamma
     ctrl.u_cm        = 0;                       % [-] factor of u_gamma in the modulator (0: standard SVPWM, k_offset = 0.5,
                                                 %     the zero-sequence loop does not act; 1: k_offset = (u_gamma + 1)/2)
+
+    % master/slave (optional field: absent = master)
+    ctrl.slave       = 0;                       % 1 in a slave: current references [i_xi_ref; i_eta_ref] from the input
+                                                %     sync (sync_out of the master), DC-link loop at rest
     p.ctrl = ctrl;
 end
 
