@@ -1,8 +1,8 @@
-function [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
+function [G, ctrl_log, sync_out] = interleaved_buck_3legs_ctrl_pwm(M, t_master, sync, p)
 %INTERLEAVED_BUCK_3LEGS_CTRL_PWM  Control and interleaved PWM of a three-leg buck converter in a single MATLAB Function block.
 %#codegen
 %
-%   [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
+%   [G, ctrl_log, sync_out] = interleaved_buck_3legs_ctrl_pwm(M, t_master, sync, p)
 %
 %   Source of the MATLAB Function interleaved_buck_3legs_ctrl_pwm of interleaved_buck_3legs/interleaved_buck_3legs_mod1:
 %   ../update_interleaved_buck_3legs.m loads this file into the block (edit here, then run it).
@@ -21,6 +21,8 @@ function [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
 %              meas_delay, no algebraic loop): M(1:3) inductor currents of legs 1, 2, 3 (pu of ibez), M(4) their sum,
 %              M(5) output current, M(6) u_out (pu of ubez), M(7) udc (pu of udc_nom), M(8) i_dc, M(9) i_cout, M(10) i_cdc
 %     t_master master time [s]: the Clock of the model, or the master time of the models with a global timing block
+%     sync     [2x1] [i_ref; enable] of the master (its output sync_out), read only in slave mode (p.ctrl.slave = 1):
+%              total current reference in pu of ibez and enable state. On a master leave it unconnected or grounded
 %     p        parameter struct, scope "Parameter" in the Symbols pane of the block: p.hw (the parameters of the ssc
 %              block, not read here), p.pwm and p.ctrl, see below and ../interleaved_buck_3legs_param_example.m
 %   Outputs
@@ -29,6 +31,17 @@ function [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
 %     ctrl_log control signals [30x1], indices in ../interleaved_buck_3legs_log_index.m (the loop signals are held
 %              between two control steps; t_loc, the carriers, the TRGO flags, the applied duties and the held
 %              samples are updated every step)
+%     sync_out [2x1] [i_ref; enable] of the last control step (held in between): total current reference of this
+%              block in pu of ibez and its enable state, for the input sync of the slave(s)
+%
+%   Master/slave (p.ctrl.slave = 1): modules in parallel on the same capacitors. The master (p.ctrl.slave absent or
+%   0) runs the voltage loop, or the current reference of mode 1, and the slaves take its total current reference
+%   from sync, so that all the modules carry the same current, each with its own leg current loops; the voltage PI of
+%   a slave is at rest. With one voltage loop per module on the same capacitors only the sum of the module currents
+%   is defined: any difference between the acquisitions of two modules is integrated into a difference of current.
+%   Master and slaves with the same clock and carrier phase run in the same tc step, the master first (data
+%   dependency), so a slave uses the reference of the same control step; with a carrier phase shift it uses the last
+%   one. A slave starts at its own t_enable and follows the master only while the master is enabled (sync(2) = 1).
 %
 %   Chain (names of the blocks of interleaved_buck.slx in brackets)
 %     every step tc
@@ -41,6 +54,11 @@ function [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
 %                      current is at its average value at the extremes of its own carrier (the ON pulse of Q1_k is
 %                      centred on the bottom, the OFF interval on the top), so the samples carry no ripple
 %                      [dcdc_ctrl/sample_hold_legs]
+%       voltages       u_out and udc through a first-order low-pass with the cutoff fc_u_meas, the anti-aliasing
+%                      filter of the measurement chain, before the acquisition (no filter when fc_u_meas is absent
+%                      or 0). Without it the voltage loop samples the switching ripple that the other converters
+%                      leave on the same capacitors: when their carrier is not synchronous with this one, the
+%                      ripple is aliased into i_ref and from there into the output current
 %       shadow load    on the rising edge of TRGO_k (k = 2, 3) the duty of leg k computed at the last control step is
 %                      loaded into the modulator (the duty of leg 1 is loaded at the control step itself)
 %                      [tri-interleaved_legs_modulator_with_TRGO/shadow_load]
@@ -50,13 +68,15 @@ function [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
 %     on the rising edge of TRGO_1 (no trigger on the first evaluation, as the Trigger block)
 %       acquisitions   the control uses the samples of the previous control step (one-step delay): the held leg
 %                      currents (leg 1 just sampled at this extreme, legs 2 and 3 up to 2/3 ts earlier at their own
-%                      extremes), u_out and udc quantized with adc_q    [buck_control/acquisitions]
+%                      extremes), u_out and udc after the low-pass, quantized with adc_q
+%                      [buck_control/acquisitions]
 %       alignment      PI of (t_master - t_loc), saturated, back-calculation anti-windup, output corr applied from the
 %                      next step (zero gains: free-running local clock = master time)
 %       reference      mode 0: u_out_ref reached from 0 with the slew u_ref_slew (pu/s); PI on u_out_ref - u_out
 %                      (kp_u, ki_u), saturated at +-i_lim with back-calculation anti-windup -> total current reference
 %                      i_ref (pu of ibez)                                                      [voltage_ctrl, pi_u]
 %                      mode 1: i_ref steps to p.ctrl.i_ref at t_ref with the slew i_ref_slew, saturated at +-i_lim
+%                      slave: i_ref = sync(1) while sync(2) = 1, else 0, saturated at +-i_lim (either mode)
 %       current loops  one PI per leg (kp_i, ki_i) on i_ref/3 - i_Lk, output the duty d_k saturated in [m_low, m_up]
 %                      with back-calculation anti-windup                                     [current_ctrl/pi/PId]
 %
@@ -73,6 +93,8 @@ function [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
 %     p.ctrl.k_time             local clock factor (1)
 %     p.ctrl.kp_align, ki_align, lim_up_align, lim_down_align   optional: alignment PI of the local clock (0, 0, 0, 0)
 %     p.ctrl.adc_q        [pu]  quantization step of the acquisitions (1/2048)
+%     p.ctrl.fc_u_meas    [Hz]  optional: cutoff of the low-pass on the acquired voltages (absent or 0: no filter)
+%     p.ctrl.slave              optional: 1 slave, i_ref from the input sync (absent or 0: master)
 %     p.ctrl.mode               0 output voltage loop, 1 total current reference
 %     p.ctrl.u_out_ref    [pu]  output voltage reference (pu of ubez), u_ref_slew [pu/s] ramp of the reference
 %     p.ctrl.kp_u [pu/pu], ki_u [1/s]   voltage PI (output in pu of ibez), i_lim [pu] its limit
@@ -87,7 +109,8 @@ function [G, ctrl_log] = interleaved_buck_3legs_ctrl_pwm(M, t_master, p)
 NLOG = 30;
 NLEGS = 3;
 
-persistent initialized trgo_z corr_z x_align is_hold is_z uo_z udc_z ref_z x_u x_i m_cmd m_apply enable_z logv
+persistent initialized trgo_z corr_z x_align is_hold is_z uo_z udc_z ref_z x_u x_i m_cmd m_apply enable_z logv ...
+           uo_f udc_f sync_z
 
 if isempty(initialized)
     initialized = true;
@@ -105,6 +128,9 @@ if isempty(initialized)
     m_apply  = zeros(NLEGS,1);       % duties loaded into the modulator (shadow registers)
     enable_z = false;                % enable state of the last control step: gates on from there
     logv     = zeros(NLOG,1);
+    uo_f     = 0;                    % output voltage after the low-pass fc_u_meas
+    udc_f    = 0;                    % DC-link voltage after the low-pass fc_u_meas
+    sync_z   = zeros(2,1);           % [i_ref; enable] of the last control step (output sync_out)
 end
 
 m = M(:);
@@ -120,6 +146,14 @@ if isfield(p.ctrl, 'kp_align')
     ki_al = p.ctrl.ki_align;
     lim_up_al = p.ctrl.lim_up_align;
     lim_dn_al = p.ctrl.lim_down_align;
+end
+fc_u = 0;
+if isfield(p.ctrl, 'fc_u_meas')
+    fc_u = p.ctrl.fc_u_meas;
+end
+slave = false;
+if isfield(p.ctrl, 'slave')
+    slave = p.ctrl.slave ~= 0;
 end
 enable = t_master >= t_en;
 q = p.ctrl.adc_q;
@@ -140,6 +174,16 @@ end
 rise = trgo & ~trgo_z;
 trgo_z = trgo;
 
+% ---- low-pass of the measured voltages (anti-aliasing filter of the measurement chain), every step
+if fc_u > 0
+    a_f   = 1 - exp(-2*pi*fc_u*p.pwm.tc);
+    uo_f  = uo_f  + a_f*(m(6) - uo_f);
+    udc_f = udc_f + a_f*(m(7) - udc_f);
+else
+    uo_f  = m(6);
+    udc_f = m(7);
+end
+
 % ---- sample-and-hold of each leg current at the extremes of its own carrier (average value of the leg current)
 for k = 1:NLEGS
     if rise(k)
@@ -157,8 +201,8 @@ if rise(1)
     uod  = uo_z;
     udcd = udc_z;
     is_z  = is_hold;
-    uo_z  = q*round(m(6)/q);
-    udc_z = q*round(m(7)/q);
+    uo_z  = q*round(uo_f/q);
+    udc_z = q*round(udc_f/q);
 
     % ---- alignment of the local clock to the master time (as the AFE blocks)
     e_al = t_master - t_loc;
@@ -172,7 +216,16 @@ if rise(1)
     e_u   = 0;
     sat_u = 0;
     u_ref = 0;
-    if p.ctrl.mode == 0
+    if slave
+        % slave: total current reference of the master while the master is enabled, voltage PI at rest
+        i_ref = 0;
+        if sync(2) > 0.5
+            i_ref = min(max(sync(1), -p.ctrl.i_lim), p.ctrl.i_lim);
+            sat_u = double(i_ref ~= sync(1));
+        end
+        ref_z = 0;
+        x_u   = 0;
+    elseif p.ctrl.mode == 0
         % output voltage loop: reference ramped with u_ref_slew, PI with back-calculation -> total current reference
         dref  = min(max(p.ctrl.u_out_ref - ref_z, -p.ctrl.u_ref_slew*ts), p.ctrl.u_ref_slew*ts);
         ref_z = ref_z + dref;
@@ -234,7 +287,11 @@ if rise(1)
     logv(21) = m_cmd(2);
     logv(22) = m_cmd(3);
     logv(27) = p.ctrl.mode;
+    if slave
+        logv(27) = 2;
+    end
     enable_z = enable;
+    sync_z   = [i_ref; double(enable)];            % reference and enable state for the slave(s)
 end
 
 % ---- shadow load of the duties of legs 2 and 3 at the extremes of their own carriers
@@ -278,5 +335,6 @@ logv(28) = is_hold(1);
 logv(29) = is_hold(2);
 logv(30) = is_hold(3);
 ctrl_log = logv;
+sync_out = sync_z;
 
 end

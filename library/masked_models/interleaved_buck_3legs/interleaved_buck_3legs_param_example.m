@@ -79,6 +79,10 @@ function p = interleaved_buck_3legs_param_example(tc)
     p.ctrl.lim_up_align   = 0;
     p.ctrl.lim_down_align = 0;
     p.ctrl.adc_q          = 1/2^11;             % [pu]  11-bit quantization of the acquisitions
+    p.ctrl.fc_u_meas      = 0;                  % [Hz]  low-pass on the acquired voltages, 0 = no filter (some hundred Hz when
+                                                %       another converter with its own carrier shares the capacitors)
+    p.ctrl.slave          = 0;                  %       1 in a slave: total current reference from the input sync (sync_out
+                                                %       of the master), voltage loop at rest
     % operating mode and references
     p.ctrl.mode           = 0;                  %       0 output voltage loop, 1 total current reference
     p.ctrl.u_out_ref      = 1;                  % [pu]  200 V

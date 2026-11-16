@@ -25,14 +25,24 @@ function update_interleaved_boost_3legs()
 %               rail dc-); the model needs an Electrical Reference on the network of the block, a DC source (battery)
 %               on in+/in- and a load on dc+/dc-
 %     inputs    1 t_master   master time [s] (Clock of the model or the master time of a global timing block)
+%               2 sync       [2x1] [i_ref; enable] of the master, read in slave mode only (p.ctrl.slave = 1)
 %     outputs   1 m          [10x1] measurements of the power stage in pu (M of the ssc block, not delayed):
 %                            i_L1, i_L2, i_L3, i_sum, i_in, u_in, udc, i_dc, i_cin, i_cdc
 %               2 ctrl_log   [30x1] control signals, indices in interleaved_boost_3legs_log_index.m
+%               3 sync_out   [2x1] [i_ref; enable] of the last control step: total current reference (pu of
+%                            ibez) and enable state of this block, for the input sync of the slave(s)
 %     mask      p            parameter struct (p.hw, p.pwm, p.ctrl), e.g. interleaved_boost_3legs_param_example()
 %   Inside: power_stage (ssc block, every parameter p.hw.<name>), interleaved_boost_3legs_ctrl_pwm (MATLAB Function,
 %   discrete at p.pwm.tc, data p with scope Parameter), gates (Simulink-PS Converter, V), meas (PS-Simulink
 %   Converter, dimensionless), meas_delay (Unit Delay of one p.pwm.tc on the measurements to the control: no
 %   algebraic loop, as in the AFE blocks).
+%
+%   Master/slave and voltage filter (2026-11-15): modules in parallel on the same capacitors run as one master
+%   and its slaves, sync_out of the master wired to sync of each slave and p.ctrl.slave = 1 in the struct of the
+%   slaves (as grid_forming_dqctrl_mod1); p.ctrl.fc_u_meas [Hz] is the cutoff of the low-pass on the acquired
+%   voltages. Both fields are optional (default: master, no filter), so the structs of the existing models keep
+%   working; a model that does not use the new ports gets an unconnected-port warning (ground sync and terminate
+%   sync_out to silence it).
 
     lib    = 'interleaved_boost_3legs';
     sub    = 'interleaved_boost_3legs_mod1';
@@ -77,8 +87,8 @@ function update_interleaved_boost_3legs()
         'update_interleaved_boost_3legs: %s has %d left and %d right physical ports, 3 and 3 expected (in+, in-, G / dc+, dc-, M)', ...
         ps, numel(ph_ps.LConn), numel(ph_ps.RConn));
 
-    % ---- control code: the inputs (M, t_master) and the outputs (G, ctrl_log) of the function are the ports of
-    %      the MATLAB Function block, p is a parameter (mask variable)
+    % ---- control code: the inputs (M, t_master, sync) and the outputs (G, ctrl_log, sync_out) of the function
+    %      are the ports of the MATLAB Function block, p is a parameter (mask variable)
     add_once(blk, mfname, 'simulink/User-Defined Functions/MATLAB Function', 'Position', [-20 150 110 250]);
     cfg = get_param(mf, 'MATLABFunctionConfiguration');
     cfg.FunctionScript = fileread(src);
@@ -97,10 +107,12 @@ function update_interleaved_boost_3legs()
     end
     ensure_data(chart, 'M',        'Input',     1, '[10 1]');
     ensure_data(chart, 't_master', 'Input',     2, '');
+    ensure_data(chart, 'sync',     'Input',     3, '[2 1]');     % fixed size: a grounded (unconnected) sync is 2x1 as well
     ensure_data(chart, 'p',        'Parameter', 0, '');
     ensure_data(chart, 'G',        'Output',    1, '[6 1]');
     ensure_data(chart, 'ctrl_log', 'Output',    2, '[30 1]');
-    keep = {'M', 't_master', 'p', 'G', 'ctrl_log'};     % data of the default script (u, y) of a new block
+    ensure_data(chart, 'sync_out', 'Output',    3, '[2 1]');
+    keep = {'M', 't_master', 'sync', 'p', 'G', 'ctrl_log', 'sync_out'};     % data of the default script (u, y) of a new block
     alld = find(chart, '-isa', 'Stateflow.Data');
     for k = 1:numel(alld)
         if ~any(strcmp(alld(k).Name, keep))
@@ -108,8 +120,8 @@ function update_interleaved_boost_3legs()
         end
     end
     ph_mf = get_param(mf, 'PortHandles');
-    assert(numel(ph_mf.Inport) == 2 && numel(ph_mf.Outport) == 2, ...
-        'update_interleaved_boost_3legs: %s has %d inputs and %d outputs, 2 and 2 expected', mf, numel(ph_mf.Inport), numel(ph_mf.Outport));
+    assert(numel(ph_mf.Inport) == 3 && numel(ph_mf.Outport) == 3, ...
+        'update_interleaved_boost_3legs: %s has %d inputs and %d outputs, 3 and 3 expected', mf, numel(ph_mf.Inport), numel(ph_mf.Outport));
 
     % ---- converters, delay, ports
     gates = add_once(blk, 'gates', 'nesl_utility/Simulink-PS Converter', 'Position', [150 190 180 210]);
@@ -121,6 +133,8 @@ function update_interleaved_boost_3legs()
     tin  = add_once(blk, 't_master', 'built-in/Inport',  'Port', '1', 'Position', [-105 218 -75 232]);
     mout = add_once(blk, 'm',        'built-in/Outport', 'Port', '1', 'Position', [480 193 510 207]);
     lout = add_once(blk, 'ctrl_log', 'built-in/Outport', 'Port', '2', 'Position', [480 233 510 247]);
+    syin = add_once(blk, 'sync',     'built-in/Inport',  'Port', '2', 'Position', [-105 258 -75 272]);
+    syou = add_once(blk, 'sync_out', 'built-in/Outport', 'Port', '3', 'Position', [480 273 510 287]);
     cpip = add_once(blk, 'in+', 'nesl_utility/Connection Port', 'Side', 'Left',  'Port', '1', 'Position', [150 123 180 137]);
     cpin = add_once(blk, 'in-', 'nesl_utility/Connection Port', 'Side', 'Left',  'Port', '2', 'Position', [150 153 180 167]);
     cpp  = add_once(blk, 'dc+', 'nesl_utility/Connection Port', 'Side', 'Right', 'Port', '3', 'Position', [400 123 430 137]);
@@ -138,6 +152,8 @@ function update_interleaved_boost_3legs()
     link_once(blk, ph_d.Outport(1),  ph_mf.Inport(1));                % delayed measurements -> control
     link_once(blk, port1(tin,  'Outport'), ph_mf.Inport(2));          % t_master -> control
     link_once(blk, ph_mf.Outport(2), port1(lout, 'Inport'));          % ctrl_log -> output
+    link_once(blk, port1(syin, 'Outport'), ph_mf.Inport(3));          % sync -> control
+    link_once(blk, ph_mf.Outport(3), port1(syou, 'Inport'));          % sync_out -> output
     link_once(blk, conn_port(cpip),  ph_ps.LConn(1));                 % in+
     link_once(blk, conn_port(cpin),  ph_ps.LConn(2));                 % in-
     link_once(blk, conn_port(cpp),   ph_ps.RConn(1));                 % dc+
@@ -164,8 +180,10 @@ function update_interleaved_boost_3legs()
         'port_label(''RConn'', 1, ''dc+'');\n' ...
         'port_label(''RConn'', 2, ''dc-'');\n' ...
         'port_label(''input'', 1, ''t_master'');\n' ...
+        'port_label(''input'', 2, ''sync'');\n' ...
         'port_label(''output'', 1, ''m'');\n' ...
-        'port_label(''output'', 2, ''ctrl_log'');']);
+        'port_label(''output'', 2, ''ctrl_log'');\n' ...
+        'port_label(''output'', 3, ''sync_out'');']);
     mk.Description = sprintf(['Three-leg interleaved boost converter in one block: input capacitor across the battery, ' ...
         'three boost legs (two switch + antiparallel diode pairs each) with one inductor per leg from the input to the ' ...
         'leg midpoint and the DC-link capacitor as a Simscape language component (boost_ssc.interleaved_boost_3legs), ' ...
@@ -177,8 +195,12 @@ function update_interleaved_boost_3legs()
         'measurements to the control through a Unit Delay of one tc (no algebraic loop). Same hardware as ' ...
         'interleaved_buck_3legs_mod1 with the power flow reversed; compact version of interleaved_boost.slx of ' ...
         'pwr-control/modelization-and-control (foundations_of_power_electronics/interleaved_boost_converter). Ports: ' ...
-        'in+, in- left (battery), dc+, dc- right (DC link, in- = dc-); t_master in, m (10x1 pu) and ctrl_log (30x1, ' ...
-        'interleaved_boost_3legs_log_index.m) out. p.ctrl.mode: 0 DC-link voltage loop (p.ctrl.udc_ref ramped with ' ...
+        'in+, in- left (battery), dc+, dc- right (DC link, in- = dc-); t_master and sync in, m (10x1 pu), ctrl_log ' ...
+        '(30x1, interleaved_boost_3legs_log_index.m) and sync_out out. Master/slave of modules in parallel on the ' ...
+        'same capacitors: sync and sync_out carry [i_ref; enable]; with p.ctrl.slave = 1 the block takes the total ' ...
+        'current reference of the master (sync_out of the master to sync of the slave), with p.ctrl.slave = 0 or ' ...
+        'absent it is a master and ignores sync. p.ctrl.fc_u_meas: cutoff of the low-pass on the acquired voltages ' ...
+        '(absent or 0: no filter). p.ctrl.mode: 0 DC-link voltage loop (p.ctrl.udc_ref ramped with ' ...
         'p.ctrl.u_ref_slew from p.ctrl.udc_ref_init, the precharged link), 1 total input current reference ' ...
         '(p.ctrl.i_ref from p.ctrl.t_ref with the slew p.ctrl.i_ref_slew; negative = buck direction). Parameter p: ' ...
         'struct of interleaved_boost_3legs_param_example.m (p.hw = parameters of the ssc block; p.pwm; p.ctrl), or ' ...

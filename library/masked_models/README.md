@@ -214,7 +214,13 @@ update: `grid_forming/grid_forming_param_example.m` and `grid_following/grid_fol
 the file next to the model, change the numbers, keep the field names). The Unit Delay of the measurements
 runs at `p.pwm.tc` of the mask (until October 2026 it read `param.glb_time.tc` from the base workspace).
 
-- `grid_following_dqctrl.slx` — grid follower: FHT-PLL, DC-link voltage loop, dq current loop.
+- `grid_following_dqctrl.slx` — grid follower: FHT-PLL, DC-link voltage loop, dq current loop. Master/slave
+  for converters in parallel on one DC link (November 2026): input `sync` and output `sync_out`, both
+  `[i_xi_ref; i_eta_ref]` in pu of `ibez`; with `p.ctrl.slave = 1` the block keeps its PLL, its current
+  loops and its modulator and takes the current references of the master (`sync_out` of the master to
+  `sync` of the slave), `i_xi_ref` limited to ±`ixi_lim`, with its DC-link PI at rest; a master (field
+  absent or 0) ignores `sync`. With one DC-link loop per block only the sum of the currents is defined.
+  The control code is inside the block.
 - `grid_forming_dqctrl.slx` — grid former: free-running phase generator, voltage loop on the FHT
   positive sequence of the terminal voltage, dq current loop. Master/slave for converters sharing one
   load: input `sync` and output `sync_out`, both `[theta; i_xi_ref; i_eta_ref; i_xi_n_ref; i_eta_n_ref]`;
@@ -407,8 +413,8 @@ MATLAB Function. Mask parameter `p`, one numeric struct (`p.hw` = parameters of 
 `p.ctrl`; `interleaved_buck_3legs/interleaved_buck_3legs_param_example.m` builds the one of the 750 V → 400 V,
 250 kW, 4 kHz converter of the model, whose `init_model.m` produces the same struct as `param.buck`);
 physical ports `dc+`/`dc-` (left, DC input) and `out+`/`out-` (right, output; `out-` is the negative rail),
-input `t_master`, outputs `m` (10×1 measurements in pu) and `ctrl_log` (30×1, indices in
-`interleaved_buck_3legs/interleaved_buck_3legs_log_index.m`).
+inputs `t_master` and `sync`, outputs `m` (10×1 measurements in pu), `ctrl_log` (30×1, indices in
+`interleaved_buck_3legs/interleaved_buck_3legs_log_index.m`) and `sync_out`.
 
 - `interleaved_buck_3legs.slx` — block `interleaved_buck_3legs_mod1`. Three triangle carriers shifted by
   2π/3 (the output sees 3 `fpwm`), control at the extremes of carrier 1 (double update, 2 `fpwm`), the
@@ -421,7 +427,16 @@ input `t_master`, outputs `m` (10×1 measurements in pu) and `ctrl_log` (30×1, 
   [`m_low`, `m_up`], upper switch on around the carrier bottom, lower switch complementary with the dead
   time. `p.ctrl.mode` 0 = output voltage loop, 1 = total current reference (`i_ref` from `t_ref` with the
   slew `i_ref_slew`). Optional enable time (`p.pwm.t_enable`). The control reads the measurements quantized
-  with `adc_q` through a Unit Delay of one `p.pwm.tc`. The control code is
+  with `adc_q` through a Unit Delay of one `p.pwm.tc`. Master/slave for modules in parallel on the same
+  capacitors (November 2026): `sync` and `sync_out` are `[i_ref; enable]`, the total current reference in
+  pu of `ibez` and the enable state; with `p.ctrl.slave = 1` the block runs its three leg current loops
+  with the reference of the master (`sync_out` of the master to `sync` of every slave) while the master is
+  enabled, limited at `i_lim`, with its voltage PI at rest and `ctrl_log(27) = 2`; a master (field absent
+  or 0) ignores `sync`. With one voltage loop per module only the sum of the module currents is defined.
+  Optional `p.ctrl.fc_u_meas` [Hz] (November 2026): first-order low-pass on `u_out` and `udc` before the
+  acquisition, the anti-aliasing filter of the measurement chain (absent or 0: no filter); without it the
+  voltage loop aliases the switching ripple that converters with another carrier leave on the same
+  capacitors. The control code is
   `interleaved_buck_3legs/private/interleaved_buck_3legs_ctrl_pwm.m`;
   `interleaved_buck_3legs/update_interleaved_buck_3legs.m` builds the library from scratch, or loads the
   source into the existing block, once `buck_ssc_lib.slx` has been built:
@@ -447,9 +462,9 @@ one MATLAB Function. Mask parameter `p`, one numeric struct (`p.hw` = parameters
 `p.pwm`, `p.ctrl`; `interleaved_boost_3legs/interleaved_boost_3legs_param_example.m` builds the one of
 the 200 V → 660 V, 750 A, 150 kW, 3 kHz converter of the model, whose `init_model.m` produces the same
 struct as `param.boost`); physical ports `in+`/`in-` (left, battery) and `dc+`/`dc-` (right, DC link;
-`in-` is the negative rail), input `t_master`, outputs `m` (10×1 measurements in pu: leg currents, their
-sum, input current, `u_in`, `udc`, DC-side current, capacitor currents) and `ctrl_log` (30×1, indices in
-`interleaved_boost_3legs/interleaved_boost_3legs_log_index.m`).
+`in-` is the negative rail), inputs `t_master` and `sync`, outputs `m` (10×1 measurements in pu: leg
+currents, their sum, input current, `u_in`, `udc`, DC-side current, capacitor currents), `ctrl_log` (30×1,
+indices in `interleaved_boost_3legs/interleaved_boost_3legs_log_index.m`) and `sync_out`.
 
 - `interleaved_boost_3legs.slx` — block `interleaved_boost_3legs_mod1`. Same carriers, sampling and
   shadow registers as the buck block (three triangle carriers shifted by 2π/3, control at the extremes
@@ -465,6 +480,8 @@ sum, input current, `u_in`, `udc`, DC-side current, capacitor currents) and `ctr
   the boost at nominal load (157 Hz). `p.ctrl.mode` 0 = DC-link voltage loop, 1 = total input current
   reference (`i_ref` from `t_ref` with the slew `i_ref_slew`). Optional enable time (`p.pwm.t_enable`).
   The control reads the measurements quantized with `adc_q` through a Unit Delay of one `p.pwm.tc`.
+  Master/slave (`sync`, `sync_out` = `[i_ref; enable]`, `p.ctrl.slave = 1`) and the optional low-pass
+  `p.ctrl.fc_u_meas` on the acquired voltages (`u_in`, `udc`) as in the buck block (November 2026).
   The control code is `interleaved_boost_3legs/private/interleaved_boost_3legs_ctrl_pwm.m`;
   `interleaved_boost_3legs/update_interleaved_boost_3legs.m` builds the library from scratch, or loads
   the source into the existing block, once `boost_ssc_lib.slx` has been built:
