@@ -1,0 +1,173 @@
+component thyristor_rr_th
+% Thyristor with Reverse Recovery and Cauer thermal model
+% --------------------------------------------------------
+% Same electrical model as thyristor_rr (piecewise-linear static
+% characteristic, Lauritzen-Ma charge dynamics, latching, holding and tq
+% logic: see thyristor_rr.ssc), plus the junction temperature computed
+% inside the block by a Cauer ladder from the junction to the case, and
+% a thermal port H for the outside: a thermal mass, a heat sink network
+% or an ideal temperature source.
+%
+% Thermal model:
+%
+%   Tj o--+--[R1]--+--[R2]-- ... --+--[Rn + Rch]--o H (case or heat sink)
+%         |        |               |
+%        C1       C2              Cn
+%         |        |               |
+%        ===      ===             ===   thermal reference
+%
+%   Rth = [R1 ... Rn], Cth = [C1 ... Cn]: Cauer ladder junction -> case,
+%   n >= 2, row vectors. A datasheet Foster network Zth(j-c) gives the
+%   equivalent ladder with foster2cauer.m (setup_files/
+%   simulink_models_initialization): the Foster coefficients themselves
+%   are NOT a Cauer ladder and must not be entered here.
+%   Rch: contact resistance case -> heat sink (both sides for a
+%   double-side cooled press-pack; 0 if a heat sink network with its own
+%   contact resistance is connected to H).
+%   T0: initial temperature of the internal nodes (the junction starts at
+%   T0); give the external mass the same initial temperature.
+%
+% Recovery parameters from one datasheet point (IRM, Qrr at |di/dt| = a).
+% This model turns off abruptly when i < Ih: the stored charge at the
+% current zero, qM0 = a*tau^2 (long-ramp limit, ramp >> tau), then drives
+% the reverse current i = -qM/Tm, which decays with the tail constant
+% tau*Tm/(tau + Tm). Hence (NOT the diode_rr formulas):
+%   IRM = a*tau^2/Tm,   Qrr = a*tau^3/(tau + Tm)
+%   c = IRM/a, q = Qrr/a:  tau = (q/c + sqrt((q/c)^2 + 4*q))/2,  Tm = tau^2/c
+% (thyristor_rr set A for the 26N6500, tau = 100 us, Tm = 190 us, gives
+% 79 A and 5.2 mC at 1.5 A/us).
+%
+% Dissipated power, fed into the junction node: P = v*i (the model has no
+% depletion capacitance; during the storage phase of the recovery v*i is
+% briefly negative, a negligible amount).
+% The electrical parameters do not depend on Tj (no electrothermal loop):
+% enter them at Tvj max.
+%
+% Outputs: Tj (K) junction temperature, P (W) dissipated power.
+%
+% Defaults: Hitachi Energy (ABB) 5STP 42U6500, 5SYA1043-08 (May 2020),
+% Tvj = 125 C:
+%   on-state: VT0 = 1.17 V, rT = 0.181 mOhm (IT 2-6 kA; above 6 kA the
+%     line is 1-3 % above the datasheet A..D model);
+%   blocking: Goff = 1e-5 S (IDRM = 800 mA at 6.5 kV and 125 C would be
+%     1.2e-4 S; an idle device is much colder);
+%   gate and latch: VGT = 2.6 V, IL = 0.7 A, IH = 0.1 A (125 C);
+%   recovery: Qrr = 6860 uAs, IRM = 91 A typ at -1.5 A/us, IT = 2 kA ->
+%     tau = 115.1 us, Tm = 218.4 us (formulas above; checked in
+%     simulation: 91 A, 6.86 mC); tq = 970 us;
+%   thermal: Rth(j-c) Foster [2.736 0.813 0.338 0.113] K/kW,
+%     [0.9484 0.1155 0.0131 0.0036] s -> Cauer ladder below,
+%     Rth(c-h) = 0.8 K/kW (double side, 120-160 kN).
+
+  nodes
+    a = foundation.electrical.electrical; % A
+    k = foundation.electrical.electrical; % K
+    H = foundation.thermal.thermal;       % H
+  end
+
+  inputs
+    % gate command (compare against Vgt)
+    G = {0, 'V'}; % G
+  end
+
+  outputs
+    Tj = {313.15, 'K'}; % Tj
+    P  = {0,      'W'}; % P
+  end
+
+  parameters
+    Vf   = {1.17,     'V'    };  % Forward voltage (VT0, 125 degC)
+    Ron  = {0.181e-3, 'Ohm'  };  % On-state resistance (rT, 125 degC)
+    Goff = {1e-5,     '1/Ohm'};  % Off-state conductance
+    Vgt  = {2.6,      'V'    };  % Gate trigger threshold
+    Vth  = {50,       'V'    };  % Forward voltage threshold for re-trigger
+    Il   = {0.7,      'A'    };  % Latching current (125 degC)
+    Ih   = {0.1,      'A'    };  % Holding current (125 degC)
+    tau  = {115.1e-6, 's'    };  % Carrier lifetime (transit time)
+    Tm   = {218.4e-6, 's'    };  % Charge cross-over time constant
+    Qth  = {1e-6,     'C'    };  % Excess-charge re-trigger threshold
+    tq   = {970e-6,   's'    };  % Circuit-commutated turn-off time (timer)
+    Rth  = {[0.418901e-3 0.410239e-3 1.259032e-3 1.911827e-3], 'K/W'}; % Cauer thermal resistances j-c [R1 ... Rn]
+    Cth  = {[14.899969 30.194389 80.828867 343.427467],        'J/K'}; % Cauer thermal capacitances [C1 ... Cn]
+    Rch  = {0.8e-3,   'K/W'  };  % Thermal resistance case to H, Rch
+    T0   = {313.15,   'K'    };  % Initial temperature of the Cauer nodes, T0
+  end
+
+  parameters (Access = private)
+    Kq    = tau + Tm;               % qE gain so that i -> i_s in steady state
+    nth   = numel(Rth);             % Cauer stages
+    Rint  = Rth(1:end-1);           % R1 ... R(n-1)
+    Rlast = Rth(end) + Rch;         % Rn + Rch, to H
+  end
+
+  variables
+    i  = {0, 'A'};              % Through variable A->K
+    v  = {0, 'V'};              % Across variable A-K
+    qM = {value = {0, 'C'}, priority = priority.high}; % Stored charge
+    Q  = {0, 'W'};              % Heat flow into the block through H
+  end
+
+  variables (ExternalAccess = observe)
+    % rise of the Cauer node temperatures over T0 (set T0, not this)
+    dT = {value = {zeros(1, nth), 'K'}, priority = priority.high};
+  end
+
+  variables (Event = true)
+    on   = 0;                   % Latch state: 0 = blocking, 1 = conducting
+    toff = {-1, 's'};           % Time of last turn-off event
+  end
+
+  intermediates
+    % Static PWL current
+    i_s  = if on > 0.5, (v - Vf*(1 - Ron*Goff))/Ron else v*Goff end;
+    % Injected charge
+    qE   = Kq * i_s;
+    % Excess charge over the leakage steady state (see thyristor_rr.ssc)
+    qExc = qM - tau*Goff*v;
+    % heat flows in the ladder: node k -> k+1, and last node -> H
+    qint = (dT(1:end-1) - dT(2:end))./Rint;
+    qout = (T0 + dT(end) - H.T)/Rlast;
+  end
+
+  branches
+    i : a.i -> k.i;
+    Q : H.Q -> *;
+  end
+
+  equations
+    assert(nth >= 2, 'Rth: at least two Cauer stages');
+    assert(numel(Cth) == nth, 'Rth and Cth: same number of stages');
+
+    v == a.v - k.v;
+    % Lauritzen-Ma lumped charge dynamics
+    der(qM) == (qE - qM)/Tm - qM/tau;
+    i       == (qE - qM)/Tm;
+
+    % Cauer ladder: C_k der(T_k) = heat in - heat out
+    Cth.*dT.der == [v*i, qint] - [qint, qout];
+    Q  == -qout;
+
+    Tj == T0 + dT(1);
+    P  == v*i;
+  end
+
+  events
+    when edge((G > Vgt) && (v > {0,'V'}) && (on < 0.5))
+      on = 1;                   % gate turn-on
+    elsewhen edge((v > Vth) && (on < 0.5) && (toff >= {0,'s'}) && ...
+                  ((time - toff < tq) || ((qExc > Qth) && (time - toff < 10*tau))))
+      on = 1;                   % tq violation: spontaneous re-fire
+    elsewhen edge((i < Ih) && (on > 0.5))
+      on   = 0;                 % natural commutation below holding
+      toff = time;              % start tq timer
+    end
+  end
+
+  annotations
+    a : Side = left;
+    k : Side = right;
+    [G, H] : Side = bottom;
+    [Tj, P] : Side = top;
+  end
+
+end

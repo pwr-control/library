@@ -160,6 +160,9 @@ inductance with its HF damping branch and plots the resulting impedance.
 returns its variables as a struct (a dataset written as a function returning a struct is also
 accepted). `device_igbt_setup` and `device_mosfet_setup` pass that struct to the corresponding
 class; `device_ideal_switch_setting` returns the plain ideal-switch struct.
+`foster2cauer(Rf, tauf)` converts a datasheet Foster Zth network into the equivalent Cauer ladder
+(continued fraction, checked against the Foster step response), for the `Rth`, `Cth` parameters
+of `diode_rr_th` and `thyristor_rr_th`.
 
 **Grid, faults and FRT**
 
