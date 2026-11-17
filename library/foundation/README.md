@@ -45,6 +45,14 @@ with thermal ports** (losses and temperatures, no transient).
 - **`thyristor_rr`** — Thyristor with piecewise-linear static characteristic plus Lauritzen-Ma
   charge dynamics: latching and holding logic, spontaneous re-fire on residual excess charge, and
   a tq constraint. Defaults: ABB 5STP 26N6500.
+- **`diode_rr_th`** — `diode_rr` with the junction temperature inside the block: a Cauer ladder
+  junction → case (from the datasheet Foster network with `foster2cauer.m`) and a thermal port
+  `H` for a thermal mass or a heat-sink network. One block stands for `ns` identical devices in
+  series. Outputs the junction temperature and the dissipated power. Defaults: Littelfuse
+  W8245EC450. The package carries its own README.
+- **`thyristor_rr_th`** — `thyristor_rr` with the same Cauer ladder and thermal port; the
+  recovery parameters come from one datasheet point (IRM, Qrr) with the formulas of its abrupt
+  turn-off, given in the README. Defaults: Hitachi Energy 5STP 42U6500.
 - **`thyristor_selftrig`** — Thyristor with the explicit passive anode-to-gate self-trigger network
   (coupling capacitor, reset resistor, static break-over path). The `M` output reports which
   mechanism fired the device. No reverse recovery — use `thyristor_rr` for that.
