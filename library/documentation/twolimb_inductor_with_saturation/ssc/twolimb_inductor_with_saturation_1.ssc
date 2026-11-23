@@ -1,0 +1,118 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+%
+% Revision history
+%   Rev. 00  2026-09-18  first issue
+
+component twolimb_inductor_with_saturation
+% Two-limb inductor with saturation
+%
+% Single-phase reactor with one winding on each limb of a common core:
+% winding 1 between a+ and b+, winding 2 between a- and b-. The windings
+% are connected so that the load (differential-mode) current, entering at
+% a+ and returning at a-, magnetises the core in the same direction. A
+% common-mode current (same direction in both conductors) does not
+% magnetise the core and only sees the leakage inductance.
+%
+% L, Ld and R are the TOTAL values seen by the load current
+% (a+ -> b+ -> load -> b- -> a-); half of each is placed in each conductor.
+% With i1 = -i2 the block is identical to singlephase_inductor_with_saturation
+% with the same parameters.
+%
+% Equivalent coupled-inductor description (linear region):
+%   L1 = L2 = Ld/2 + L/4,   M = L/4,   k = L/(L + 2*Ld)
+% The saturation factor kL(im) scales the coupled part (L/4 and M) only,
+% im = (i1 - i2)/2 being the magnetising current (= load current in
+% differential mode). The saturation table is the DIFFERENTIAL inductance
+% dpsi/di normalised to L, versus |im| normalised to the peak base current
+% sqrt(2)*i_base.
+%
+% To disable the saturation effect set i_base to inf.
+
+    nodes
+        ap = foundation.electrical.electrical;      % a+:left
+        an = foundation.electrical.electrical;      % a-:left
+        bp = foundation.electrical.electrical;      % b+:right
+        bn = foundation.electrical.electrical;      % b-:right
+    end
+
+    outputs
+        psi_out = {0, 'V*s'};    % psi
+        im_out  = {0, 'A'};      % im
+    end
+
+    parameters
+        L      = {300e-6, 'H'};      % Main (magnetising) inductance, total
+        Ld     = {20e-6,  'H'};      % Leakage inductance, total
+        R      = {2.4e-3, 'Ohm'};    % Winding resistance, total
+        i_base = {360,    'A'};      % Base current (Arms)
+    end
+
+    parameters(Access=private)
+        % dpsi/di normalised to L, versus |im| / (sqrt(2)*i_base)
+        L_saturation       = {[1.0, 1.0, 1.0, 0.88, 0.39], '1'};
+        Normalized_current = {[0, 1.0, 1.35, 2.30, 3.85],  '1'};
+    end
+
+    variables
+        u1 = {0, 'V'};           % u1 (a+ to b+)
+        u2 = {0, 'V'};           % u2 (a- to b-)
+        i1 = {0, 'A'};           % i1 (a+ -> b+)
+        i2 = {0, 'A'};           % i2 (a- -> b-)
+        im = {0, 'A'};           % magnetising current (i1 - i2)/2
+        i_norm = {0, '1'};       % |im| in p.u. of the peak base current
+        kL = {1, '1'};           % saturation factor
+        % core flux linkage of the main path, total for the loop
+        psi = {value = {0, 'V*s'}, priority = priority.high};
+    end
+
+    branches
+        i1 : ap.i -> bp.i;
+        i2 : an.i -> bn.i;
+    end
+
+    equations
+        assert(L > 0,      'Main inductance must be positive');
+        assert(Ld > 0,     'Leakage inductance must be positive');
+        assert(R >= 0,     'Winding resistance must be non-negative');
+        assert(i_base > 0, 'Base current must be positive');
+
+        u1 == ap.v - bp.v;
+        u2 == an.v - bn.v;
+
+        im == (i1 - i2)/2;
+        i_norm == abs(im)/(i_base*sqrt(2));
+        kL == tablelookup(Normalized_current, L_saturation, i_norm, ...
+            interpolation = linear, extrapolation = nearest);
+
+        % core (coupled) flux linkage, total for the loop: dpsi = L*kL(im)*dim
+        psi.der == L*kL*(i1.der - i2.der)/2;
+
+        % half of the leakage, resistance and core EMF in each conductor
+        u1 == (R/2)*i1 + (Ld/2)*i1.der + psi.der/2;
+        u2 == (R/2)*i2 + (Ld/2)*i2.der - psi.der/2;
+
+        % total flux linkage seen by the load current (same as the single-phase block)
+        psi_out == psi + Ld*im;
+        im_out  == im;
+    end
+end

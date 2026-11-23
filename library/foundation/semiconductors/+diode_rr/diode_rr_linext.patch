@@ -1,0 +1,59 @@
+--- a/library/foundation/semiconductors/+diode_rr/diode_rr.ssc
++++ b/library/foundation/semiconductors/+diode_rr/diode_rr.ssc
+@@ -20,9 +20,17 @@
+ % extracted tau falls with di/dt): extract at the datasheet point closest
+ % to the di/dt of the application, or extrapolate tau along the curve.
+ %
+-% Static check (on-state):
++% Static check (on-state, below Imax):
+ %   If = Is*tau/(tau + TM)*(exp(Vf/(N*Vt)) - 1), plus Rs*If.
+ %
++% Numerics: above the static current Imax the exponential is continued
++% linearly (value and slope continuous). With a fixed-step solver and a
++% fixed number of Newton iterations an iterate that overshoots the
++% junction voltage then gives a large but finite current and Jacobian
++% instead of an overflow (power diodes have Is ~ 1e-4 A: 3.5 V of
++% junction voltage would be ~1e29 A). Choose Imax a few times above the
++% largest current of the study; below Imax the curve is unchanged.
++%
+ % Example: Infineon D711N (Tvj = 160 C, Vt = 37.3 mV), see the extraction
+ % script d711n_lm_extract.py:
+ %   set A, datasheet test 10 A/us : tau = 37.5 us, TM = 32.8 us
+@@ -54,6 +62,12 @@
+     mg  = {0.5,    '1'  }; % Grading coefficient, m
+     FC  = {0.5,    '1'  }; % Forward-bias depletion clamp factor
+     dsm = {10e-3,  'V'  }; % Smoothing width (numerics)
++    Imax = {50e3,  'A'  }; % Linearization current (numerics), Imax
++end
++
++parameters (Access = private)
++    % exponential argument at the static current Imax
++    xlin = log(Imax*(tau + TM)/(tau*Is) + 1);
+ end
+ 
+ variables
+@@ -70,10 +84,11 @@
+ end
+ 
+ intermediates
+-    % smooth-limited exponential argument (protects the solver only;
+-    % never active in normal operation)
+-    xr  = 100 - vj/(N*Vt);
+-    xe  = 100 - 0.5*(xr + sqrt(xr^2 + 1e-3));
++    % exponential argument, continued linearly above xlin (protects the
++    % solver only; never active below Imax)
++    xj  = vj/(N*Vt);
++    xp  = 0.5*((xj - xlin) + sqrt((xj - xlin)^2 + 1e-2)); % smooth max(xj - xlin, 0)
++    xm  = xj - xp;                                         % smooth min(xj, xlin)
+     % smooth clamp of vj at FC*Vjp for the depletion charge
+     xc  = FC*Vjp - vj;
+     xcp = 0.5*(xc + sqrt(xc^2 + dsm^2));  % positive part of xc
+@@ -86,7 +101,7 @@
+     v == vj + Rs*i;
+ 
+     % Lauritzen-Ma lumped charge model
+-    qE     == tau*Is*(exp(xe) - 1);
++    qE     == tau*Is*(exp(xm)*(1 + xp) - 1);
+     qM.der == (qE - qM)/TM - qM/tau;
+ 
+     % depletion charge, linear extension above FC*Vjp

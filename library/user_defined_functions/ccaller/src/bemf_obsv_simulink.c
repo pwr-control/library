@@ -1,0 +1,64 @@
+/*
+Copyright (c) 2025 Davide Bagnara
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+
+#include <bemf_obsv.h>
+#include <bemf_obsv_simulink.h>
+
+BEMF_OBSV state_obsv = {0.0F};
+unsigned int state_obsv_initialized = 0;
+
+// ------------------------------------------------------------------------------
+BEMF_OBSV_OUTPUT bemf_obsv_process_simulink(unsigned char reset, const float u_alpha, const float u_beta, 
+		const float i_alpha, const float i_beta, const float u_dc, const float ts, 
+		const float bemf_obsv_fb_p_1, const float bemf_obsv_p_1,const float bemf_obsv_fb_p_2, 
+		const float bemf_obsv_p_2, const float motorc_omega_bez, const float motorc_m_scale, 
+		const float motorc_rs_norm, const float motorc_ls_norm, const float motorc_phi_m_norm, 
+		const float bemf_obsv_kalman_omega, const float bemf_obsv_kalman_theta, const float phase_compensation_omega, 
+		const float phase_compensation_torque, const float omega_flt_fcut
+)
+{
+
+	/* reset reloads the parameters too, so a new simulation does not keep the previous ones */
+	if (!state_obsv_initialized || reset) {
+	    bemf_obsv_init(&state_obsv, bemf_obsv_fb_p_1, bemf_obsv_p_1, bemf_obsv_fb_p_2, bemf_obsv_p_2, motorc_omega_bez, motorc_m_scale, motorc_rs_norm,
+		motorc_ls_norm, motorc_phi_m_norm, bemf_obsv_kalman_omega, bemf_obsv_kalman_theta, phase_compensation_omega, phase_compensation_torque, omega_flt_fcut);
+		state_obsv_initialized = 1;
+	}
+
+	bemf_obsv_ts(&state_obsv, ts);
+	
+	obsv_omega_flt_init(&state_obsv);
+
+	const float output_value = bemf_obsv_process(&state_obsv, u_alpha, u_beta, i_alpha, i_beta, u_dc);
+	const float omega_pu_hat = output_value;
+
+	const BEMF_OBSV_OUTPUT bemf_obsv_output = {
+		.omega_pu_hat = omega_pu_hat,
+		.omega_pu_hat_flt = state_obsv.omega_hat_flt,
+		.theta_hat = state_obsv.theta_hat,
+		.psi_r_alpha_hat = state_obsv.psi_r_alpha_hat,
+		.psi_r_beta_hat = state_obsv.psi_r_beta_hat
+	};
+	return bemf_obsv_output;
+}
+

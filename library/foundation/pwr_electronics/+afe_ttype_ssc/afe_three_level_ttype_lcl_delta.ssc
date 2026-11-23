@@ -1,0 +1,440 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component afe_three_level_ttype_lcl_delta
+% AFE Three-Level T-Type Bridge with LCL Filter, Delta Capacitors
+% Three-phase three-level T-type bridge (three legs of four ideal switch +
+% antiparallel diode pairs), split DC link and LCL filter in ONE Simscape
+% block, so that the power stage of one AFE counts as one nonvirtual block
+% (MATLAB Home licence: at most 1000 nonvirtual blocks per model, referenced
+% models and library links included). Same block as
+% afe_three_level_ttype_lcl with the three filter capacitors connected in
+% DELTA, between the capacitor nodes a-b, b-c and c-a, instead of in star:
+% the T-type version of afe_ssc.afe_two_level_lcl_delta. Same ports, same gate
+% vector, same parameter names and same layout of M as
+% afe_three_level_ttype_lcl (M(1:17) as afe_two_level_lcl_delta, M(18:22) the
+% split DC link), so the two blocks can be swapped in a model.
+%
+%   T-type leg x (x = a, b, c; same arrangement and numbering as
+%   ideal_bridges.three_phase_bridge_ttype, afe_ttype_ssc.afe_single_phase_ttype
+%   and the T-type blocks of masked_models/semiconductors_bridges):
+%     Q1     between + and the midpoint m_x (collector on +):  m_x = +  when on
+%     Q4     between m_x and - (collector on m_x):             m_x = -  when on
+%     Q2, Q3 in anti-series, common emitter, between np and m_x (Q2 collector
+%            on np, Q3 collector on m_x):                      m_x = np when both on
+%   Allowed states of a leg: P = {Q1, Q2}, O = {Q2, Q3}, N = {Q3, Q4}; Q1/Q3
+%   and Q2/Q4 are the complementary pairs. Because of the antiparallel
+%   diodes, Q1 with Q3 on shorts the upper bank through D2 (3*Ron), Q4 with
+%   Q2 on shorts the lower bank through D3 (3*Ron), Q1 with Q4 on shorts the
+%   whole DC link (2*Ron). No dead time and no interlock inside the block:
+%   both belong to the modulator.
+%   switch + diode pair (current i, voltage v, collector -> emitter):
+%     gate on  (G(k) > Vth)  ->  i = v/Ron   (bidirectional)
+%     gate off, v < 0        ->  i = v/Ron   (antiparallel diode conducting)
+%     gate off, v >= 0       ->  i = v*Goff  (blocking)
+%   Split DC link (optional, cap_dc): Cdc1 + Rdc1 from + to np and Cdc2 +
+%     Rdc2 from np to -, both at Vdc0/2 at the start. The neutral point np is
+%     a port in any case: leave it unconnected with cap_dc = on (the two banks
+%     define it); with cap_dc = off connect +, np and - to an external split DC
+%     link (dclink_for_three_levels, or another T-type block with its
+%     capacitors on). The series resistances keep the two bank voltages
+%     independent states when an ideal source sits across + and - (then set
+%     Vdc0 equal to its voltage). The defaults (2 x 14.4 mF, 2 x 1 mOhm) are
+%     the 7.2 mF / 2 mOhm of afe_two_level_lcl split in two banks.
+%   LCL: as afe_two_level_lcl_delta: converter-side three-phase inductor
+%     (positive sequence L1p, zero sequence L10, series resistance R1, leakage
+%     Lls1), delta capacitors Cf with series resistance Rcf (one per branch),
+%     grid-side three-phase inductor (L2p, L20, R2, Lls2), with the equations
+%     of threephase_inductor.ssc of pwr-control/library:
+%       Lm = (Lp - L0)/3,  La = (L0 + Lp + Lm)/2,
+%       u1 - R*i - (Lls + La)*i' + Lm*(i_y' + i_z') - u2 = 0
+%     (positive-sequence inductance Lp + Lls, zero-sequence L0 + Lls).
+%
+% Delta and star: seen from the capacitor nodes, a delta of Cf and Rcf per
+% branch is the same filter as a star of 3*Cf and Rcf/3 per phase. The
+% default values here (Cf = 120 uF, Rcf = 150 mOhm) are the delta equivalent
+% of the defaults of afe_three_level_ttype_lcl (360 uF, 50 mOhm): same
+% resonance, f_res = 1/(2*pi)*sqrt((L1 + L2)/(L1*L2*3*Cf)) = 1.02 kHz with
+% L1 = L1p + Lls1 and L2 = L2p + Lls2. To move a model from the star block to
+% this one, divide Cf by 3 and multiply Rcf by 3. Each delta capacitor sees
+% the line-to-line voltage (sqrt(3) times the phase voltage) and carries
+% 1/sqrt(3) of the capacitive line current. Rcf must be > 0: the three
+% capacitors form a loop and Rcf fixes the current that circulates in it
+% (zero in normal operation; a circulating current set by initial voltages
+% that do not add up to zero decays with the time constant Rcf*Cf).
+%
+% Gate input G: physical-signal vector [12x1] in V, order per leg
+%     G = [Q1a; Q2a; Q3a; Q4a; Q1b; Q2b; Q3b; Q4b; Q1c; Q2c; Q3c; Q4c]
+% (gate_cmds_phu/phv/phw.cmd_gate_Q1..Q4 of the library modulator
+% three_phase_three_levels_PWM_modulator, as ideal_bridges.three_phase_bridge_ttype).
+% Drive it with +15 V (on) / -10 V (off) and Vth = 2.5 V. Three-level
+% modulation of a leg with the reference m in [-1, 1] and the carrier c in
+% [0, 1]: m >= 0, Q2 on, Q4 off, Q1 on while c < m, Q3 = not Q1; m < 0, Q3 on,
+% Q1 off, Q4 on while c < -m, Q2 = not Q4. Each midpoint then averages
+% m*vdc/2 with respect to np (balanced banks).
+%
+% Measurement output M: physical-signal vector [22x1], dimensionless (pu);
+% M(1:17) as afe_two_level_lcl_delta:
+%   M(1:3)   i1_abc/ibez   converter-side inductor currents, positive OUT of the bridge
+%   M(4:6)   uc_abc/ubez   filter capacitor node voltages without zero sequence,
+%                          uc_a = vk_a - (vk_a + vk_b + vk_c)/3: the capacitor
+%                          voltages of the equivalent star (what M(4:6) of the
+%                          star block shows); the delta capacitor voltages are
+%                          uc_a - uc_b, uc_b - uc_c, uc_c - uc_a
+%   M(7:9)   i2_abc/ibez   grid-side inductor currents, positive towards the grid
+%   M(10:12) ug_abc/ubez   grid terminal voltages without zero sequence,
+%                          ug_a = (2*va - vb - vc)/3
+%   M(13)    vdc/udc_nom   DC-link voltage (+) - (-)
+%   M(14)    ic/ibez       DC-link capacitor current, mean of the two banks
+%                          (ic1 + ic2)/2: the current that charges vdc; equal to
+%                          M(14) of afe_two_level_lcl with Cdc = Cdc1/2 when no
+%                          current flows into np
+%   M(15:17) icf/ibez      currents of the three delta capacitors
+%                          [icf_ab; icf_bc; icf_ca]: icf_ab flows from node a to
+%                          node b through the capacitor between a and b, and so
+%                          on. The current from line a into the capacitor bank
+%                          is icf_ab - icf_ca = i1_a - i2_a.
+%   M(18)    vdc1/udc_nom  upper bank voltage (+) - np
+%   M(19)    vdc2/udc_nom  lower bank voltage np - (-)  (M(18) - M(19): neutral-point unbalance)
+%   M(20)    i_np/ibez     neutral-point current, from the three legs INTO np
+%   M(21)    ic1/ibez      upper bank current, (+) -> np
+%   M(22)    ic2/ibez      lower bank current, np -> (-)
+%
+% Ports: a b c (AC, left), G (gates, left), + np - (DC, right), M
+% (measurements, right). Initial conditions: Vdc0/2 on each DC-link bank
+% (with cap_dc = on); the inductor currents and the filter capacitor voltages
+% have priority none (set them in the Variables tab if needed).
+
+  nodes
+    a  = foundation.electrical.electrical; % a
+    b  = foundation.electrical.electrical; % b
+    c  = foundation.electrical.electrical; % c
+    p  = foundation.electrical.electrical; % +
+    np = foundation.electrical.electrical; % np
+    n  = foundation.electrical.electrical; % -
+  end
+
+  inputs
+    G = {zeros(12,1), 'V'}; % G
+  end
+
+  outputs
+    M = {zeros(22,1), '1'}; % M
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth    = {2.5,     'V'    };   % Gate threshold voltage
+    Ron    = {1e-3,    'Ohm'  };   % On-state resistance (switch and diode)
+    Goff   = {1e-6,    '1/Ohm'};   % Off-state conductance
+    % --- split DC link ---
+    cap_dc = afe_ttype_ssc.onoff.on;   % Split DC-link capacitors
+    Cdc1   = {14.4e-3, 'F'    };   % Upper bank capacitance, + to np
+    Rdc1   = {1e-3,    'Ohm'  };   % Upper bank series resistance
+    Cdc2   = {14.4e-3, 'F'    };   % Lower bank capacitance, np to -
+    Rdc2   = {1e-3,    'Ohm'  };   % Lower bank series resistance
+    Vdc0   = {660,     'V'    };   % DC-link initial voltage (Vdc0/2 per bank)
+    % --- converter-side inductor ---
+    L1p    = {330e-6,  'H'    };   % Positive-sequence inductance
+    L10    = {330e-6,  'H'    };   % Zero-sequence inductance
+    R1     = {2.6e-3,  'Ohm'  };   % Series resistance
+    Lls1   = {6e-6,    'H'    };   % Leakage inductance
+    % --- filter capacitors (delta) ---
+    Cf     = {120e-6,  'F'    };   % Capacitance per delta branch
+    Rcf    = {150e-3,  'Ohm'  };   % Series resistance per delta branch (> 0)
+    % --- grid-side inductor ---
+    L2p    = {80e-6,   'H'    };   % Positive-sequence inductance
+    L20    = {80e-6,   'H'    };   % Zero-sequence inductance
+    R2     = {0.63e-3, 'Ohm'  };   % Series resistance
+    Lls2   = {5e-6,    'H'    };   % Leakage inductance
+    % --- normalization of the measurement output ---
+    ubez    = {326.6,  'V'    };   % Base voltage (peak phase voltage)
+    ibez    = {566.7,  'A'    };   % Base current (peak phase current)
+    udc_nom = {660,    'V'    };   % Base DC-link voltage
+  end
+
+  variables
+    % ---- split DC link ----
+    vc1   = {0, 'V'};   % Upper bank capacitor voltage (without Rdc1)
+    vc2   = {0, 'V'};   % Lower bank capacitor voltage (without Rdc2)
+    ic1   = {0, 'A'};   % Upper bank current, (+) -> np
+    ic2   = {0, 'A'};   % Lower bank current, np -> (-)
+    % ---- leg a ----
+    vm_a  = {0, 'V'};   % Midpoint potential of leg a
+    vs_a  = {0, 'V'};   % Common-emitter potential of the neutral pair Q2a/Q3a
+    iq1_a = {0, 'A'};   % Current of Q1a, (+) -> midpoint
+    iq2_a = {0, 'A'};   % Current of Q2a, np -> common emitter
+    iq3_a = {0, 'A'};   % Current of Q3a, midpoint -> common emitter
+    iq4_a = {0, 'A'};   % Current of Q4a, midpoint -> (-)
+    % ---- leg b ----
+    vm_b  = {0, 'V'};   % Midpoint potential of leg b
+    vs_b  = {0, 'V'};   % Common-emitter potential of the neutral pair Q2b/Q3b
+    iq1_b = {0, 'A'};   % Current of Q1b
+    iq2_b = {0, 'A'};   % Current of Q2b
+    iq3_b = {0, 'A'};   % Current of Q3b
+    iq4_b = {0, 'A'};   % Current of Q4b
+    % ---- leg c ----
+    vm_c  = {0, 'V'};   % Midpoint potential of leg c
+    vs_c  = {0, 'V'};   % Common-emitter potential of the neutral pair Q2c/Q3c
+    iq1_c = {0, 'A'};   % Current of Q1c
+    iq2_c = {0, 'A'};   % Current of Q2c
+    iq3_c = {0, 'A'};   % Current of Q3c
+    iq4_c = {0, 'A'};   % Current of Q4c
+    % ---- LCL filter ----
+    i1_a = {value = {0, 'A'}, priority = priority.none};    % Converter-side inductor current a, midpoint -> capacitor node
+    i1_b = {value = {0, 'A'}, priority = priority.none};    % Converter-side inductor current b
+    i1_c = {value = {0, 'A'}, priority = priority.none};    % Converter-side inductor current c
+    vk_a = {0, 'V'};    % Capacitor node potential a (between the two inductors)
+    vk_b = {0, 'V'};    % Capacitor node potential b
+    vk_c = {0, 'V'};    % Capacitor node potential c
+    vc_ab = {value = {0, 'V'}, priority = priority.none};   % Delta capacitor voltage a-b (without Rcf), node a positive
+    vc_bc = {value = {0, 'V'}, priority = priority.none};   % Delta capacitor voltage b-c, node b positive
+    vc_ca = {value = {0, 'V'}, priority = priority.none};   % Delta capacitor voltage c-a, node c positive
+    icf_ab = {0, 'A'};  % Delta capacitor current, node a -> node b
+    icf_bc = {0, 'A'};  % Delta capacitor current, node b -> node c
+    icf_ca = {0, 'A'};  % Delta capacitor current, node c -> node a
+    i2_a = {value = {0, 'A'}, priority = priority.none};    % Grid-side inductor current a, capacitor node -> terminal a
+    i2_b = {value = {0, 'A'}, priority = priority.none};    % Grid-side inductor current b
+    i2_c = {value = {0, 'A'}, priority = priority.none};    % Grid-side inductor current c
+  end
+
+  intermediates (ExternalAccess = observe)
+    vq1_a = p.v - vm_a;    % Voltage across Q1a (collector - emitter)
+    vq2_a = np.v - vs_a;   % Voltage across Q2a
+    vq3_a = vm_a - vs_a;   % Voltage across Q3a
+    vq4_a = vm_a - n.v;    % Voltage across Q4a
+    vq1_b = p.v - vm_b;    % Voltage across Q1b
+    vq2_b = np.v - vs_b;   % Voltage across Q2b
+    vq3_b = vm_b - vs_b;   % Voltage across Q3b
+    vq4_b = vm_b - n.v;    % Voltage across Q4b
+    vq1_c = p.v - vm_c;    % Voltage across Q1c
+    vq2_c = np.v - vs_c;   % Voltage across Q2c
+    vq3_c = vm_c - vs_c;   % Voltage across Q3c
+    vq4_c = vm_c - n.v;    % Voltage across Q4c
+    vdc   = p.v - n.v;     % DC-link voltage, (+) - (-)
+    vdc1  = p.v - np.v;    % Upper bank voltage at the terminals, (+) - np
+    vdc2  = np.v - n.v;    % Lower bank voltage at the terminals, np - (-)
+    i_np  = iq3_a + iq3_b + iq3_c;   % Neutral-point current, from the legs INTO np
+    ic    = (ic1 + ic2)/2; % DC-link capacitor current, mean of the two banks
+    ucf_ab = vk_a - vk_b;  % Delta capacitor voltage a-b (terminal, with Rcf)
+    ucf_bc = vk_b - vk_c;  % Delta capacitor voltage b-c
+    ucf_ca = vk_c - vk_a;  % Delta capacitor voltage c-a
+    vk0   = (vk_a + vk_b + vk_c)/3;  % Zero sequence of the capacitor node potentials
+    uc_a  = vk_a - vk0;    % Capacitor node voltage a without zero sequence (equivalent star)
+    uc_b  = vk_b - vk0;    % Capacitor node voltage b without zero sequence
+    uc_c  = vk_c - vk0;    % Capacitor node voltage c without zero sequence
+    v0    = (a.v + b.v + c.v)/3;    % Zero sequence of the grid terminal voltages
+    ug_a  = a.v - v0;      % Grid terminal voltage a without zero sequence
+    ug_b  = b.v - v0;      % Grid terminal voltage b without zero sequence
+    ug_c  = c.v - v0;      % Grid terminal voltage c without zero sequence
+  end
+
+  branches
+    % The leg midpoints, the common-emitter nodes of the neutral pairs and
+    % the capacitor nodes are internal algebraic variables, not nodes. Q1 is
+    % declared as a branch (+) -> terminal, Q4 as terminal -> (-) and the
+    % neutral pair as terminal -> np carrying the current of Q3 (= -iq2 by
+    % the KCL of the common-emitter node), as in
+    % ideal_bridges.three_phase_bridge_ttype; the three delta capacitor
+    % currents are declared as branches a -> b, b -> c, c -> a, as in
+    % afe_two_level_lcl_delta. With the KCL of the capacitor nodes (equations
+    % below) the current delivered at each AC terminal is the grid-side
+    % inductor current.
+    ic1   : p.i  -> np.i;
+    ic2   : np.i -> n.i;
+    iq1_a : p.i  -> a.i;
+    iq4_a : a.i  -> n.i;
+    iq3_a : a.i  -> np.i;
+    iq1_b : p.i  -> b.i;
+    iq4_b : b.i  -> n.i;
+    iq3_b : b.i  -> np.i;
+    iq1_c : p.i  -> c.i;
+    iq4_c : c.i  -> n.i;
+    iq3_c : c.i  -> np.i;
+    icf_ab : a.i -> b.i;
+    icf_bc : b.i -> c.i;
+    icf_ca : c.i -> a.i;
+  end
+
+  equations
+    % ---------- split DC link ----------
+    if cap_dc == afe_ttype_ssc.onoff.on
+      ic1 == Cdc1*vc1.der;
+      ic2 == Cdc2*vc2.der;
+      vdc1 == vc1 + Rdc1*ic1;
+      vdc2 == vc2 + Rdc2*ic2;
+    else
+      ic1 == 0;
+      ic2 == 0;
+      vc1 == vdc1;
+      vc2 == vdc2;
+    end
+
+    % ---------- leg a: switch + antiparallel diode pairs ----------
+    if (G(1) > Vth) || (vq1_a < 0)
+      iq1_a == vq1_a/Ron;
+    else
+      iq1_a == vq1_a*Goff;
+    end
+    if (G(2) > Vth) || (vq2_a < 0)
+      iq2_a == vq2_a/Ron;
+    else
+      iq2_a == vq2_a*Goff;
+    end
+    if (G(3) > Vth) || (vq3_a < 0)
+      iq3_a == vq3_a/Ron;
+    else
+      iq3_a == vq3_a*Goff;
+    end
+    if (G(4) > Vth) || (vq4_a < 0)
+      iq4_a == vq4_a/Ron;
+    else
+      iq4_a == vq4_a*Goff;
+    end
+    % common-emitter node of the neutral pair; leg output current
+    iq2_a + iq3_a == 0;
+    i1_a == iq1_a - iq4_a - iq3_a;
+
+    % ---------- leg b ----------
+    if (G(5) > Vth) || (vq1_b < 0)
+      iq1_b == vq1_b/Ron;
+    else
+      iq1_b == vq1_b*Goff;
+    end
+    if (G(6) > Vth) || (vq2_b < 0)
+      iq2_b == vq2_b/Ron;
+    else
+      iq2_b == vq2_b*Goff;
+    end
+    if (G(7) > Vth) || (vq3_b < 0)
+      iq3_b == vq3_b/Ron;
+    else
+      iq3_b == vq3_b*Goff;
+    end
+    if (G(8) > Vth) || (vq4_b < 0)
+      iq4_b == vq4_b/Ron;
+    else
+      iq4_b == vq4_b*Goff;
+    end
+    iq2_b + iq3_b == 0;
+    i1_b == iq1_b - iq4_b - iq3_b;
+
+    % ---------- leg c ----------
+    if (G(9) > Vth) || (vq1_c < 0)
+      iq1_c == vq1_c/Ron;
+    else
+      iq1_c == vq1_c*Goff;
+    end
+    if (G(10) > Vth) || (vq2_c < 0)
+      iq2_c == vq2_c/Ron;
+    else
+      iq2_c == vq2_c*Goff;
+    end
+    if (G(11) > Vth) || (vq3_c < 0)
+      iq3_c == vq3_c/Ron;
+    else
+      iq3_c == vq3_c*Goff;
+    end
+    if (G(12) > Vth) || (vq4_c < 0)
+      iq4_c == vq4_c/Ron;
+    else
+      iq4_c == vq4_c*Goff;
+    end
+    iq2_c + iq3_c == 0;
+    i1_c == iq1_c - iq4_c - iq3_c;
+
+    % ---------- LCL filter ----------
+    let
+      Lm1 = (L1p - L10)/3;
+      La1 = (L10 + L1p + Lm1)/2;
+      Lm2 = (L2p - L20)/3;
+      La2 = (L20 + L2p + Lm2)/2;
+    in
+      % converter-side inductor: midpoint -> capacitor node
+      vm_a - R1*i1_a - (Lls1 + La1)*i1_a.der + Lm1*i1_b.der + Lm1*i1_c.der - vk_a == 0;
+      vm_b - R1*i1_b - (Lls1 + La1)*i1_b.der + Lm1*i1_a.der + Lm1*i1_c.der - vk_b == 0;
+      vm_c - R1*i1_c - (Lls1 + La1)*i1_c.der + Lm1*i1_a.der + Lm1*i1_b.der - vk_c == 0;
+      % grid-side inductor: capacitor node -> terminal
+      vk_a - R2*i2_a - (Lls2 + La2)*i2_a.der + Lm2*i2_b.der + Lm2*i2_c.der - a.v == 0;
+      vk_b - R2*i2_b - (Lls2 + La2)*i2_b.der + Lm2*i2_a.der + Lm2*i2_c.der - b.v == 0;
+      vk_c - R2*i2_c - (Lls2 + La2)*i2_c.der + Lm2*i2_a.der + Lm2*i2_b.der - c.v == 0;
+    end
+    % delta capacitors with series resistance
+    ucf_ab == vc_ab + Rcf*icf_ab;
+    ucf_bc == vc_bc + Rcf*icf_bc;
+    ucf_ca == vc_ca + Rcf*icf_ca;
+    icf_ab == Cf*vc_ab.der;
+    icf_bc == Cf*vc_bc.der;
+    icf_ca == Cf*vc_ca.der;
+    % capacitor nodes: converter-side current = grid-side current + current into the delta
+    i1_a == i2_a + icf_ab - icf_ca;
+    i1_b == i2_b + icf_bc - icf_ab;
+    i1_c == i2_c + icf_ca - icf_bc;
+
+    % ---------- measurements (pu) ----------
+    M == [i1_a/ibez; i1_b/ibez; i1_c/ibez;
+          uc_a/ubez; uc_b/ubez; uc_c/ubez;
+          i2_a/ibez; i2_b/ibez; i2_c/ibez;
+          ug_a/ubez; ug_b/ubez; ug_c/ubez;
+          vdc/udc_nom;
+          ic/ibez;
+          icf_ab/ibez; icf_bc/ibez; icf_ca/ibez;
+          vdc1/udc_nom;
+          vdc2/udc_nom;
+          i_np/ibez;
+          ic1/ibez;
+          ic2/ibez];
+  end
+
+  % DC-link initial voltage: half of Vdc0 on each bank (only with the capacitors)
+  if cap_dc == afe_ttype_ssc.onoff.on
+    equations (Initial = true)
+      vc1 == Vdc0/2;
+      vc2 == Vdc0/2;
+    end
+  end
+
+  % hide the parameters of the DC link when it is switched off
+  if cap_dc == afe_ttype_ssc.onoff.off
+    annotations
+      [Cdc1, Rdc1, Cdc2, Rdc2, Vdc0] : ExternalAccess = none;
+    end
+  end
+
+  annotations
+    a  : Side = left;
+    b  : Side = left;
+    c  : Side = left;
+    G  : Side = left;
+    p  : Side = right;
+    np : Side = right;
+    n  : Side = right;
+    M  : Side = right;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff)
+                UIGroup("Split DC link", cap_dc, Cdc1, Rdc1, Cdc2, Rdc2, Vdc0)
+                UIGroup("Converter-side inductor", L1p, L10, R1, Lls1)
+                UIGroup("Filter capacitors (delta)", Cf, Rcf)
+                UIGroup("Grid-side inductor", L2p, L20, R2, Lls2)
+                UIGroup("Normalization", ubez, ibez, udc_nom)];
+  end
+
+end

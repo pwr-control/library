@@ -1,0 +1,46 @@
+component rlc_branch
+% RLC Branch
+% Series L - R - C branch between p and n (L may be zero: then a plain R-C branch).
+% Used for the thyristor RC snubber (L = 0, R2, C2) and for the peak-holding capacitor
+% branch (L2, Rch, Ch). v0 is the initial capacitor voltage.
+
+  nodes
+    p = foundation.electrical.electrical; % +:left
+    n = foundation.electrical.electrical; % -:right
+  end
+
+  outputs
+    vC = {0, 'V'}; % vC:right
+  end
+
+  parameters
+    L  = {5e-6, 'H'};     % Inductance L (0 allowed)
+    R  = {2, 'Ohm'};      % Resistance R
+    C  = {20e-6, 'F'};    % Capacitance C
+    v0 = {0, 'V'};        % Initial capacitor voltage
+  end
+
+  variables
+    i   = {0, 'A'};                                   % Branch current
+    v   = {0, 'V'};                                   % Branch voltage
+    vCi = {value = v0, priority = priority.high};     % Capacitor voltage
+  end
+
+  branches
+    i : p.i -> n.i;
+  end
+
+  equations
+    assert(L >= 0)
+    assert(C > 0)
+    assert(R > 0 || L > 0, 'R and L cannot both be zero')
+    v == p.v - n.v;
+    C*der(vCi) == i;
+    if L > 0
+      v == L*der(i) + R*i + vCi;
+    else
+      v == R*i + vCi;
+    end
+    vC == vCi;
+  end
+end

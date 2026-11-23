@@ -1,0 +1,336 @@
+
+=== transformer_Dyn, clock 11: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got 30, expected 30                      OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 0, expected 0                        OK
+   neutral current n [A]                                got 0, expected 0                        OK
+   power balance P_src - P_cu - P_fe [W]                got 9.09495e-13, expected 0              OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got -3.27668e-09, expected 0             OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got 27.1663, expected 27.1663            OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got 4.67253e-10, expected 0              OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+5) single-phase load 1 pu a-n (delta carries the zero sequence)
+   I_a / Ib2                                            got 0.988802, expected 0.988802          OK
+   zero-sequence voltage V0 / Vph2 (small: ~ |I0 (z1+z2)|) got 0.0164056, expected 0.0164056        OK
+      ~ |I0 (z1 + z2)| (within 5 %)                     got 0.0164056, expected 0.0168064        OK
+   |I_A - I_A,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_B - I_B,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_C - I_C,noload| / (n21 |I_a|) (idle line)         got 5.77597e-17, expected 0              OK
+   sum of primary line currents [A]                     got 2.58184e-14, expected 0              OK
+   neutral current In = I_a                             got 1427.21, expected 1427.21            OK
+   circulating (zero-sequence) current in the delta: 0.3174 of n21*I_a; |V_an|, |V_bn|, |V_cn| = 0.9888, 0.9993, 1.0000 pu
+   circulating current / (n21 I_a /3)                   got 0.952329, expected 0.952329          OK
+   power balance [W]                                    got 2.70575e-11, expected 0              OK
+
+=== transformer_Dyn, clock 1: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got -30, expected -30                    OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 0, expected 0                        OK
+   neutral current n [A]                                got 0, expected 0                        OK
+   power balance P_src - P_cu - P_fe [W]                got 9.09495e-13, expected 0              OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got 1.84525e-09, expected 0              OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got -32.8337, expected -32.8337          OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got 1.16415e-10, expected 0              OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+5) single-phase load 1 pu a-n (delta carries the zero sequence)
+   I_a / Ib2                                            got 0.988802, expected 0.988802          OK
+   zero-sequence voltage V0 / Vph2 (small: ~ |I0 (z1+z2)|) got 0.0164056, expected 0.0164056        OK
+      ~ |I0 (z1 + z2)| (within 5 %)                     got 0.0164056, expected 0.0168064        OK
+   |I_C - I_C,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_A - I_A,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_B - I_B,noload| / (n21 |I_a|) (idle line)         got 4.15764e-18, expected 0              OK
+   sum of primary line currents [A]                     got 5.68434e-14, expected 0              OK
+   neutral current In = I_a                             got 1427.21, expected 1427.21            OK
+   circulating (zero-sequence) current in the delta: 0.3174 of n21*I_a; |V_an|, |V_bn|, |V_cn| = 0.9888, 0.9993, 1.0000 pu
+   circulating current / (n21 I_a /3)                   got 0.952329, expected 0.952329          OK
+   power balance [W]                                    got 7.63976e-11, expected 0              OK
+
+=== transformer_Dyn, clock 5: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got -150, expected -150                  OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 0, expected 0                        OK
+   neutral current n [A]                                got 0, expected 0                        OK
+   power balance P_src - P_cu - P_fe [W]                got 9.09495e-13, expected 0              OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got -3.27668e-09, expected 0             OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got -152.834, expected -152.834          OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got 4.67253e-10, expected 0              OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+5) single-phase load 1 pu a-n (delta carries the zero sequence)
+   I_a / Ib2                                            got 0.988802, expected 0.988802          OK
+   zero-sequence voltage V0 / Vph2 (small: ~ |I0 (z1+z2)|) got 0.0164056, expected 0.0164056        OK
+      ~ |I0 (z1 + z2)| (within 5 %)                     got 0.0164056, expected 0.0168064        OK
+   |I_A - I_A,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_B - I_B,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_C - I_C,noload| / (n21 |I_a|) (idle line)         got 5.77597e-17, expected 0              OK
+   sum of primary line currents [A]                     got 2.58184e-14, expected 0              OK
+   neutral current In = I_a                             got 1427.21, expected 1427.21            OK
+   circulating (zero-sequence) current in the delta: 0.3174 of n21*I_a; |V_an|, |V_bn|, |V_cn| = 0.9888, 0.9993, 1.0000 pu
+   circulating current / (n21 I_a /3)                   got 0.952329, expected 0.952329          OK
+   power balance [W]                                    got 2.70575e-11, expected 0              OK
+
+=== transformer_Dyn, clock 7: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got 150, expected 150                    OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 0, expected 0                        OK
+   neutral current n [A]                                got 0, expected 0                        OK
+   power balance P_src - P_cu - P_fe [W]                got 9.09495e-13, expected 0              OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got 1.84525e-09, expected 0              OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got 147.166, expected 147.166            OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got 1.16415e-10, expected 0              OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+5) single-phase load 1 pu a-n (delta carries the zero sequence)
+   I_a / Ib2                                            got 0.988802, expected 0.988802          OK
+   zero-sequence voltage V0 / Vph2 (small: ~ |I0 (z1+z2)|) got 0.0164056, expected 0.0164056        OK
+      ~ |I0 (z1 + z2)| (within 5 %)                     got 0.0164056, expected 0.0168064        OK
+   |I_C - I_C,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_A - I_A,noload| / (n21 |I_a|)                     got 0.99974, expected 1                  OK
+   |I_B - I_B,noload| / (n21 |I_a|) (idle line)         got 4.15764e-18, expected 0              OK
+   sum of primary line currents [A]                     got 5.68434e-14, expected 0              OK
+   neutral current In = I_a                             got 1427.21, expected 1427.21            OK
+   circulating (zero-sequence) current in the delta: 0.3174 of n21*I_a; |V_an|, |V_bn|, |V_cn| = 0.9888, 0.9993, 1.0000 pu
+   circulating current / (n21 I_a /3)                   got 0.952329, expected 0.952329          OK
+   power balance [W]                                    got 7.63976e-11, expected 0              OK
+
+=== transformer_Yyn, clock 0: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got 0, expected 0                        OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 0, expected 0                        OK
+   neutral current n [A]                                got 0, expected 0                        OK
+   power balance P_src - P_cu - P_fe [W]                got -1.36424e-12, expected 0             OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got 1.8461e-09, expected 0               OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got -2.83375, expected -2.83375          OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got 2.32058e-09, expected 0              OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+4) single-phase load 1 pu a-n, three-limb core (lm0 = 0.5), N floating
+   I_a / Ib2                                            got 0.970818, expected 0.970818          OK
+   zero-sequence voltage V0 / Vph2 (neutral shift)      got 0.169902, expected 0.169902          OK
+   |V_bn| / Vph2                                        got 1.14628, expected 1.14628            OK
+   |V_cn| / Vph2                                        got 0.889716, expected 0.889716          OK
+   neutral current In = I_a                             got 1401.25, expected 1401.25            OK
+   sum of primary line currents (N floating) [A]        got 1.71857e-13, expected 0              OK
+   primary star point shift |V_N| / Vph1 = 0.1618, secondary V0 / Vph2 = 0.1699
+   |V_an| = 0.9708, |V_bn| = 1.1463, |V_cn| = 0.8897 pu; I_A, I_B, I_C = 0.651, 0.334, 0.317 pu
+   power balance [W]                                    got -2.251e-10, expected 0               OK
+4) single-phase load 1 pu a-n, bank of single-phase units (lm0 = lm = 100), N floating
+   I_a / Ib2                                            got 0.0303511, expected 0.0303511        OK
+   zero-sequence voltage V0 / Vph2 (neutral shift)      got 0.992313, expected 0.992313          OK
+   |V_bn| / Vph2                                        got 1.73936, expected 1.73936            OK
+   |V_cn| / Vph2                                        got 1.70971, expected 1.70971            OK
+   neutral current In = I_a                             got 43.808, expected 43.808              OK
+   sum of primary line currents (N floating) [A]        got 1.98603e-15, expected 0              OK
+   primary star point shift |V_N| / Vph1 = 0.9921, secondary V0 / Vph2 = 0.9923
+   |V_an| = 0.0304, |V_bn| = 1.7394, |V_cn| = 1.7097 pu; I_A, I_B, I_C = 0.030, 0.018, 0.017 pu
+   power balance [W]                                    got -9.09495e-13, expected 0             OK
+4) single-phase load 1 pu a-n, three-limb core, N grounded (YNyn)
+   I_a / Ib2                                            got 0.988802, expected 0.988802          OK
+   zero-sequence voltage V0 / Vph2 (neutral shift)      got 0.0164056, expected 0.0164056        OK
+   |V_bn| / Vph2                                        got 0.999336, expected 0.999336          OK
+   |V_cn| / Vph2                                        got 0.999974, expected 0.999974          OK
+   neutral current In = I_a                             got 1427.21, expected 1427.21            OK
+   primary neutral current IN = I_a*V2/V1 (zero seq. in the primary) got 787.928, expected 787.928            OK
+   |V_an| = 0.9888, |V_bn| = 0.9993, |V_cn| = 1.0000 pu; I_A, I_B, I_C = 0.975, 0.026, 0.013 pu
+   power balance [W]                                    got 3.18323e-12, expected 0              OK
+
+=== transformer_Yyn, clock 6: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got -180, expected -180                  OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 0, expected 0                        OK
+   neutral current n [A]                                got 0, expected 0                        OK
+   power balance P_src - P_cu - P_fe [W]                got -1.36424e-12, expected 0             OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got 1.8461e-09, expected 0               OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got 177.166, expected 177.166            OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got 2.67164e-09, expected 0              OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+4) single-phase load 1 pu a-n, three-limb core (lm0 = 0.5), N floating
+   I_a / Ib2                                            got 0.970818, expected 0.970818          OK
+   zero-sequence voltage V0 / Vph2 (neutral shift)      got 0.169902, expected 0.169902          OK
+   |V_bn| / Vph2                                        got 1.14628, expected 1.14628            OK
+   |V_cn| / Vph2                                        got 0.889716, expected 0.889716          OK
+   neutral current In = I_a                             got 1401.25, expected 1401.25            OK
+   sum of primary line currents (N floating) [A]        got 1.71857e-13, expected 0              OK
+   primary star point shift |V_N| / Vph1 = 0.1618, secondary V0 / Vph2 = 0.1699
+   |V_an| = 0.9708, |V_bn| = 1.1463, |V_cn| = 0.8897 pu; I_A, I_B, I_C = 0.651, 0.334, 0.317 pu
+   power balance [W]                                    got -2.251e-10, expected 0               OK
+4) single-phase load 1 pu a-n, bank of single-phase units (lm0 = lm = 100), N floating
+   I_a / Ib2                                            got 0.0303511, expected 0.0303511        OK
+   zero-sequence voltage V0 / Vph2 (neutral shift)      got 0.992313, expected 0.992313          OK
+   |V_bn| / Vph2                                        got 1.73936, expected 1.73936            OK
+   |V_cn| / Vph2                                        got 1.70971, expected 1.70971            OK
+   neutral current In = I_a                             got 43.808, expected 43.808              OK
+   sum of primary line currents (N floating) [A]        got 1.98603e-15, expected 0              OK
+   primary star point shift |V_N| / Vph1 = 0.9921, secondary V0 / Vph2 = 0.9923
+   |V_an| = 0.0304, |V_bn| = 1.7394, |V_cn| = 1.7097 pu; I_A, I_B, I_C = 0.030, 0.018, 0.017 pu
+   power balance [W]                                    got -9.09495e-13, expected 0             OK
+4) single-phase load 1 pu a-n, three-limb core, N grounded (YNyn)
+   I_a / Ib2                                            got 0.988802, expected 0.988802          OK
+   zero-sequence voltage V0 / Vph2 (neutral shift)      got 0.0164056, expected 0.0164056        OK
+   |V_bn| / Vph2                                        got 0.999336, expected 0.999336          OK
+   |V_cn| / Vph2                                        got 0.999974, expected 0.999974          OK
+   neutral current In = I_a                             got 1427.21, expected 1427.21            OK
+   primary neutral current IN = I_a*V2/V1 (zero seq. in the primary) got 787.928, expected 787.928            OK
+   |V_an| = 0.9888, |V_bn| = 0.9993, |V_cn| = 1.0000 pu; I_A, I_B, I_C = 0.975, 0.026, 0.013 pu
+   power balance [W]                                    got 3.18323e-12, expected 0              OK
+
+=== transformer_Dd, clock 0: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got 0, expected 0                        OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 8.88178e-16, expected 0              OK
+   power balance P_src - P_cu - P_fe [W]                got 0, expected 0                        OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got 1.38027e-09, expected 0              OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got -2.83375, expected -2.83375          OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got -1.221e-10, expected 0               OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+6) single-phase load a-b (R = 3 pu star base)
+   I_ab / Ib2                                           got 0.573064, expected 0.573064          OK
+   coil a-b current / I_ab (2/3)                        got 0.666667, expected 0.666667          OK
+   coil b-c current / I_ab (1/3, series path)           got 0.333333, expected 0.333333          OK
+   coil c-a current / I_ab (1/3, series path)           got 0.333333, expected 0.333333          OK
+   I_c = i2ca - i2bc = 0 (idle terminal)                got 0, expected 0                        OK
+   |I_A - I_A,noload| / (n21 |I_ab|)                    got 0.99974, expected 1                  OK
+   |I_B - I_B,noload| / (n21 |I_ab|)                    got 0.99974, expected 1                  OK
+   |I_C - I_C,noload| / (n21 |I_ab|) (idle line)        got 2.69696e-17, expected 0              OK
+   zero-sequence flux psi_a + psi_b + psi_c [V*s]       got 3.14018e-16, expected 0              OK
+   power balance [W]                                    got -1.22782e-11, expected 0             OK
+
+=== transformer_Dd, clock 6: Sr = 1000 kVA, 690/400 V, 50 Hz ===
+1) no load
+   |u_ab| / V2                                          got 0.99974, expected 0.99974            OK
+   phase(u_ab) - phase(u_AB) [deg]                      got -180, expected -180                  OK
+   I_A / Ib1 (no-load current, pu)                      got 0.0101954, expected 0.0101954        OK
+   phase(I_A) - phase(u_AN) [deg]                       got -78.6901, expected -78.6901          OK
+   sum of line currents [A]                             got 8.88178e-16, expected 0              OK
+   power balance P_src - P_cu - P_fe [W]                got 0, expected 0                        OK
+   P_fe / Sr (pu)                                       got 0.00199896, expected 0.00199896      OK
+2) three-phase short circuit at the secondary
+   Ib1 / I_A = |z_sc| (pu)                              got 0.0509836, expected 0.0509836        OK
+      ~ |(r1 + r2) + j (l1 + l2)|                       got 0.0509836, expected 0.0509902        OK
+   phase of z_sc [deg]                                  got 78.6901, expected 78.6901            OK
+   secondary line current I_a / Ib2                     got 19.6091, expected 19.6091            OK
+   power balance [W]                                    got 1.38027e-09, expected 0              OK
+3) rated resistive load (1 pu per phase, star, neutral to ground)
+   V_a / (V2/sqrt3) (regulation)                        got 0.988633, expected 0.988633          OK
+   phase(V_a) - phase(V_A) [deg]                        got 177.166, expected 177.166            OK
+   I_A / Ib1                                            got 0.990916, expected 0.990916          OK
+   I_a / Ib2                                            got 0.988633, expected 0.988633          OK
+   line current ratio I_A/I_a = V2/V1                   got 0.581049, expected 0.581049          OK
+   power balance P_src - P_load - P_cu - P_fe [W]       got -1.221e-10, expected 0               OK
+   P_cu / Sr ~ (r1 + r2) at ~1 pu current               got 0.00979655, expected 0.00979655      OK
+   efficiency 98.8099 %, P_cu 9797 W, P_fe 1976 W
+6) single-phase load a-b (R = 3 pu star base)
+   I_ab / Ib2                                           got 0.573064, expected 0.573064          OK
+   coil a-b current / I_ab (2/3)                        got 0.666667, expected 0.666667          OK
+   coil b-c current / I_ab (1/3, series path)           got 0.333333, expected 0.333333          OK
+   coil c-a current / I_ab (1/3, series path)           got 0.333333, expected 0.333333          OK
+   I_c = i2ca - i2bc = 0 (idle terminal)                got 0, expected 0                        OK
+   |I_A - I_A,noload| / (n21 |I_ab|)                    got 0.99974, expected 1                  OK
+   |I_B - I_B,noload| / (n21 |I_ab|)                    got 0.99974, expected 1                  OK
+   |I_C - I_C,noload| / (n21 |I_ab|) (idle line)        got 2.69696e-17, expected 0              OK
+   zero-sequence flux psi_a + psi_b + psi_c [V*s]       got 3.14018e-16, expected 0              OK
+   power balance [W]                                    got -1.22782e-11, expected 0             OK
+
+ALL CHECKS PASSED

@@ -1,0 +1,56 @@
+% MIT License
+% 
+% Copyright (c) 2025 Davide Bagnara
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component lotka_volterra
+% Lotka-Volterra predator–prey model
+
+    inputs
+        alpha = {1.0, '1/s'};       % prey growth
+        beta = {0.1, '1/s'};        % predation rate
+        delta = {0.075, '1/s'};     % predator growth from prey
+        gamma = {1.5, '1/s'};       % predator mortality
+    end
+
+    outputs
+        x_out = {x0, '1'};          % prey number
+        y_out = {y0, '1'};          % predator number
+    end
+
+    parameters
+        x0 = {40, '1'};             % prey initial condition
+        y0 = {9, '1'};              % predator initial condition
+    end
+
+    variables(ExternalAccess=observe)
+        x = {x0, '1'};              % prey number
+        y = {y0, '1'};              % predator number
+    end
+
+    equations
+        x.der == alpha * x - beta * x * y;
+        y.der == delta * x * y - gamma * y;
+
+        x_out == x;
+        y_out == y;
+    end
+
+end

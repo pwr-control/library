@@ -1,0 +1,310 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component lit_18_pulse
+% LIT 18-Pulse Autotransformer (Current Dividers X, Coupled Reactors Y, Three B6 Bridges)
+%
+% Line interphase transformer (LIT) of an 18-pulse diode rectifier: three
+% six-pulse bridges (B6) with their DC terminals in parallel, directly, with
+% no DC interphase reactor, fed from a three-wire line through six
+% single-phase units, two per line k = a, b, c:
+%
+%   X_k  current divider, one tapped coil X1-X2-X3: the line terminal feeds
+%        the tap X2 (through the series impedance rs, ls), X3 is the
+%        terminal of bridge 3, X1 is connected to Y5 of Y_k;
+%   Y_k  coupled reactor, a tapped coil Y1-Y2-Y3 and a coil Y4-Y5 on the same
+%        core: Y1 is a terminal of bridge 1, Y3 of bridge 2, the tap Y2 is
+%        connected to Y4 of the unit of the next line
+%        (Y_a.Y2 - Y_b.Y4, Y_b.Y2 - Y_c.Y4, Y_c.Y2 - Y_a.Y4).
+%
+% The current of line k goes to bridge 3 through X2-X3 of X_k, and to
+% bridges 1 and 2 through X2-X1 of X_k, Y5-Y4 of Y_k and the tap of the unit
+% of the previous line, then Y2-Y1 or Y2-Y3 of that unit. The bridge
+% terminals carry the letter of the line that feeds them:
+%
+%   bridge 1   a1 = Y_c.Y1   b1 = Y_a.Y1   c1 = Y_b.Y1
+%   bridge 2   a2 = Y_c.Y3   b2 = Y_a.Y3   c2 = Y_b.Y3
+%   bridge 3   a3 = X_a.X3   b3 = X_b.X3   c3 = X_c.X3
+%
+% Like-polarity (dotted) ends: X1 and X2 of each X unit (X1-X2-X3 is one
+% coil), Y1, Y2 and Y5 of each Y unit. With Y4 at the polarity of Y1 instead
+% the bridges do not share the current equally (no 18-pulse operation).
+%
+% Ideal turns. With ideal cores the ampere-turn balance of each unit forces
+% the sharing of the line current among the three bridges. For three equal
+% bridge currents, bridge 1 leading the line of the same letter by 20 deg,
+% bridge 2 lagging by 20 deg and bridge 3 in phase, it gives
+%   n_x23 = N(X2-X3)/N(X1-X2) = 2 cos(20 deg)       = 1.8794
+%   n_y12 = N(Y1-Y2)/N(Y4-Y5) = 2 cos(20 deg)       = 1.8794
+%   n_y23 = N(Y2-Y3)/N(Y4-Y5) = 1 + 2 cos(20 deg)   = 2.8794
+% The line current is (1 + 2 cos(20 deg)) times a bridge current and, by the
+% power balance, the fundamental at the bridge terminals is
+% (1 + 2 cos(20 deg))/3 = 0.960 times the line voltage. With a negative-
+% sequence supply the shifts of bridges 1 and 2 swap. Only the ratios inside
+% each unit count: the cores are separate. The cores are excited by the load
+% current only: with the bridges open no current flows anywhere and the
+% bridge terminals sit at the line voltage (a capacitive DC side charges to
+% the peak line-to-line voltage at no load).
+%
+% Equations. The branch currents i1k, i2k, i3k flow from the line terminal
+% of line k to its terminal of bridge 1, 2, 3 (no internal node: the line
+% current is i1k + i2k + i3k, the current of X1-X2 of X_k and of Y4-Y5 of
+% Y_k is i1k + i2k). Each core has the flux linkage psi of its reference
+% coil, X1-X2 for X and Y4-Y5 for Y, and the voltage um = dpsi/dt induced in
+% it; with k+1 the next line and k-1 the previous one (a -> b -> c -> a):
+%   X_k  psi = Lmx (n_x23 i3k - i1k - i2k - um/Rfex)
+%   Y_k  psi = Lmy (i1k + i2k - n_y12 i1(k+1) + n_y23 i2(k+1) - um/Rfey)
+% (ampere-turns in turns of the reference coil: Y1-Y2-Y3 of Y_k carries the
+% currents of line k+1 to bridges 1 and 2), and with Z i = R i + L di/dt of
+% the coil sections crossed, iLk = i1k + i2k + i3k:
+%   u(k) - u(k3) = Zs iLk + Zx23 i3k + n_x23 umx_k
+%   u(k) - u(k1) = Zs iLk + (Zx12 + Zy45)(i1k + i2k) + Zy12 i1k
+%                  - umx_k + umy_k - n_y12 umy_(k-1)
+%   u(k) - u(k2) = Zs iLk + (Zx12 + Zy45)(i1k + i2k) + Zy23 i2k
+%                  - umx_k + umy_k + n_y23 umy_(k-1)
+% Six separate single-phase cores, one per unit: the zero-sequence current
+% that the paralleled bridges could circulate meets the magnetizing
+% inductance. Linear magnetics: no saturation, no hysteresis, no winding
+% capacitances, no thermal port.
+%
+% Per unit on the rated power Sr and on the rated line-to-line voltage V1 at
+% the line terminals: Zb = V1^2/Sr, Lb = Zb/(2 pi fr). Each resistance and
+% leakage inductance is that of the coil section itself in pu of Zb, with no
+% turns scaling. rs, ls: series impedance at the line terminals, the
+% short-circuit impedance of the LIT lumped on the line side. The commutation
+% loop of a diode (step of reverse voltage at turn-off over the di/dt at the
+% current zero), plus the coil leakages, depends on the DC side. With an
+% impressed DC voltage or a DC capacitor the diodes in conduction tie the
+% other bridge terminals together during the long overlap, and per ampere of
+% diode current the line currents change by a balanced set of amplitude
+% n_y23 (bridge 3: n_y23 A in the line of the diode and n_y23/2 A back in
+% each of the other two; bridges 1 and 2: the same set turned by 20 deg):
+% loop 1.5 n_y23^2 = 12.4 times Ls. With one smoothed DC current for the
+% three bridges (a DC choke) the return of bridge 3 splits as n_y23 - 1 and
+% 1 A: loop 2 (n_y23^2 - n_y23 + 1) = 12.8 times Ls, the same for bridges 1
+% and 2. A separate current source on each bridge does not fit the cores:
+% the X units force i1k + i2k = n_x23 i3k at every instant, so the DC current
+% of each bridge carries a ripple. The default ls = 0.04 at 13.8 kV, 3 MW,
+% 60 Hz gives, with a stiff source, an impressed DC voltage and 62 A per
+% bridge, a commutation di/dt of about 0.09 A/us and 168 deg of conduction;
+% the source impedance adds to it, so lower ls when the grid is modelled with
+% its own impedance. The magnetizing inductances lm and the core-loss resistances
+% rfe are referred to the reference coil of each core. Losses at rated
+% current (fundamental, ideal turns): copper
+% Pcu/Sr = rs + 0.426 (r_x12 + r_y45) + 0.121 (r_x23 + r_y12 + r_y23) (the
+% coils carry 0.653 and 0.347 times the line current); iron Pfe = um^2/Rfe
+% per core, with um of the reference coil 0.0214 V1/sqrt(3) for X and
+% 0.138 V1/sqrt(3) for Y, so rfe = (um/V1)^2 Sr/Pfe.
+%
+% Positive currents flow into A, B, C and out of the bridge terminals. The
+% output psi = [psi of X_a; X_b; X_c; Y_a; Y_b; Y_c] (V*s) holds the flux
+% linkages of the reference coils.
+
+nodes
+    A  = foundation.electrical.electrical; % A:left
+    B  = foundation.electrical.electrical; % B:left
+    C  = foundation.electrical.electrical; % C:left
+    a1 = foundation.electrical.electrical; % a1:right
+    b1 = foundation.electrical.electrical; % b1:right
+    c1 = foundation.electrical.electrical; % c1:right
+    a2 = foundation.electrical.electrical; % a2:right
+    b2 = foundation.electrical.electrical; % b2:right
+    c2 = foundation.electrical.electrical; % c2:right
+    a3 = foundation.electrical.electrical; % a3:right
+    b3 = foundation.electrical.electrical; % b3:right
+    c3 = foundation.electrical.electrical; % c3:right
+end
+
+outputs
+    psi = {zeros(6,1), 'V*s'};  % psi:right
+end
+
+parameters
+    Sr    = {3e6,    'V*A'};               % Rated power at the line terminals (three-phase)
+    V1    = {13.8e3, 'V'  };               % Rated line-to-line voltage (rms)
+    fr    = {60,     'Hz' };               % Rated frequency
+    n_x23 = {1.879385241571817, '1'};      % Turns ratio N(X2-X3)/N(X1-X2), ideal 2*cos(20 deg)
+    n_y12 = {1.879385241571817, '1'};      % Turns ratio N(Y1-Y2)/N(Y4-Y5), ideal 2*cos(20 deg)
+    n_y23 = {2.879385241571817, '1'};      % Turns ratio N(Y2-Y3)/N(Y4-Y5), ideal 1 + 2*cos(20 deg)
+    rs    = {0.002,  '1'  };               % Series resistance at the line terminals (pu)
+    ls    = {0.04,   '1'  };               % Series inductance at the line terminals, LIT short-circuit (pu)
+    r_x12 = {0.001,  '1'  };               % Resistance of coil X1-X2 (pu)
+    l_x12 = {0.001,  '1'  };               % Leakage inductance of coil X1-X2 (pu)
+    r_x23 = {0.001,  '1'  };               % Resistance of coil X2-X3 (pu)
+    l_x23 = {0.001,  '1'  };               % Leakage inductance of coil X2-X3 (pu)
+    r_y12 = {0.001,  '1'  };               % Resistance of coil Y1-Y2 (pu)
+    l_y12 = {0.001,  '1'  };               % Leakage inductance of coil Y1-Y2 (pu)
+    r_y23 = {0.001,  '1'  };               % Resistance of coil Y2-Y3 (pu)
+    l_y23 = {0.001,  '1'  };               % Leakage inductance of coil Y2-Y3 (pu)
+    r_y45 = {0.001,  '1'  };               % Resistance of coil Y4-Y5 (pu)
+    l_y45 = {0.001,  '1'  };               % Leakage inductance of coil Y4-Y5 (pu)
+    lm_x  = {100,    '1'  };               % Magnetizing inductance of an X core, referred to X1-X2 (pu)
+    rfe_x = {1000,   '1'  };               % Core-loss resistance of an X core, referred to X1-X2 (pu)
+    lm_y  = {100,    '1'  };               % Magnetizing inductance of a Y core, referred to Y4-Y5 (pu)
+    rfe_y = {1000,   '1'  };               % Core-loss resistance of a Y core, referred to Y4-Y5 (pu)
+end
+
+parameters(Access=private)
+    wb   = {2*pi,'rad'}*fr;   % rated angular frequency
+    Zb   = V1^2/Sr;           % base impedance at the line terminals
+    Rs   = rs*Zb;             % series resistance at the line terminals
+    Ls   = ls*Zb/wb;          % series inductance at the line terminals
+    Rx23 = r_x23*Zb;          % coil X2-X3
+    Lx23 = l_x23*Zb/wb;
+    Ry12 = r_y12*Zb;          % coil Y1-Y2
+    Ly12 = l_y12*Zb/wb;
+    Ry23 = r_y23*Zb;          % coil Y2-Y3
+    Ly23 = l_y23*Zb/wb;
+    Rsh  = (r_x12 + r_y45)*Zb;      % coils X1-X2 of X_k and Y4-Y5 of Y_k, in series: current i1k + i2k
+    Lsh  = (l_x12 + l_y45)*Zb/wb;
+    Lmx  = lm_x*Zb/wb;        % magnetizing inductance of an X core, X1-X2 referred
+    Rfex = rfe_x*Zb;          % core-loss resistance of an X core, X1-X2 referred
+    Lmy  = lm_y*Zb/wb;        % magnetizing inductance of a Y core, Y4-Y5 referred
+    Rfey = rfe_y*Zb;          % core-loss resistance of a Y core, Y4-Y5 referred
+end
+
+variables
+    i1a = {value = {0, 'A'}, priority = priority.high};  % Current A -> a1 (line a to bridge 1)
+    i2a = {value = {0, 'A'}, priority = priority.high};  % Current A -> a2 (line a to bridge 2)
+    i3a = {value = {0, 'A'}, priority = priority.high};  % Current A -> a3 (line a to bridge 3)
+    i1b = {value = {0, 'A'}, priority = priority.high};  % Current B -> b1
+    i2b = {value = {0, 'A'}, priority = priority.high};  % Current B -> b2
+    i3b = {value = {0, 'A'}, priority = priority.high};  % Current B -> b3
+    i1c = {value = {0, 'A'}, priority = priority.high};  % Current C -> c1
+    i2c = {value = {0, 'A'}, priority = priority.high};  % Current C -> c2
+    i3c = {value = {0, 'A'}, priority = priority.high};  % Current C -> c3
+end
+
+variables(Access=private)
+    psixa = {0, 'V*s'}; % flux linkage of X1-X2 of X_a
+    psixb = {0, 'V*s'}; % flux linkage of X1-X2 of X_b
+    psixc = {0, 'V*s'}; % flux linkage of X1-X2 of X_c
+    psiya = {0, 'V*s'}; % flux linkage of Y4-Y5 of Y_a
+    psiyb = {0, 'V*s'}; % flux linkage of Y4-Y5 of Y_b
+    psiyc = {0, 'V*s'}; % flux linkage of Y4-Y5 of Y_c
+    umxa  = {0, 'V'};   % voltage dpsi/dt of X1-X2 of X_a, positive at X1
+    umxb  = {0, 'V'};   % voltage of X1-X2 of X_b
+    umxc  = {0, 'V'};   % voltage of X1-X2 of X_c
+    umya  = {0, 'V'};   % voltage dpsi/dt of Y4-Y5 of Y_a, positive at Y5
+    umyb  = {0, 'V'};   % voltage of Y4-Y5 of Y_b
+    umyc  = {0, 'V'};   % voltage of Y4-Y5 of Y_c
+end
+
+intermediates(ExternalAccess=observe)
+    iLa = i1a + i2a + i3a;   % Line current into A
+    iLb = i1b + i2b + i3b;   % Line current into B
+    iLc = i1c + i2c + i3c;   % Line current into C
+end
+
+branches
+    i1a : A.i -> a1.i;
+    i2a : A.i -> a2.i;
+    i3a : A.i -> a3.i;
+    i1b : B.i -> b1.i;
+    i2b : B.i -> b2.i;
+    i3b : B.i -> b3.i;
+    i1c : C.i -> c1.i;
+    i2c : C.i -> c2.i;
+    i3c : C.i -> c3.i;
+end
+
+equations
+    assert(Sr > 0, 'Rated power must be positive')
+    assert(V1 > 0, 'Rated voltage must be positive')
+    assert(fr > 0, 'Rated frequency must be positive')
+    assert(n_x23 > 0 && n_y12 > 0 && n_y23 > 0, 'Turns ratios must be positive')
+    assert(rs >= 0 && ls >= 0, 'Series impedance at the line terminals must be non-negative')
+    assert(r_x12 >= 0 && r_x23 >= 0 && r_y12 >= 0 && r_y23 >= 0 && r_y45 >= 0, ...
+        'Coil resistances must be non-negative')
+    assert(l_x12 > 0 && l_x23 > 0 && l_y12 > 0 && l_y23 > 0 && l_y45 > 0, ...
+        'Coil leakage inductances must be positive (1e-4 pu or more)')
+    assert(lm_x > 0 && lm_y > 0, 'Magnetizing inductances must be positive')
+    assert(rfe_x > 0 && rfe_y > 0, 'Core-loss resistances must be positive')
+
+    % Core voltages: the only der() of the fluxes. Simscape counts every
+    % equation that contains der() as a differential equation and wants as
+    % many as the differentiated variables (15: six fluxes, nine branch
+    % currents), so each flux derivative is written once and the core
+    % voltages are used algebraically below (see +three_phase_transformer).
+    umxa == der(psixa);
+    umxb == der(psixb);
+    umxc == der(psixc);
+    umya == der(psiya);
+    umyb == der(psiyb);
+    umyc == der(psiyc);
+
+    % Line a: bridge 3 through X2-X3 of X_a; bridges 1 and 2 through X2-X1
+    % of X_a, Y5-Y4 of Y_a and the tap of Y_c (Y2-Y1 and Y2-Y3 of Y_c).
+    A.v - a3.v == Rs*(i1a + i2a + i3a) + Ls*(der(i1a) + der(i2a) + der(i3a)) ...
+        + Rx23*i3a + Lx23*der(i3a) + n_x23*umxa;
+    A.v - a1.v == Rs*(i1a + i2a + i3a) + Ls*(der(i1a) + der(i2a) + der(i3a)) ...
+        + Rsh*(i1a + i2a) + Lsh*(der(i1a) + der(i2a)) + Ry12*i1a + Ly12*der(i1a) ...
+        - umxa + umya - n_y12*umyc;
+    A.v - a2.v == Rs*(i1a + i2a + i3a) + Ls*(der(i1a) + der(i2a) + der(i3a)) ...
+        + Rsh*(i1a + i2a) + Lsh*(der(i1a) + der(i2a)) + Ry23*i2a + Ly23*der(i2a) ...
+        - umxa + umya + n_y23*umyc;
+
+    % Line b: X_b, Y_b and the tap of Y_a.
+    B.v - b3.v == Rs*(i1b + i2b + i3b) + Ls*(der(i1b) + der(i2b) + der(i3b)) ...
+        + Rx23*i3b + Lx23*der(i3b) + n_x23*umxb;
+    B.v - b1.v == Rs*(i1b + i2b + i3b) + Ls*(der(i1b) + der(i2b) + der(i3b)) ...
+        + Rsh*(i1b + i2b) + Lsh*(der(i1b) + der(i2b)) + Ry12*i1b + Ly12*der(i1b) ...
+        - umxb + umyb - n_y12*umya;
+    B.v - b2.v == Rs*(i1b + i2b + i3b) + Ls*(der(i1b) + der(i2b) + der(i3b)) ...
+        + Rsh*(i1b + i2b) + Lsh*(der(i1b) + der(i2b)) + Ry23*i2b + Ly23*der(i2b) ...
+        - umxb + umyb + n_y23*umya;
+
+    % Line c: X_c, Y_c and the tap of Y_b.
+    C.v - c3.v == Rs*(i1c + i2c + i3c) + Ls*(der(i1c) + der(i2c) + der(i3c)) ...
+        + Rx23*i3c + Lx23*der(i3c) + n_x23*umxc;
+    C.v - c1.v == Rs*(i1c + i2c + i3c) + Ls*(der(i1c) + der(i2c) + der(i3c)) ...
+        + Rsh*(i1c + i2c) + Lsh*(der(i1c) + der(i2c)) + Ry12*i1c + Ly12*der(i1c) ...
+        - umxc + umyc - n_y12*umyb;
+    C.v - c2.v == Rs*(i1c + i2c + i3c) + Ls*(der(i1c) + der(i2c) + der(i3c)) ...
+        + Rsh*(i1c + i2c) + Lsh*(der(i1c) + der(i2c)) + Ry23*i2c + Ly23*der(i2c) ...
+        - umxc + umyc + n_y23*umyb;
+
+    % Ampere-turn balance of the cores, in turns of the reference coil, with
+    % the core-loss current um/Rfe: the magnetizing current is psi/Lm.
+    % X_k: X1-X2 carries i1k + i2k from X2 to X1, X2-X3 carries i3k.
+    psixa == Lmx*(n_x23*i3a - i1a - i2a - umxa/Rfex);
+    psixb == Lmx*(n_x23*i3b - i1b - i2b - umxb/Rfex);
+    psixc == Lmx*(n_x23*i3c - i1c - i2c - umxc/Rfex);
+    % Y_k: Y4-Y5 carries i1k + i2k from Y5 to Y4; Y1-Y2 and Y2-Y3 carry the
+    % currents of the next line to bridges 1 and 2 (tap Y2 fed by Y_(k+1)).
+    psiya == Lmy*(i1a + i2a - n_y12*i1b + n_y23*i2b - umya/Rfey);
+    psiyb == Lmy*(i1b + i2b - n_y12*i1c + n_y23*i2c - umyb/Rfey);
+    psiyc == Lmy*(i1c + i2c - n_y12*i1a + n_y23*i2a - umyc/Rfey);
+
+    psi == [psixa; psixb; psixc; psiya; psiyb; psiyc];
+end
+
+annotations
+    UILayout = [
+        UIGroup('Ratings', Sr, V1, fr)
+        UIGroup('Turns ratios', n_x23, n_y12, n_y23)
+        UIGroup('Series impedance at the line terminals', rs, ls)
+        UIGroup('Coil sections', r_x12, l_x12, r_x23, l_x23, r_y12, l_y12, r_y23, l_y23, r_y45, l_y45)
+        UIGroup('Cores', lm_x, rfe_x, lm_y, rfe_y)];
+end
+
+end

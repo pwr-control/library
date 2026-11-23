@@ -1,0 +1,93 @@
+% MIT License
+%
+% Copyright (c) 2025 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+%
+% Revision history
+%   Rev. 00              first issue
+%   Rev. 01  2026-09-18  removed initial-value priority on kL_saturation,
+%                        removed empty let/in block, parameter checks,
+%                        comments (differential inductance, leakage)
+
+component singlephase_inductor_with_saturation
+% Single-phase inductor with saturation
+%
+% Series inductor with saturable main inductance L, non-saturable leakage
+% inductance Ld and winding resistance R. The saturation table is the
+% DIFFERENTIAL inductance dpsi/di normalised to L, versus |i| normalised to
+% the peak base current sqrt(2)*i_base. The flux linkage psi is integrated
+% from u - R*i; its initial value 0 is consistent only with i(0) = 0.
+%
+% To disable the saturation effect set i_base to inf.
+
+    nodes
+        up = foundation.electrical.electrical;      % up:left
+        un = foundation.electrical.electrical;      % un:right
+    end
+
+    outputs
+        psi_out = {0, 'V*s'};    % psi
+    end
+
+    parameters
+        L      = {300e-6, 'H'};      % Main (magnetising) inductance
+        Ld     = {20e-6,  'H'};      % Leakage inductance
+        R      = {2.4e-3, 'Ohm'};    % Winding resistance
+        i_base = {360,    'A'};      % Base current (Arms)
+    end
+
+    parameters(Access=private)
+        % dpsi/di normalised to L, versus |i| / (sqrt(2)*i_base)
+        L_saturation       = {[1.0, 1.0, 1.0, 0.88, 0.39], '1'};
+        Normalized_current = {[0, 1.0, 1.35, 2.30, 3.85],  '1'};
+    end
+
+    variables
+        u = {0, 'V'};                % u
+        i = {0, 'A'};                % i
+        i_norm = {0, '1'};           % |i| in p.u. of the peak base current
+        kL_saturation = {1, '1'};    % saturation factor (algebraic, no initial-value priority)
+        L_actual = {0, 'H'};         % differential main inductance L*kL
+        psi = {value = {0, 'V*s'}, priority = priority.high};   % total flux linkage
+    end
+
+    branches
+        i : up.i -> un.i;
+    end
+
+    equations
+        assert(L > 0,      'Main inductance must be positive');
+        assert(Ld >= 0,    'Leakage inductance must be non-negative');
+        assert(R >= 0,     'Winding resistance must be non-negative');
+        assert(i_base > 0, 'Base current must be positive');
+
+        i_norm == abs(i)/(i_base*sqrt(2));
+        kL_saturation == tablelookup(Normalized_current, L_saturation, i_norm, ...
+            interpolation = linear, extrapolation = nearest);
+        L_actual == L*kL_saturation;
+
+        u == up.v - un.v;
+
+        u - R*i - (Ld + L_actual)*i.der == 0;
+        psi.der == (Ld + L_actual)*i.der;
+
+        psi_out == psi;
+    end
+end

@@ -1,0 +1,126 @@
+component igbt_dyn
+% IGBT (switching dynamics) : 1.5
+% Behavioral IGBT for turn-on/turn-off transient studies. No losses.
+% MOS channel (square law, smooth linear/saturation transition),
+% nonlinear Miller capacitance Cgc(v), nonlinear output capacitance
+% Cce(v), constant Cge, internal gate resistance, and a charge-based
+% tail current: a fraction ftail of the on-state current keeps flowing
+% at turn-off and decays with time constant tauT.
+% The antiparallel diode is NOT included: pair with diode_rr.
+%
+% Fitting hints (datasheet, hot curves):
+%   Vth, Kp   : transfer characteristic, Ic = Kp/2*(Vge - Vth)^2
+%   Cge       : Cies - Cres at high Vce
+%   Cgc0,mc   : fit the Cres(Vce) curve (Cgc0 = Cres at Vce ~ 0)
+%   Cce0,mo   : fit Coes(Vce) - Cres(Vce)
+%   ftail,tauT: from an Eoff waveform or typical values 0.15-0.3, 1-3 us
+
+nodes
+    G = foundation.electrical.electrical; % G
+    C = foundation.electrical.electrical; % C
+    E = foundation.electrical.electrical; % E
+end
+
+annotations
+    G : Side = left;
+    C : Side = right;
+    E : Side = right;
+end
+
+nodes(Access = private)
+    gi = foundation.electrical.electrical; % internal gate node
+end
+
+parameters
+    % channel
+    Vth   = {6.5,    'V'    }; % Gate threshold voltage, Vth
+    Kp    = {100,    'A/V^2'}; % Transconductance parameter, Kp
+    lam   = {0,      '1/V'  }; % Output-conductance coefficient, lambda
+    % capacitances
+    Cge   = {180e-9, 'F'}; % Gate-emitter capacitance, Cge
+    Cgc0  = {25e-9,  'F'}; % Miller capacitance at Vgc = 0, Cgc0
+    Vjc   = {1,      'V'}; % Miller junction potential, Vjc
+    mc    = {0.7,    '1'}; % Miller grading coefficient, mc
+    Cce0  = {30e-9,  'F'}; % Output capacitance at Vce = 0, Cce0
+    Vjo   = {1,      'V'}; % Output junction potential, Vjo
+    mo    = {0.5,    '1'}; % Output grading coefficient, mo
+    % gate
+    Rg    = {1,      'Ohm'}; % Internal gate resistance, Rg_int
+    % tail current
+    ftail = {0.25,   '1'}; % Tail fraction of on-state current, ftail
+    tauT  = {1.5e-6, 's'}; % Tail time constant, tauT
+    % numerics
+    dsm   = {0.1,    'V'}; % Smoothing width
+end
+
+variables
+    % branch currents
+    ig   = {0, 'A'}; % gate current
+    ige  = {0, 'A'}; % Cge current
+    igc  = {0, 'A'}; % Miller current
+    ich  = {0, 'A'}; % channel current (MOS part)
+    icap = {0, 'A'}; % Cce displacement current
+    itl  = {value = {0, 'A'}, priority = priority.high}; % tail current (state)
+    % across
+    vge  = {0,  'V'};
+    vgc  = {0,  'V'};
+    vce  = {10, 'V'};
+    % charges (explicit nominal values: they scale the solver jacobian)
+    qge  = {value = {0, 'C'}, nominal = {1e-6, 'C'}};
+    qgc  = {value = {0, 'C'}, nominal = {1e-6, 'C'}};
+    qce  = {value = {0, 'C'}, nominal = {1e-6, 'C'}};
+end
+
+branches
+    ig   : G.i  -> gi.i;
+    ige  : gi.i -> E.i;
+    igc  : gi.i -> C.i;
+    ich  : C.i  -> E.i;
+    icap : C.i  -> E.i;
+    itl  : C.i  -> E.i;
+end
+
+intermediates
+    % smooth positive parts / smooth min
+    vov  = vge - Vth;
+    vovp = 0.5*(vov + sqrt(vov^2 + dsm^2));                   % max(vov,0)
+    vcep = 0.5*(vce + sqrt(vce^2 + dsm^2));                   % max(vce,0)
+    vx   = 0.5*(vcep + vovp - sqrt((vcep - vovp)^2 + dsm^2)); % min(vcep,vovp)
+    % raw channel current: linear + saturation, smooth transition
+    ich0 = Kp*(vovp*vx - vx^2/2)*(1 + lam*vcep);
+    % split of vgc and vce for the charge expressions
+    vgp  = 0.5*(vgc + sqrt(vgc^2 + dsm^2));                   % >= 0 part
+    vgn  = vgc - vgp;                                         % <= 0 part
+    vcn  = vce - vcep;                                        % <= 0 part
+end
+
+equations
+    % across definitions
+    vge == gi.v - E.v;
+    vgc == gi.v - C.v;
+    vce == C.v  - E.v;
+
+    % internal gate resistance
+    G.v - gi.v == Rg*ig;
+
+    % gate-emitter capacitance (constant)
+    qge == Cge*vge;
+    ige == qge.der;
+
+    % Miller capacitance, charge based:
+    % constant Cgc0 for vgc > 0 (on-state), depletion for vgc < 0
+    qgc == Cgc0*vgp - Cgc0*Vjc/(1 - mc)*((1 - vgn/Vjc)^(1 - mc) - 1);
+    igc == qgc.der;
+
+    % output capacitance, charge based: depletion for vce > 0
+    qce  == Cce0*Vjo/(1 - mo)*((1 + vcep/Vjo)^(1 - mo) - 1) + Cce0*vcn;
+    icap == qce.der;
+
+    % channel + tail (total on-state current = ich0; at turn-off the
+    % fraction ftail decays freely with tauT). The tail state is kept
+    % directly in ampere (not as a charge) for jacobian conditioning.
+    % To disable the tail set ftail = 0; keep tauT > 0 in any case.
+    ich == (1 - ftail)*ich0;
+    tauT*itl.der == ftail*ich0 - itl;
+end
+end

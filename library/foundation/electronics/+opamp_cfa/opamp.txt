@@ -1,0 +1,93 @@
+% MIT License
+% 
+% Copyright (c) 2025 Davide Bagnara
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component opamp
+
+nodes
+    vdd = foundation.electrical.electrical; % vdd:left
+    vss = foundation.electrical.electrical; % vss:right
+    gnd = foundation.electrical.electrical; % gnd:right
+end
+
+nodes
+    p = foundation.electrical.electrical; % p:left
+    n = foundation.electrical.electrical; % n:left
+    out = foundation.electrical.electrical; % out :right
+end
+
+parameters
+    Rin   = { 1e6, 'Ohm' }; % Rin
+    Rout   = { 1, 'Ohm' }; % Rout
+    A = {1e6, '1'}; % A
+    Acm = {1, '1'}; % Acm
+    vgamma = { 0.5, 'V' }; %Vgamma 
+    Rb = { 1, 'Ohm' }; % Rb
+end
+
+parameters(Access=Private)
+end
+
+variables(Access=Private)
+    idd_s = { 0, 'A' }; 
+    iss_s = { 0, 'A' }; 
+end
+
+variables
+    id   = { 0, 'A' };
+    vd   = { 0, 'V' }; 
+    i_out = { 0, 'A' };
+    vm = { 0, 'V' }; 
+    v_out = { 0, 'V' }; 
+    vdd_s = { 0, 'V' }; 
+    vss_s = { 0, 'V' }; 
+end
+
+branches
+    id   : p.i -> n.i;
+    i_out : out.i -> gnd.i;
+    idd_s : vdd.i -> gnd.i;
+    iss_s : vss.i -> gnd.i;
+end
+
+equations
+    vm == -A*vd;
+    v_out == vm - Rout*(i_out + idd_s + iss_s);
+    if v_out > vdd_s
+        v_out - idd_s*Rb - vdd_s + vgamma == 0;
+        iss_s == 0;
+    elseif v_out < vss_s
+        v_out - iss_s*Rb - vss_s - vgamma == 0;
+        idd_s == 0;
+    else
+        iss_s == 0;
+        idd_s == 0;
+    end
+    
+    vdd_s == vdd.v - gnd.v;
+    vss_s == vss.v - gnd.v;
+    v_out == out.v - gnd.v;
+    vd == p.v - n.v;
+    vd == Rin * id;
+
+end
+
+end

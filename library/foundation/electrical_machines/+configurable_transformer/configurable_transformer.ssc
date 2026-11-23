@@ -1,0 +1,501 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component configurable_transformer
+% Configurable Transformer: One or Two Three-Phase Primaries, Three-Phase or Single-Phase Secondary
+%
+% Transformer on a three-limb core whose windings are chosen in the block
+% dialog: one or two three-phase primaries, each in star (neutral brought
+% out) or delta, and one secondary, three-phase in star (neutral brought
+% out) or delta, or single-phase. Each three-phase winding has one coil on
+% each limb a, b, c; the single-phase secondary is made of coils on the
+% three limbs in series with the relative turns ws = [wa wb wc] (with sign,
+% the winding sense), as in tri_monophase_transformer: [1 -1 0] the output
+% follows the line-to-line voltage V_AB, [1 -1/2 -1/2] T type in phase with
+% V_A, [1 0 0] limb a only (needs the primary neutral). The equations are
+% those of the library components transformer_Dd, transformer_Yyn,
+% transformer_Dyn (+three_phase_transformer) and tri_monophase_transformer,
+% and each of them is a configuration of this one with the same results.
+%
+% Vector group. Primary 1 is the reference: the coil of phase A on limb a
+% between A1 and N1 (star), or the coil of limb a across A1-B1 (delta, as
+% transformer_Dyn). Primary 2 and a three-phase secondary are placed by
+% their clock number against primary 1, clock2 and clock3: their voltages
+% lag those of primary 1 by clock*30 degrees (IEC 60076-1), e.g. Dyn11 =
+% primary 1 delta, secondary star, clock3 = 11. The clock number is even
+% between windings with the same connection (Yy0, Yy6, Dd0, Dd6, ...) and
+% odd otherwise (Dy1, Dy5, Dy7, Dy11, Yd1, Yd11, ...). A winding with clock
+% number h has its phase-a coil (star) or a-b coil (delta) on limb
+% k = -q mod 3 (0 = a, 1 = b, 2 = c) with sense (-1)^q, the coils of the
+% next phases on the next limbs in the order a, b, c, where
+% q = (h + d1 - dw)/2 and d = 1 for a delta, 0 for a star winding (d1 of
+% primary 1, dw of the winding): Dyn11 q = 6, coil a on limb a, same sense;
+% Dyn1 q = 1, coil a on limb c, reversed (as transformer_Dyn); Yd1 q = 0,
+% coil a-b on limb a; Yy6 q = 3, coil a on limb a, reversed.
+%
+% Ports: A1, B1, C1, N1 (primary 1), A2, B2, C2, N2 (primary 2), a, b, c, n
+% (three-phase secondary), s1, s2 (single-phase secondary). The block shows
+% only the ports of the chosen configuration: the neutral of each star
+% winding, the primary 2 terminals with two primaries, a, b, c (and n) or
+% s1, s2 by the secondary (dropdowns: the enumerations n_primaries,
+% connection and secondary_winding of this package). Leave a neutral
+% unconnected, or on an Open Circuit block, for an isolated star. A
+% single-phase load across a-b of a star secondary gives the single-phase
+% secondary with ws = [1 -1 0] at the same V3 (coil c idle, the a-b winding
+% is two coils in series: r3 and l3 of each coil are half of those of the
+% a-b winding).
+% Positive current is taken into A1, B1, C1 (A2, B2, C2) and out of a, b, c
+% (s1) towards the load. The outputs psi_a, psi_b, psi_c are the flux
+% linkages of the primary-1 coils on the three limbs.
+%
+% Equations, for each limb k with flux linkage psi_k of its primary-1 coil
+% and limb voltage um_k = dpsi_k/dt; a coil of turns ratio n (N/N1) and
+% placement P(j,k) (+1, -1 or 0, phase j on limb k):
+%   primary coil (current into the terminal)
+%       u = R i + L di/dt + n sum_k P(j,k) um_k
+%   secondary coil (current towards the load)
+%       u = n sum_k P(j,k) um_k - R i - L di/dt
+%   mmf balance of limb k, in primary-1 turns
+%       im_k = i1_k + n2 sum_j P2(j,k) i2_j - n3 sum_j P3(j,k) i3_j - um_k/Rfe
+%   three-limb core
+%       psi_k = Lm im_k - Lc (im_a + im_b + im_c),   Lc = (Lm - Lm0)/3
+% i.e. lm for the positive and the negative sequence of the magnetizing
+% currents, lm0 for the zero sequence (the sum of the limb fluxes returns
+% through air and tank in a three-limb core: a fraction of a pu; lm0 = lm
+% for a bank of single-phase units or a five-limb core). Core losses are a
+% linear resistance rfe per limb. Linear magnetics: no saturation, no
+% hysteresis, no winding capacitances, no thermal port.
+%
+% Per unit, on the rated apparent power Sr of the secondary (three-phase
+% power, or the single-phase output power) and on the rated voltages V1, V2
+% (line-to-line) and V3 (line-to-line, or the single-phase output voltage):
+% the base of a star coil is V^2/Sr, of a delta coil 3*V^2/Sr (the same pu
+% value gives the same line-side behaviour for either connection), of the
+% single-phase winding V3^2/Sr; lm, lm0 and rfe are on the base of the
+% primary-1 coil. From the nameplate: l1 + l3 = ucc/100, r1 + r3 = copper
+% losses/Sr, lm = rated over magnetizing current, rfe = Sr/iron losses. The
+% turns ratios follow from the rated coil voltages Vc (V/sqrt(3) of a star
+% coil, V of a delta coil): n2 = V2c/V1c, n3 = V3c/V1c, single-phase
+% n3 = V3/(gw*V1c), gw = |wa + wb*exp(-j120deg) + wc*exp(+j120deg)| (sqrt(3)
+% for [1 -1 0], 3/2 for [1 -1/2 -1/2], 1 for [1 0 0]).
+
+nodes
+    A1 = foundation.electrical.electrical; % A1:left
+    B1 = foundation.electrical.electrical; % B1:left
+    C1 = foundation.electrical.electrical; % C1:left
+    N1 = foundation.electrical.electrical; % N1:left
+    A2 = foundation.electrical.electrical; % A2:left
+    B2 = foundation.electrical.electrical; % B2:left
+    C2 = foundation.electrical.electrical; % C2:left
+    N2 = foundation.electrical.electrical; % N2:left
+    a  = foundation.electrical.electrical; % a:right
+    b  = foundation.electrical.electrical; % b:right
+    c  = foundation.electrical.electrical; % c:right
+    n  = foundation.electrical.electrical; % n:right
+    s1 = foundation.electrical.electrical; % s1:right
+    s2 = foundation.electrical.electrical; % s2:right
+end
+
+outputs
+    psi_a = {0, 'V*s'};  % psi_a:right
+    psi_b = {0, 'V*s'};  % psi_b:right
+    psi_c = {0, 'V*s'};  % psi_c:right
+end
+
+parameters
+    primaries = configurable_transformer.n_primaries.two;                % Primaries
+    conn1     = configurable_transformer.connection.star;                % Primary 1 connection
+    conn2     = configurable_transformer.connection.star;                % Primary 2 connection
+    clock2    = {0, '1'};                                         % Primary 2 clock number against primary 1 (0 ... 11)
+    secondary = configurable_transformer.secondary_winding.single_phase; % Secondary
+    clock3    = {0, '1'};                                         % Secondary clock number against primary 1 (0 ... 11)
+    ws        = {[1 -1 0], '1'};                                  % Single-phase turns distribution on limbs a, b, c [wa wb wc]
+    Sr  = {100e3, 'V*A'};   % Rated apparent power of the secondary (three-phase or single-phase)
+    V1  = {400,   'V'  };   % Primary 1 rated line-to-line voltage (rms)
+    V2  = {400,   'V'  };   % Primary 2 rated line-to-line voltage (rms)
+    V3  = {230,   'V'  };   % Secondary rated voltage (rms): line-to-line, or the single-phase output
+    fr  = {50,    'Hz' };   % Rated frequency
+    r1  = {0.005, '1'  };   % Primary 1 coil resistance (pu)
+    l1  = {0.030, '1'  };   % Primary 1 coil leakage inductance (pu)
+    r2  = {0.005, '1'  };   % Primary 2 coil resistance (pu)
+    l2  = {0.030, '1'  };   % Primary 2 coil leakage inductance (pu)
+    r3  = {0.005, '1'  };   % Secondary coil resistance (pu; single-phase: the whole winding)
+    l3  = {0.030, '1'  };   % Secondary coil leakage inductance (pu; single-phase: the whole winding)
+    lm  = {100,   '1'  };   % Positive-sequence magnetizing inductance (pu)
+    lm0 = {0.5,   '1'  };   % Zero-sequence magnetizing inductance (pu)
+    rfe = {500,   '1'  };   % Core-loss resistance per limb (pu)
+end
+
+parameters(Access=private)
+    wb = {2*pi,'rad'}*fr;   % rated angular frequency
+    gw = sqrt((ws(1) - (ws(2) + ws(3))/2)^2 + 3/4*(ws(3) - ws(2))^2);   % |wa + a^2 wb + a wc|
+end
+
+variables
+    i1a = {0, 'A'};  % primary 1 coil of limb a: A1 -> N1 (star) or A1 -> B1 (delta)
+    i1b = {0, 'A'};  % primary 1 coil of limb b: B1 -> N1 (star) or B1 -> C1 (delta)
+    i1c = {0, 'A'};  % primary 1 coil of limb c: C1 -> N1 (star) or C1 -> A1 (delta)
+    i2a = {0, 'A'};  % primary 2 coil of phase a: A2 -> N2 (star) or A2 -> B2 (delta)
+    i2b = {0, 'A'};  % primary 2 coil of phase b: B2 -> N2 (star) or B2 -> C2 (delta)
+    i2c = {0, 'A'};  % primary 2 coil of phase c: C2 -> N2 (star) or C2 -> A2 (delta)
+    i3a = {0, 'A'};  % secondary coil of phase a, out of a: n -> a (star) or b -> a (delta)
+    i3b = {0, 'A'};  % secondary coil of phase b, out of b: n -> b (star) or c -> b (delta)
+    i3c = {0, 'A'};  % secondary coil of phase c, out of c: n -> c (star) or a -> c (delta)
+    i3  = {0, 'A'};  % single-phase secondary current, out of s1
+end
+
+variables(Access=private)
+    psia = {0, 'V*s'};  % flux linkage of the primary-1 coil on limb a
+    psib = {0, 'V*s'};  % flux linkage of the primary-1 coil on limb b
+    psic = {0, 'V*s'};  % flux linkage of the primary-1 coil on limb c
+    uma  = {0, 'V'};    % limb voltage dpsi_a/dt, induced in the primary-1 coil of limb a
+    umb  = {0, 'V'};    % limb voltage of limb b
+    umc  = {0, 'V'};    % limb voltage of limb c
+    ima  = {0, 'A'};    % magnetizing current of limb a, primary-1 turns
+    imb  = {0, 'A'};    % magnetizing current of limb b
+    imc  = {0, 'A'};    % magnetizing current of limb c
+    f2a  = {0, 'A'};    % mmf of the primary-2 coils on limb a, primary-1 turns
+    f2b  = {0, 'A'};    % mmf of the primary-2 coils on limb b
+    f2c  = {0, 'A'};    % mmf of the primary-2 coils on limb c
+    f3a  = {0, 'A'};    % mmf of the secondary coils on limb a, primary-1 turns (demagnetizing)
+    f3b  = {0, 'A'};    % mmf of the secondary coils on limb b
+    f3c  = {0, 'A'};    % mmf of the secondary coils on limb c
+end
+
+% ---------------------------------------------------------------- primary 1
+% The der() of a coil current appears only in the equation of its coil and
+% the der() of a limb flux only in um == der(psi): Simscape counts every
+% equation with der() as a differential equation and wants as many as the
+% differentiated variables (see +three_phase_transformer).
+if conn1 == configurable_transformer.connection.star
+    branches
+        i1a : A1.i -> N1.i;
+        i1b : B1.i -> N1.i;
+        i1c : C1.i -> N1.i;
+    end
+    equations
+        let
+            R1 = r1*V1^2/Sr;        % coil base V1^2/Sr
+            L1 = l1*V1^2/Sr/wb;
+        in
+            A1.v - N1.v == R1*i1a + L1*der(i1a) + uma;
+            B1.v - N1.v == R1*i1b + L1*der(i1b) + umb;
+            C1.v - N1.v == R1*i1c + L1*der(i1c) + umc;
+        end
+    end
+else
+    annotations
+        N1 : ExternalAccess=none;
+    end
+    connections
+        connect(N1, *);
+    end
+    branches
+        i1a : A1.i -> B1.i;
+        i1b : B1.i -> C1.i;
+        i1c : C1.i -> A1.i;
+    end
+    equations
+        let
+            R1 = r1*3*V1^2/Sr;      % coil base 3*V1^2/Sr
+            L1 = l1*3*V1^2/Sr/wb;
+        in
+            A1.v - B1.v == R1*i1a + L1*der(i1a) + uma;
+            B1.v - C1.v == R1*i1b + L1*der(i1b) + umb;
+            C1.v - A1.v == R1*i1c + L1*der(i1c) + umc;
+        end
+    end
+end
+
+% ---------------------------------------------------------------- primary 2
+if primaries == configurable_transformer.n_primaries.one
+    annotations
+        [A2, B2, C2, N2, conn2, clock2, V2, r2, l2, i2a, i2b, i2c] : ExternalAccess=none;
+    end
+    connections
+        connect(A2, *);
+        connect(B2, *);
+        connect(C2, *);
+        connect(N2, *);
+    end
+    equations
+        i2a == 0;
+        i2b == 0;
+        i2c == 0;
+        f2a == 0;
+        f2b == 0;
+        f2c == 0;
+    end
+else
+    equations
+        assert(abs(clock2 - round(clock2)) < 1e-9, 'Primary 2 clock number must be an integer')
+    end
+    if conn2 == configurable_transformer.connection.star
+        if conn1 == configurable_transformer.connection.star
+            equations
+                assert(cos(pi*clock2) > 0.5, 'Primaries star and star: the clock number of primary 2 must be even')
+            end
+        else
+            equations
+                assert(cos(pi*clock2) < -0.5, 'Primaries delta and star: the clock number of primary 2 must be odd')
+            end
+        end
+        branches
+            i2a : A2.i -> N2.i;
+            i2b : B2.i -> N2.i;
+            i2c : C2.i -> N2.i;
+        end
+        equations
+            let
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                n2  = V2/sqrt(3)/V1c;       % N2/N1 of the coils
+                R2  = r2*V2^2/Sr;
+                L2  = l2*V2^2/Sr/wb;
+                q   = (clock2 + d1)/2;      % placement of the phase-a coil
+                sq  = cos(pi*q);
+                p0  = sq*(1 + 2*cos(2*pi*q/3))/3;         % P(j,k) for k - j = 0 (mod 3)
+                p1  = sq*(1 + 2*cos(2*pi*(q + 1)/3))/3;   % k - j = 1
+                p2  = sq*(1 + 2*cos(2*pi*(q + 2)/3))/3;   % k - j = 2
+            in
+                A2.v - N2.v == R2*i2a + L2*der(i2a) + n2*(p0*uma + p1*umb + p2*umc);
+                B2.v - N2.v == R2*i2b + L2*der(i2b) + n2*(p2*uma + p0*umb + p1*umc);
+                C2.v - N2.v == R2*i2c + L2*der(i2c) + n2*(p1*uma + p2*umb + p0*umc);
+                f2a == n2*(p0*i2a + p2*i2b + p1*i2c);
+                f2b == n2*(p1*i2a + p0*i2b + p2*i2c);
+                f2c == n2*(p2*i2a + p1*i2b + p0*i2c);
+            end
+        end
+    else
+        if conn1 == configurable_transformer.connection.star
+            equations
+                assert(cos(pi*clock2) < -0.5, 'Primaries star and delta: the clock number of primary 2 must be odd')
+            end
+        else
+            equations
+                assert(cos(pi*clock2) > 0.5, 'Primaries delta and delta: the clock number of primary 2 must be even')
+            end
+        end
+        annotations
+            N2 : ExternalAccess=none;
+        end
+        connections
+            connect(N2, *);
+        end
+        branches
+            i2a : A2.i -> B2.i;
+            i2b : B2.i -> C2.i;
+            i2c : C2.i -> A2.i;
+        end
+        equations
+            let
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                n2  = V2/V1c;               % N2/N1 of the coils
+                R2  = r2*3*V2^2/Sr;
+                L2  = l2*3*V2^2/Sr/wb;
+                q   = (clock2 + d1 - 1)/2;  % placement of the a-b coil
+                sq  = cos(pi*q);
+                p0  = sq*(1 + 2*cos(2*pi*q/3))/3;
+                p1  = sq*(1 + 2*cos(2*pi*(q + 1)/3))/3;
+                p2  = sq*(1 + 2*cos(2*pi*(q + 2)/3))/3;
+            in
+                A2.v - B2.v == R2*i2a + L2*der(i2a) + n2*(p0*uma + p1*umb + p2*umc);
+                B2.v - C2.v == R2*i2b + L2*der(i2b) + n2*(p2*uma + p0*umb + p1*umc);
+                C2.v - A2.v == R2*i2c + L2*der(i2c) + n2*(p1*uma + p2*umb + p0*umc);
+                f2a == n2*(p0*i2a + p2*i2b + p1*i2c);
+                f2b == n2*(p1*i2a + p0*i2b + p2*i2c);
+                f2c == n2*(p2*i2a + p1*i2b + p0*i2c);
+            end
+        end
+    end
+end
+
+% ---------------------------------------------------------------- secondary
+if secondary == configurable_transformer.secondary_winding.single_phase
+    annotations
+        [a, b, c, n, clock3, i3a, i3b, i3c] : ExternalAccess=none;
+    end
+    connections
+        connect(a, *);
+        connect(b, *);
+        connect(c, *);
+        connect(n, *);
+    end
+    branches
+        i3 : s2.i -> s1.i;
+    end
+    equations
+        assert(gw > 0, 'ws must have a non-zero positive-sequence component')
+        let
+            V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
+            n3  = V3/(gw*V1c);              % N3/N1
+            R3  = r3*V3^2/Sr;               % the whole single-phase winding
+            L3  = l3*V3^2/Sr/wb;
+        in
+            s1.v - s2.v == n3*(ws(1)*uma + ws(2)*umb + ws(3)*umc) - R3*i3 - L3*der(i3);
+            f3a == n3*ws(1)*i3;
+            f3b == n3*ws(2)*i3;
+            f3c == n3*ws(3)*i3;
+            i3a == 0;
+            i3b == 0;
+            i3c == 0;
+        end
+    end
+else
+    annotations
+        [s1, s2, ws, i3] : ExternalAccess=none;
+    end
+    connections
+        connect(s1, *);
+        connect(s2, *);
+    end
+    equations
+        assert(abs(clock3 - round(clock3)) < 1e-9, 'Secondary clock number must be an integer')
+        i3 == 0;
+    end
+    if secondary == configurable_transformer.secondary_winding.star
+        if conn1 == configurable_transformer.connection.star
+            equations
+                assert(cos(pi*clock3) > 0.5, 'Primary 1 star, secondary star: the clock number must be even')
+            end
+        else
+            equations
+                assert(cos(pi*clock3) < -0.5, 'Primary 1 delta, secondary star: the clock number must be odd')
+            end
+        end
+        branches
+            i3a : n.i -> a.i;
+            i3b : n.i -> b.i;
+            i3c : n.i -> c.i;
+        end
+        equations
+            let
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                n3  = V3/sqrt(3)/V1c;       % N3/N1 of the coils
+                R3  = r3*V3^2/Sr;
+                L3  = l3*V3^2/Sr/wb;
+                q   = (clock3 + d1)/2;      % placement of the phase-a coil
+                sq  = cos(pi*q);
+                p0  = sq*(1 + 2*cos(2*pi*q/3))/3;
+                p1  = sq*(1 + 2*cos(2*pi*(q + 1)/3))/3;
+                p2  = sq*(1 + 2*cos(2*pi*(q + 2)/3))/3;
+            in
+                a.v - n.v == n3*(p0*uma + p1*umb + p2*umc) - R3*i3a - L3*der(i3a);
+                b.v - n.v == n3*(p2*uma + p0*umb + p1*umc) - R3*i3b - L3*der(i3b);
+                c.v - n.v == n3*(p1*uma + p2*umb + p0*umc) - R3*i3c - L3*der(i3c);
+                f3a == n3*(p0*i3a + p2*i3b + p1*i3c);
+                f3b == n3*(p1*i3a + p0*i3b + p2*i3c);
+                f3c == n3*(p2*i3a + p1*i3b + p0*i3c);
+            end
+        end
+    else
+        if conn1 == configurable_transformer.connection.star
+            equations
+                assert(cos(pi*clock3) < -0.5, 'Primary 1 star, secondary delta: the clock number must be odd')
+            end
+        else
+            equations
+                assert(cos(pi*clock3) > 0.5, 'Primary 1 delta, secondary delta: the clock number must be even')
+            end
+        end
+        annotations
+            n : ExternalAccess=none;
+        end
+        connections
+            connect(n, *);
+        end
+        branches
+            i3a : b.i -> a.i;
+            i3b : c.i -> b.i;
+            i3c : a.i -> c.i;
+        end
+        equations
+            let
+                d1  = if conn1 == configurable_transformer.connection.delta, 1 else 0 end;
+                V1c = if conn1 == configurable_transformer.connection.delta, V1 else V1/sqrt(3) end;
+                n3  = V3/V1c;               % N3/N1 of the coils
+                R3  = r3*3*V3^2/Sr;
+                L3  = l3*3*V3^2/Sr/wb;
+                q   = (clock3 + d1 - 1)/2;  % placement of the a-b coil
+                sq  = cos(pi*q);
+                p0  = sq*(1 + 2*cos(2*pi*q/3))/3;
+                p1  = sq*(1 + 2*cos(2*pi*(q + 1)/3))/3;
+                p2  = sq*(1 + 2*cos(2*pi*(q + 2)/3))/3;
+            in
+                a.v - b.v == n3*(p0*uma + p1*umb + p2*umc) - R3*i3a - L3*der(i3a);
+                b.v - c.v == n3*(p2*uma + p0*umb + p1*umc) - R3*i3b - L3*der(i3b);
+                c.v - a.v == n3*(p1*uma + p2*umb + p0*umc) - R3*i3c - L3*der(i3c);
+                f3a == n3*(p0*i3a + p2*i3b + p1*i3c);
+                f3b == n3*(p1*i3a + p0*i3b + p2*i3c);
+                f3c == n3*(p2*i3a + p1*i3b + p0*i3c);
+            end
+        end
+    end
+end
+
+% ---------------------------------------------------------------- core
+equations
+    assert(Sr > 0, 'Rated power must be positive')
+    assert(V1 > 0 && V2 > 0 && V3 > 0, 'Rated voltages must be positive')
+    assert(fr > 0, 'Rated frequency must be positive')
+    assert(r1 >= 0 && r2 >= 0 && r3 >= 0, 'Winding resistances must be non-negative')
+    assert(l1 >= 0 && l2 >= 0 && l3 >= 0, 'Leakage inductances must be non-negative')
+    assert(lm > 0 && lm0 > 0, 'Magnetizing inductances must be positive')
+    assert(rfe > 0, 'Core-loss resistance must be positive')
+    let
+        Zm  = if conn1 == configurable_transformer.connection.delta, 3*V1^2/Sr else V1^2/Sr end;   % base of the primary-1 coil
+        Lm  = lm*Zm/wb;            % positive-sequence magnetizing inductance, primary-1 coil referred
+        Lm0 = lm0*Zm/wb;           % zero-sequence magnetizing inductance
+        Lc  = (Lm - Lm0)/3;        % limb-to-limb term of the magnetizing inductance matrix
+        Rfe = rfe*Zm;              % core-loss resistance per limb
+    in
+        % limb voltages: the only der() of the fluxes
+        uma == der(psia);
+        umb == der(psib);
+        umc == der(psic);
+
+        % mmf balance of each limb, primary-1 turns; the core-loss current um/Rfe is subtracted
+        ima == i1a + f2a - f3a - uma/Rfe;
+        imb == i1b + f2b - f3b - umb/Rfe;
+        imc == i1c + f2c - f3c - umc/Rfe;
+
+        % three-limb core: Lm for the positive and negative sequence, Lm0 for the zero sequence
+        psia == Lm*ima - Lc*(ima + imb + imc);
+        psib == Lm*imb - Lc*(ima + imb + imc);
+        psic == Lm*imc - Lc*(ima + imb + imc);
+    end
+
+    psi_a == psia;
+    psi_b == psib;
+    psi_c == psic;
+end
+
+annotations
+    UILayout = [
+        UIGroup('Configuration', primaries, conn1, conn2, clock2, secondary, clock3, ws)
+        UIGroup('Ratings', Sr, V1, V2, V3, fr)
+        UIGroup('Impedances', r1, l1, r2, l2, r3, l3, lm, lm0, rfe)];
+end
+
+end

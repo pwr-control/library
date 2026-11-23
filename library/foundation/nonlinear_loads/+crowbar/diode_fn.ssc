@@ -1,0 +1,36 @@
+component diode_fn
+% Diode (functional)
+% Piecewise-linear diode: i = Goff*v for v <= Vf, i = (v - Vf)/Ron + Goff*Vf for v > Vf.
+% Placeholder for the reverse-recovery model diode_rr: same ports (A anode, K cathode).
+
+  nodes
+    A = foundation.electrical.electrical; % A:left
+    K = foundation.electrical.electrical; % K:right
+  end
+
+  parameters
+    Vf   = {1.2, 'V'};      % Forward voltage Vf
+    Ron  = {0.2e-3, 'Ohm'}; % On resistance Ron
+    Goff = {1e-6, '1/Ohm'}; % Off conductance Goff
+  end
+
+  variables
+    i = {0, 'A'}; % Current
+    v = {0, 'V'}; % Voltage
+  end
+
+  branches
+    i : A.i -> K.i;
+  end
+
+  equations
+    assert(Ron > 0)
+    assert(Goff >= 0)
+    v == A.v - K.v;
+    if v > Vf
+      i == (v - Vf)/Ron + Goff*Vf;
+    else
+      i == Goff*v;
+    end
+  end
+end

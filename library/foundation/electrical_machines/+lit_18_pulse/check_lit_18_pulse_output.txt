@@ -1,0 +1,156 @@
+
+=== A. structure of lit_18_pulse.ssc ===
+   12 nodes ['A', 'B', 'C', 'a1', 'b1', 'c1', 'a2', 'b2', 'c2', 'a3', 'b3', 'c3'], outputs [('psi', 6)], 22 parameters (+16 private), 21 variables, 9 branches, 22 equations
+   component name                                                   got lit_18_pulse, expected lit_18_pulse     OK
+   line terminals A, B, C on the left                               got ['left', 'left', 'left'], expected ['left', 'left', 'left']OK
+   bridge terminals a1 .. c3 declared in this order                 got ['a1', 'b1', 'c1', 'a2', 'b2', 'c2', 'a3', 'b3', 'c3'], expected ['a1', 'b1', 'c1', 'a2', 'b2', 'c2', 'a3', 'b3', 'c3']OK
+   bridge terminals on the right                                    got ['right', 'right', 'right', 'right', 'right', 'right', 'right', 'right', 'right'], expected ['right', 'right', 'right', 'right', 'right', 'right', 'right', 'right', 'right']OK
+   every node electrical                                            got True, expected True                     OK
+   output psi: 6 flux linkages in V*s                               got [('psi', 6, 'V*s')], expected [('psi', 6, 'V*s')]OK
+   output psi on the right (after the nodes, like the transformers) got right, expected right                   OK
+   every public parameter in the UILayout once                      got ['Sr', 'V1', 'fr', 'l_x12', 'l_x23', 'l_y12', 'l_y23', 'l_y45', 'lm_x', 'lm_y', 'ls', 'n_x23', 'n_y12', 'n_y23', 'r_x12', 'r_x23', 'r_y12', 'r_y23', 'r_y45', 'rfe_x', 'rfe_y', 'rs'], expected ['Sr', 'V1', 'fr', 'l_x12', 'l_x23', 'l_y12', 'l_y23', 'l_y45', 'lm_x', 'lm_y', 'ls', 'n_x23', 'n_y12', 'n_y23', 'r_x12', 'r_x23', 'r_y12', 'r_y23', 'r_y45', 'rfe_x', 'rfe_y', 'rs']OK
+   parameter units in SI base units only                            got True, expected True                     OK
+   asserts true with the defaults (9)                               got True, expected True                     OK
+   default n_x23 = 2 cos 20 deg                                     got 1.87939, expected 1.87939               OK
+   default n_y12 = 2 cos 20 deg                                     got 1.87939, expected 1.87939               OK
+   default n_y23 = 1 + 2 cos 20 deg                                 got 2.87939, expected 2.87939               OK
+   equations = variables + outputs (21 + 6)                         got 27, expected 27                         OK
+   der() equations = differentiated variables                       got 15, expected 15                         OK
+   differentiated: 9 branch currents and 6 fluxes                   got ['i1a', 'i1b', 'i1c', 'i2a', 'i2b', 'i2c', 'i3a', 'i3b', 'i3c', 'psixa', 'psixb', 'psixc', 'psiya', 'psiyb', 'psiyc'], expected ['i1a', 'i1b', 'i1c', 'i2a', 'i2b', 'i2c', 'i3a', 'i3b', 'i3c', 'psixa', 'psixb', 'psixc', 'psiya', 'psiyb', 'psiyc']OK
+   every variable used in the equations                             got [], expected []                         OK
+   branches: i{j}{k} from the line terminal to terminal k{j}        got [('i1a', 'A', 'a1'), ('i2a', 'A', 'a2'), ('i3a', 'A', 'a3'), ('i1b', 'B', 'b1'), ('i2b', 'B', 'b2'), ('i3b', 'B', 'b3'), ('i1c', 'C', 'c1'), ('i2c', 'C', 'c2'), ('i3c', 'C', 'c3')], expected [('i1a', 'A', 'a1'), ('i2a', 'A', 'a2'), ('i3a', 'A', 'a3'), ('i1b', 'B', 'b1'), ('i2b', 'B', 'b2'), ('i3b', 'B', 'b3'), ('i1c', 'C', 'c1'), ('i2c', 'C', 'c2'), ('i3c', 'C', 'c3')]OK
+   branch currents public, initial 0 A, priority high               got True, expected True                     OK
+   intermediates iLk = i1k + i2k + i3k                              got [('iLa', 'i1a + i2a + i3a'), ('iLb', 'i1b + i2b + i3b'), ('iLc', 'i1c + i2c + i3c')], expected [('iLa', 'i1a + i2a + i3a'), ('iLb', 'i1b + i2b + i3b'), ('iLc', 'i1c + i2c + i3c')]OK
+   rows from the equations (scalar)                                 got 27, expected 27                         OK
+   linear forms of the equations built from the text: 27 rows, 15 with der()
+
+=== B. phasor domain (der -> j w), peak phasors ===
+1) no load (bridge terminals open), defaults
+   max |V(k j) - V(k)| / |V(k)| over the 9 terminals                got 8.69657e-13, expected 0                 OK
+   max |psi| [V*s]                                                  got 6.16779e-12, expected 0                 OK
+   line current [A]                                                 got 6.82456e-13, expected 0                 OK
+2) ideal cores, zero impedances, resistive star load R = 3 c^2 Zb per bridge, c = (1 + 2 cos 20)/3
+   bridge current spread (max - min)/mean, 9 terminals              got 1.56887e-08, expected 0                 OK
+   line a: phase(I bridge 1) - phase(I bridge 3) [deg]              got 20, expected 20                         OK
+   line a: phase(I bridge 2) - phase(I bridge 3) [deg]              got -20, expected -20                       OK
+   line b: phase(I bridge 1) - phase(I bridge 3) [deg]              got 20, expected 20                         OK
+   line b: phase(I bridge 2) - phase(I bridge 3) [deg]              got -20, expected -20                       OK
+   line c: phase(I bridge 1) - phase(I bridge 3) [deg]              got 20, expected 20                         OK
+   line c: phase(I bridge 2) - phase(I bridge 3) [deg]              got -20, expected -20                       OK
+   |V bridge| / |V line| = (1 + 2 cos 20)/3, all terminals          got 0.959795, expected 0.959795             OK
+      min over the terminals                                        got 0.959795, expected 0.959795             OK
+   phase(V a3) - phase(V A) [deg]                                   got -1.62231e-07, expected 0                OK
+   I line / I bridge 3 = 1 + 2 cos 20 (complex ratio, magnitude)    got 2.87939, expected 2.87939               OK
+   phase(I line) - phase(V line) [deg] (unity power factor)         got -1.11679e-07, expected 0                OK
+   |umx_a / V_a - (1 - c)/n_x23|                                    got 3.06483e-09, expected 0                 OK
+   |umy_a / V_a - u| (u from the bridge-1 equation)                 got 3.207e-09, expected 0                   OK
+   |umx_b / V_b - (1 - c)/n_x23|                                    got 1.87774e-09, expected 0                 OK
+   |umy_b / V_b - u| (u from the bridge-1 equation)                 got 2.74103e-09, expected 0                 OK
+   |umx_c / V_c - (1 - c)/n_x23|                                    got 4.79232e-09, expected 0                 OK
+   |umy_c / V_c - u| (u from the bridge-1 equation)                 got 3.94798e-09, expected 0                 OK
+   closed forms satisfy the bridge-2 equation                       got 1.249e-16, expected 0                   OK
+   psi(1) = umxa/(j w), psi(4) = umya/(j w)                         got 4.18953e-15, expected 0                 OK
+   P source = P load (lossless), relative                           got 3e+06, expected 3e+06                   OK
+   P source / Sr (rated loading)                                    got 1, expected 1                           OK
+   coil voltages at 13.8 kV (rms): X1-X2 170 V, X2-X3 320 V, Y4-Y5 1099 V, Y1-Y2 2066 V, Y2-Y3 3165 V
+   coil currents at rated line current 125.5 A: 81.9 A (X1-X2, Y4-Y5), 43.6 A (X2-X3, Y1-Y2, Y2-Y3); rating 1/2 sum V I: X core 14.0 kVA, Y core 159.0 kVA, LIT 17.3 % of Sr
+3) negative sequence, ideal
+   bridge current spread                                            got 1.56887e-08, expected 0                 OK
+   line a: phase(I bridge 1) - phase(I bridge 3) [deg]              got -20, expected -20                       OK
+   line a: phase(I bridge 2) - phase(I bridge 3) [deg]              got 20, expected 20                         OK
+4) netlist, ideal: dotted Y5 (as in the .ssc) and Y4 at the polarity of Y1
+   .ssc = netlist: max |dI| / I over the 9 terminals                got 1.22527e-15, expected 0                 OK
+   .ssc = netlist: max |dV| / V over the 9 terminals                got 2.25823e-08, expected 0                 OK
+   Y4 like Y1: |I bridge 1, 2, 3| / |I bridge 3| = 1.378, 0.643, 1, phases -14.4, +32.1 deg
+   Y4 like Y1: max/min bridge current > 1.5 (no equal sharing)      got True, expected True                     OK
+5) defaults (rs 0.002, ls 0.04, coils r = l = 0.001, lm 100, rfe 1000 pu), same load
+   .ssc = netlist: max |dI| / I over the 9 terminals                got 9.06435e-15, expected 0                 OK
+   .ssc = netlist: max |dV| / V over the 9 terminals                got 1.51387e-12, expected 0                 OK
+   .ssc = netlist: line currents                                    got 7.31288e-15, expected 0                 OK
+   .ssc = netlist: psi X_a                                          got 1.72e-11, expected 0                    OK
+   .ssc = netlist: psi Y_c                                          got 2.02328e-12, expected 0                 OK
+   sharing spread with the defaults < 0.5 %                         got True, expected True                     OK
+   spread 0.157 %, phases +20.031 / -19.960 deg, |V bridge|/|V line| 0.9559
+   Pcu/Sr at rated current = rs + 0.426 (r_x12 + r_y45) + 0.121 (...) got 0.000964167, expected 0.0009645       OK
+      exact coefficients (2 cos 20/(1 + 2 cos 20))^2, (1/(1 + 2 cos 20))^2 got 0.000964167, expected 0.000964167OK
+      power balance P source = P load + P cu                        got 2.99711e+06, expected 2.99711e+06       OK
+
+=== C. time domain: backward Euler, diodes Ron 1 mOhm / Goff 1 nS, bridges in parallel on DC ===
+1) .ssc = netlist, defaults, RC DC link (R 95.20 Ohm, 2 mF) precharged at 16.9 kV, 3 periods from t = 0
+   same diode states at every step                                  got True, expected True                     OK
+   max |d i bridge terminal| / peak                                 got 2.07746e-10, expected 0                 OK
+   max |d Vdc| / Vdc                                                got 2.26954e-12, expected 0                 OK
+2) defaults at rated power, RC DC link, 20 periods, last one analysed (8000 steps per period)
+   steady state: Vdc mean of period 20 / period 19                  got 1, expected 1                           OK
+   DC current sharing (max - min)/mean < 1 %                        got True, expected True                     OK
+   line current harmonic 5 < 0.2 % of the fundamental               got True, expected True                     OK
+   line current harmonic 7 < 0.2 % of the fundamental               got True, expected True                     OK
+   line current harmonic 11 < 0.2 % of the fundamental              got True, expected True                     OK
+   line current harmonic 13 < 0.2 % of the fundamental              got True, expected True                     OK
+   line current harmonic 17 > 2 % (characteristic)                  got True, expected True                     OK
+   line current harmonic 19 > 2 % (characteristic)                  got True, expected True                     OK
+   phase(I a1) - phase(I a3) [deg]                                  got 20.0269, expected 20                    OK
+   phase(I a2) - phase(I a3) [deg]                                  got -19.9578, expected -20                  OK
+   |I a1| / |I a3| (fundamental)                                    got 0.999124, expected 1                    OK
+   |I a2| / |I a3| (fundamental)                                    got 1.00065, expected 1                     OK
+   energy balance: source = DC load + C + copper + iron + diodes    got 50138.5, expected 50136.2               OK
+   Vdc 16895 V (ripple 0.4 V p-p), Id per bridge 59.07 / 59.21 / 59.18 A, P_in 3.008 MW, line I1 126.69 A rms, PF 0.9915
+   line harmonics, % of I1: 5: 0.024, 7: 0.017, 11: 0.009, 13: 0.007, 17: 5.015, 19: 3.565, 35: 0.947, 37: 0.895, THD(<40) 6.29 %
+   D3a+: mean 19.73 A, rms 31.18 A, peak 62.33 A, conduction 169.2 deg, di/dt at the zero 0.0953 A/us, step 8198 V, then 18.33 V/us; energy: copper 9862 W, iron 206 W, diodes 20 W; itmax 5
+3) current-stiff DC side (L 0.5 H, R 95.2 Ohm), leakages 1e-4 pu (ls and coils): ideal 18-pulse spectrum
+   harmonic 5 / fundamental (cancelled)                             got 0.000269913, expected 0                 OK
+   harmonic 7 / fundamental (cancelled)                             got 0.000120003, expected 0                 OK
+   harmonic 11 / fundamental (cancelled)                            got 4.73607e-05, expected 0                 OK
+   harmonic 13 / fundamental (cancelled)                            got 2.46064e-05, expected 0                 OK
+   harmonic 17 / fundamental = 1/17 (relative)                      got 0.0586819, expected 0.0588235           OK
+   harmonic 19 / fundamental = 1/19 (relative)                      got 0.0524655, expected 0.0526316           OK
+   harmonic 35 / fundamental = 1/35 (relative)                      got 0.0283734, expected 0.0285714           OK
+   harmonic 37 / fundamental = 1/37 (relative)                      got 0.0268167, expected 0.027027            OK
+   Vdc 17018 V, Id 178.76 A, D3a+ conduction 160.7 deg; harmonics x h: 17: 0.998, 19: 0.997, 35: 0.993, 37: 0.992; itmax 5
+4) commutation loop, ls 0.04 pu, coils 1e-4 pu, lm 1e4, rfe 1e6 pu, for two DC sides
+   DC side: impressed DC voltage 16.9 kV (short in the jump network)
+   D3a+ off at 89.53 deg, 8 diodes on: D1a- D1b+ D1c- D2a+ D2b+ D2c- D3b+ D3c-
+   D3a+: incremental L, zero coil leakage, / (1.5 n_y23^2 Ls)       got 1, expected 1                           OK
+   D3a+: sum of d iL^2 = 1.5 n_y23^2                                got 12.4363, expected 12.4363               OK
+   D3a+: d iL of line a per A = n_y23 (bridge 3), n_y23 cos 20 (1, 2) got 2.87939, expected 2.87939             OK
+   D3a+: step / (di/dt) in the simulation = incremental L (coils 1e-4) got 0.0839208, expected 0.084018         OK
+      di/dt 0.0961 A/us, step 8067 V, L 83.92 mH = 12.4596 Ls (incremental 12.4740 Ls); d iL = +2.8794, -1.4397, -1.4397 A per A
+   D1a+ off at 69.55 deg, 8 diodes on: D1b+ D1c- D2a+ D2b+ D2c- D3a+ D3b+ D3c-
+   D1a+: incremental L, zero coil leakage, / (1.5 n_y23^2 Ls)       got 1, expected 1                           OK
+   D1a+: sum of d iL^2 = 1.5 n_y23^2                                got 12.4363, expected 12.4363               OK
+   D1a+: d iL of line a per A = n_y23 (bridge 3), n_y23 cos 20 (1, 2) got 2.70574, expected 2.70574             OK
+   D1a+: step / (di/dt) in the simulation = incremental L (coils 1e-4) got 0.083921, expected 0.084018          OK
+      di/dt 0.0961 A/us, step 8067 V, L 83.92 mH = 12.4596 Ls (incremental 12.4740 Ls); d iL = +2.7057, -2.2057, -0.5000 A per A
+   D2a+ off at 109.53 deg, 8 diodes on: D1a- D1b+ D1c- D2b+ D2c- D3a- D3b+ D3c-
+   D2a+: incremental L, zero coil leakage, / (1.5 n_y23^2 Ls)       got 1, expected 1                           OK
+   D2a+: sum of d iL^2 = 1.5 n_y23^2                                got 12.4363, expected 12.4363               OK
+   D2a+: d iL of line a per A = n_y23 (bridge 3), n_y23 cos 20 (1, 2) got 2.70574, expected 2.70574             OK
+   D2a+: step / (di/dt) in the simulation = incremental L (coils 1e-4) got 0.083921, expected 0.084018          OK
+      di/dt 0.0961 A/us, step 8067 V, L 83.92 mH = 12.4596 Ls (incremental 12.4740 Ls); d iL = +2.7057, -0.5000, -2.2057 A per A
+      itmax 4
+   DC side: one smoothed DC current, L 0.5 H + R 95 Ohm (open in the jump network)
+   D3a+ off at 89.62 deg, 8 diodes on: D1a- D1b+ D1c- D2a+ D2b+ D2c- D3b+ D3c-
+   D3a+: incremental L, zero coil leakage, / (2 (n_y23^2 - n_y23 + 1) Ls) got 1, expected 1                     OK
+   D3a+: sum of d iL^2 = 2 (n_y23^2 - n_y23 + 1)                    got 12.8229, expected 12.8229               OK
+   D3a+: d iL per A = (n_y23, -(n_y23 - 1), -1)                     got 6.26909e-10, expected 0                 OK
+   D3a+: step / (di/dt) in the simulation = incremental L (coils 1e-4) got 0.0865032, expected 0.0866303        OK
+      di/dt 0.0953 A/us, step 8245 V, L 86.50 mH = 12.8430 Ls (incremental 12.8619 Ls); d iL = +2.8794, -1.8794, -1.0000 A per A
+   D1a+ off at 69.64 deg, 8 diodes on: D1b+ D1c- D2a+ D2b+ D2c- D3a+ D3b+ D3c-
+   D1a+: incremental L, zero coil leakage, / (2 (n_y23^2 - n_y23 + 1) Ls) got 1, expected 1                     OK
+   D1a+: sum of d iL^2 = 2 (n_y23^2 - n_y23 + 1)                    got 12.8229, expected 12.8229               OK
+   D1a+: step / (di/dt) in the simulation = incremental L (coils 1e-4) got 0.0865044, expected 0.0866303        OK
+      di/dt 0.0953 A/us, step 8246 V, L 86.50 mH = 12.8432 Ls (incremental 12.8619 Ls); d iL = +2.5321, -2.5321, -0.0000 A per A
+   D2a+ off at 109.62 deg, 8 diodes on: D1a- D1b+ D1c- D2b+ D2c- D3a- D3b+ D3c-
+   D2a+: incremental L, zero coil leakage, / (2 (n_y23^2 - n_y23 + 1) Ls) got 1, expected 1                     OK
+   D2a+: sum of d iL^2 = 2 (n_y23^2 - n_y23 + 1)                    got 12.8229, expected 12.8229               OK
+   D2a+: step / (di/dt) in the simulation = incremental L (coils 1e-4) got 0.0865036, expected 0.0866303        OK
+      di/dt 0.0953 A/us, step 8245 V, L 86.50 mH = 12.8431 Ls (incremental 12.8619 Ls); d iL = +2.8794, -1.0000, -1.8794 A per A
+      itmax 2
+   1.5 n_y23^2 = 12.4363 with an impressed DC voltage or a DC capacitor, 2 (n_y23^2 - n_y23 + 1) = 12.8229 with one smoothed DC current
+
+=== D. reference values of test_lit_18_pulse.m (defaults, 13.8 kV 60 Hz, L 0.5 H + R 95 Ohm on DC, diodes Vf 0, Ron 1 mOhm, Goff 1 nS, 12 periods, last one) ===
+   Id 177.8473, Id1 59.1977, Id2 59.3442, Id3 59.3054, IL1 126.9597, ILrms 127.2047, h5 0.0279, h7 0.0134, h11 0.0097, h13 0.0063, h17 4.6239, h19 3.8772, sh1 20.0269, sh2 -19.9579, cond 169.2450, Vdc 16895.4907
+   MATLAB: ref = struct('Id', 177.85, 'Id1', 59.198, 'Id2', 59.344, 'Id3', 59.305, 'IL1', 126.96, 'ILrms', 127.2, 'h5', 0.027852, 'h7', 0.013392, 'h11', 0.0097414, 'h13', 0.0063433, 'h17', 4.6239, 'h19', 3.8772, 'sh1', 20.027, 'sh2', -19.958, 'cond', 169.25, 'Vdc', 16895);
+   DC current = sum of the three bridges (relative)                 got 177.847, expected 177.847               OK
+
+108 checks, 0 failed

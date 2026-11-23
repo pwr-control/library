@@ -1,0 +1,180 @@
+component diode_rr_th
+% RR Diode with Cauer thermal model : 2.0
+% Lauritzen-Ma charge-controlled diode (same electrical model as diode_rr)
+% with the junction temperature computed inside the block by a Cauer
+% ladder from the junction to the case, and a thermal port H for the
+% outside: a thermal mass, a heat sink network or an ideal temperature
+% source. One block can stand for ns identical devices in series.
+%
+% Electrical model: see diode_rr.ssc (parameter extraction, numerics).
+% The ns devices in series carry the same current: the block scales
+%   N, Rs, Rr, Vjp, dsm by ns and Cj0 by 1/ns; Is, tau, TM, Imax are
+%   unchanged. Enter the parameters of ONE device.
+%
+% Thermal model (parameters of ONE device):
+%
+%   Tj o--+--[R1]--+--[R2]-- ... --+--[Rn + Rch]--o H (case or heat sink)
+%         |        |               |
+%        C1       C2              Cn
+%         |        |               |
+%        ===      ===             ===   thermal reference
+%
+%   Rth = [R1 ... Rn], Cth = [C1 ... Cn]: Cauer ladder junction -> case,
+%   n >= 2, row vectors. A datasheet Foster network Zth(j-c) gives the
+%   equivalent ladder with foster2cauer.m (setup_files/
+%   simulink_models_initialization): the Foster coefficients themselves
+%   are NOT a Cauer ladder and must not be entered here. The equivalent
+%   ladder has the same Zth(j-c) with the case held at constant
+%   temperature and, unlike the Foster network, gives the right heat flow
+%   into whatever is connected to H.
+%   Rch: contact resistance case -> heat sink (0 if Zth already includes
+%   it, e.g. a Zth(j-hs) datasheet curve, or if a heat sink network with
+%   its own contact resistance is connected to H).
+%   With ns > 1 the ns ladders are identical and in parallel: the block
+%   uses Rth/ns, Cth*ns, Rch/ns, and H is the common case node of the ns
+%   devices; connect to H the TOTAL thermal mass (ns times that of one
+%   device) to get the temperature of each device.
+%   T0: initial temperature of the internal nodes (the junction starts at
+%   T0); give the external mass the same initial temperature.
+%
+% Dissipated power, fed into the junction node:
+%   P = Rs*i^2 + vj*(qE - qM)/TM + vj^2/Rr
+% i.e. the terminal power v*i minus the reactive power vj*der(qj) of the
+% depletion charge, which is stored and returned, not dissipated.
+% The electrical parameters do not depend on Tj (no electrothermal loop):
+% enter them at Tj max, which is conservative for the losses above the
+% temperature-crossover current of VF.
+%
+% Outputs: Tj (K) junction temperature, P (W) dissipated power of the
+% ns devices.
+%
+% Defaults: Littelfuse (Westcode) W8245EC450, one device, Tj = 160 C:
+%   forward: tangent at 7.5 kA of VT0 = 0.776 V, rT = 0.087 mOhm (N = 1,
+%     Vt at 125 C as device_lm_params.m), within 0.5 % of the line from
+%     3 to 15 kA;
+%   recovery: Qrr = 21.5 mC, Irrm = 350 A at 10 A/us -> tau = 78.9 us,
+%     TM = 99.1 us; Rr = 1.2 MOhm, Cj0 = 5 nF (estimates), mg = 0;
+%   thermal: Zth(j-hs) Foster [1.8146 1.3878 1.3962 0.4167] K/kW,
+%     [0.8936 0.3521 0.0597 0.0188] s -> Cauer ladder below (contact
+%     included, Rch = 0).
+
+nodes
+    p = foundation.electrical.electrical; % A
+    n = foundation.electrical.electrical; % K
+    H = foundation.thermal.thermal;       % H
+end
+
+outputs
+    Tj = {313.15, 'K'}; % Tj
+    P  = {0,      'W'}; % P
+end
+
+annotations
+    p : Side = left;
+    n : Side = right;
+    H : Side = bottom;
+    [Tj, P] : Side = top;
+end
+
+parameters
+    Is   = {9.36125e-7, 'A'  }; % Saturation current, Is
+    N    = {1,          '1'  }; % Emission coefficient, N
+    Vt   = {34.31e-3,   'V'  }; % Thermal voltage, kT/q
+    tau  = {78.93e-6,   's'  }; % Carrier lifetime, tau
+    TM   = {99.06e-6,   's'  }; % Transit time, TM
+    Rs   = {82.43e-6,   'Ohm'}; % Series resistance, Rs
+    Rr   = {1.2e6,      'Ohm'}; % Reverse leakage resistance, Rr (1e12 = none)
+    Cj0  = {5e-9,       'F'  }; % Zero-bias depletion capacitance, Cj0
+    Vjp  = {0.7,        'V'  }; % Junction potential, Vj
+    mg   = {0,          '1'  }; % Grading coefficient, m
+    FC   = {0.5,        '1'  }; % Forward-bias depletion clamp factor
+    dsm  = {10e-3,      'V'  }; % Smoothing width (numerics)
+    Imax = {100e3,      'A'  }; % Linearization current (numerics), Imax
+    ns   = {1,          '1'  }; % Identical devices in series, ns
+    Rth  = {[1.678425e-3 1.083105e-3 1.817316e-3 0.436378e-3], 'K/W'}; % Cauer thermal resistances j-c, one device [R1 ... Rn]
+    Cth  = {[19.424306 46.004012 178.757932 1536.318702],      'J/K'}; % Cauer thermal capacitances, one device [C1 ... Cn]
+    Rch  = {0,          'K/W'}; % Thermal resistance case to H, one device, Rch
+    T0   = {313.15,     'K'  }; % Initial temperature of the Cauer nodes, T0
+end
+
+parameters (Access = private)
+    nth   = numel(Rth);                 % Cauer stages
+    % ns devices in series, same current
+    N_e   = ns*N;
+    Rs_e  = ns*Rs;
+    Rr_e  = ns*Rr;
+    Cj0_e = Cj0/ns;
+    Vjp_e = ns*Vjp;
+    dsm_e = ns*dsm;
+    % exponential argument at the static current Imax
+    xlin  = log(Imax*(tau + TM)/(tau*Is) + 1);
+    Cfc   = Cj0_e/(1 - FC)^mg;          % depletion C at the clamp point
+    % ns identical ladders in parallel
+    Rint  = Rth(1:end-1)/ns;            % R1 ... R(n-1)
+    Rlast = (Rth(end) + Rch)/ns;        % Rn + Rch, to H
+    Cn    = Cth*ns;                     % C1 ... Cn
+end
+
+variables
+    i  = {0, 'A'};                                     % through
+    v  = {0, 'V'};                                     % across
+    vj = {0, 'V'};                                     % internal junction voltage
+    qE = {value = {0, 'C'}, nominal = {1e-4, 'C'}};                           % injected junction charge
+    qM = {value = {0, 'C'}, nominal = {1e-4, 'C'}, priority = priority.high}; % mid-region stored charge
+    qj = {value = {0, 'C'}, nominal = {1e-5, 'C'}};                           % depletion charge
+    Q  = {0, 'W'};                                     % heat flow into the block through H
+end
+
+variables (ExternalAccess = observe)
+    % rise of the Cauer node temperatures over T0 (set T0, not this)
+    dT = {value = {zeros(1, nth), 'K'}, priority = priority.high};
+end
+
+branches
+    i : p.i -> n.i;
+    Q : H.Q -> *;
+end
+
+intermediates
+    % exponential argument, continued linearly above xlin (protects the
+    % solver only; never active below Imax)
+    xj  = vj/(N_e*Vt);
+    xp  = 0.5*((xj - xlin) + sqrt((xj - xlin)^2 + 1e-2)); % smooth max(xj - xlin, 0)
+    xm  = xj - xp;                                         % smooth min(xj, xlin)
+    % smooth clamp of vj at FC*Vjp for the depletion charge
+    xc  = FC*Vjp_e - vj;
+    xcp = 0.5*(xc + sqrt(xc^2 + dsm_e^2));  % positive part of xc
+    vjc = FC*Vjp_e - xcp;                   % min(vj, FC*Vjp), smooth
+    % dissipated power (without the reactive depletion-charge power)
+    Pd  = vj*(qE - qM)/TM + vj^2/Rr_e + Rs_e*i^2;
+    % heat flows in the ladder: node k -> k+1, and last node -> H
+    qint = (dT(1:end-1) - dT(2:end))./Rint;
+    qout = (T0 + dT(end) - H.T)/Rlast;
+end
+
+equations
+    assert(nth >= 2, 'Rth: at least two Cauer stages');
+    assert(numel(Cth) == nth, 'Rth and Cth: same number of stages');
+    assert(ns >= 1);
+
+    v == p.v - n.v;
+    v == vj + Rs_e*i;
+
+    % Lauritzen-Ma lumped charge model
+    qE     == tau*Is*(exp(xm)*(1 + xp) - 1);
+    qM.der == (qE - qM)/TM - qM/tau;
+
+    % depletion charge, linear extension above FC*Vjp
+    qj == Cj0_e*Vjp_e/(1 - mg)*(1 - (1 - vjc/Vjp_e)^(1 - mg)) + Cfc*(vj - vjc);
+
+    % total current = diffusion + depletion displacement + leakage
+    i == (qE - qM)/TM + qj.der + vj/Rr_e;
+
+    % Cauer ladder: C_k der(T_k) = heat in - heat out
+    Cn.*dT.der == [Pd, qint] - [qint, qout];
+    Q  == -qout;
+
+    Tj == T0 + dT(1);
+    P  == Pd;
+end
+end

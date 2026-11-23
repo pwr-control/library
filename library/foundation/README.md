@@ -1,0 +1,397 @@
+# Foundation — Simscape language components
+
+Physical models written in Simscape language (`.ssc`), grouped by domain. Each component lives in
+its own `+package` folder and is compiled into the `<package>_lib.slx` file next to it, which is
+the Simulink library holding the block.
+
+Rebuild a component after editing it:
+
+```matlab
+cd library/foundation/<domain>
+ssc_build <package>
+```
+
+Several components are documented in detail in [`../documentation`](../documentation).
+
+---
+
+## `semiconductors`
+
+Device models at two levels: **switching dynamics** (waveform shape, no losses) and **simplified
+with thermal ports** (losses and temperatures, no transient).
+
+- **`igbt_dyn`** — Behavioural IGBT for turn-on/turn-off transients: square-law channel with smooth
+  saturation, constant Cge, charge-based nonlinear Miller and output capacitances, internal gate
+  resistance, charge-based tail current. No losses; the antiparallel diode is separate, pair it
+  with `diode_rr`.
+- **`mos_dyn`** — Power MOSFET (Si or SiC) switching transients: symmetric channel conducting in
+  both quadrants, nonlinear Cgd with oxide clamp, nonlinear Cds, intrinsic body diode with
+  Lauritzen-Ma charge dynamics, gate/drain/source parasitics including common-source inductance
+  feedback, optional avalanche clamp. No losses, no thermal port.
+- **`diode_rr`** — Charge-controlled diode (Lauritzen-Ma): Irr, trr and recovery softness emerge
+  from the circuit di/dt instead of being imposed. Includes SPICE depletion capacitance and a
+  reverse leakage resistance for static voltage sharing in series stacks.
+- **`igbt_simple`** — IGBT with antiparallel diode as two conduction branches (Vce_sat, Vf, Ron,
+  Rd). Conduction only, no switching energies, no thermal ports.
+- **`igbt_simple_2th`** — Same conduction model with single-point switching energies
+  (Eon, Eoff, Err at a reference current and voltage, scaled linearly) dissipated on two thermal
+  ports, `Ht` for the IGBT chip and `Hd` for the free-wheeling diode. Sample-and-hold states
+  recover the commutated current and blocking voltage; Err is attributed locally by detecting the
+  recovery event. Defaults: Mitsubishi CM1200DW-34T.
+- **`mos_simple_2th`** — MOSFET counterpart: resistive channel with optional temperature
+  coefficient (closing the electrothermal loop), third-quadrant conduction falling out of the
+  parallel channel/diode branches, `two_die` selecting whether diode losses go to `Hd` or `Ht`.
+  The package carries its own README with the interface and sign conventions.
+- **`thyristor_rr`** — Thyristor with piecewise-linear static characteristic plus Lauritzen-Ma
+  charge dynamics: latching and holding logic, spontaneous re-fire on residual excess charge, and
+  a tq constraint. Defaults: ABB 5STP 26N6500.
+- **`diode_rr_th`** — `diode_rr` with the junction temperature inside the block: a Cauer ladder
+  junction → case (from the datasheet Foster network with `foster2cauer.m`) and a thermal port
+  `H` for a thermal mass or a heat-sink network. One block stands for `ns` identical devices in
+  series. Outputs the junction temperature and the dissipated power. Defaults: Littelfuse
+  W8245EC450. The package carries its own README.
+- **`thyristor_rr_th`** — `thyristor_rr` with the same Cauer ladder and thermal port; the
+  recovery parameters come from one datasheet point (IRM, Qrr) with the formulas of its abrupt
+  turn-off, given in the README. Defaults: Hitachi Energy 5STP 42U6500.
+- **`thyristor_selftrig`** — Thyristor with the explicit passive anode-to-gate self-trigger network
+  (coupling capacitor, reset resistor, static break-over path). The `M` output reports which
+  mechanism fired the device. No reverse recovery — use `thyristor_rr` for that.
+- **`crowbar_bidir`** — Bidirectional self-triggered crowbar: two antiparallel thyristors, each
+  with its own floating trigger network, for bypassing a low-impedance element that may open.
+  Reports the firing mode and polarity, the I²t and the dissipated energy.
+- **`tvs_clamp`** — Bidirectional TVS stack (N series × M parallel) for IGBT active clamping:
+  symmetric avalanche with an algebraic smooth knee, dynamic resistance, leakage and junction
+  capacitance. Device temperature is a parameter, no self-heating. Defaults: 1.5KE440CA.
+
+## `pwr_electronics`
+
+Reactors with a shared saturation model: a normalized table of differential inductance dψ/di
+against the current normalized to the peak base current √2·`i_base`. Set `i_base = inf` to work
+with a linear inductor.
+
+- **`singlephase_inductor_with_saturation`** — Series reactor with saturable main inductance,
+  non-saturable leakage and winding resistance; outputs the flux linkage.
+- **`twolimb_inductor_with_saturation`** — Single-phase reactor with one winding on each limb, i.e.
+  half the inductance and half the resistance in each conductor of a two-wire line (split DC-link
+  reactors, rectifier output reactors in both poles). Differential-mode current magnetizes the
+  core, common-mode current sees only the leakage.
+- **`threephase_inductor`** — Linear three-phase reactor with mutual coupling, parameterized by
+  positive- and zero-sequence inductance and resistance plus leakage.
+- **`threephase_inductor_with_saturation`** — Same topology with per-phase saturation scaling the
+  self and mutual inductances independently.
+
+Single-block power stages of the compact converter blocks of [`../masked_models`](../masked_models)
+(one converter = one nonvirtual block of power stage, MATLAB Home licence):
+
+- **`ideal_bridges`** — functional bridges, one block per converter: switch + antiparallel diode as a
+  piecewise-linear resistor (`Ron` / `Goff`, no losses, no dead time), gates in as a physical-signal
+  vector `G` (+15 / -10 V against `Vth`), terminal currents `I` and DC-link voltage(s) `V` out, optional
+  DC-link capacitor(s) and AC series inductors (`ideal_bridges.onoff`). Two-level `full_bridge` and
+  `three_phase_bridge` (gate order `[a+; a-; b+; b-; ...]`); three-level T-type `half_bridge_ttype`,
+  `full_bridge_ttype` and `three_phase_bridge_ttype` (per leg Q1 from `+` to the midpoint, Q4 from the
+  midpoint to `-`, Q2/Q3 anti-series to the neutral point `np`, exposed as a port; split DC link `Cdc1` /
+  `Cdc2` with ESR, optional; gate order `[Q1; Q2; Q3; Q4]` per leg as the library three-level modulators
+  and `afe_single_phase_ttype`; `V = [vdc; vdc1; vdc2]`). `check_ideal_bridges_ttype.py` (python3 +
+  numpy, output committed) checks the structure of the five `.ssc` (equation and `der()` counts for every
+  on/off combination), one T-type leg at the 16 gate patterns and the half bridge in the time domain with
+  three-level PWM. Build with `ssc_build ideal_bridges` from this folder (`ideal_bridges_lib.slx`,
+  committed next to the package). Details in [`pwr_electronics/+ideal_bridges/README.md`](pwr_electronics/+ideal_bridges/README.md).
+- **`afe_ssc`** — `afe_two_level_lcl`: two-level bridge with DC-link capacitor and LCL filter, the power
+  stage of `grid_following_dqctrl`, `grid_forming_dqctrl` and of the PMSM inverter `pmsm_inverter_dqctrl`
+  (L or LC output filter). Gate commands in as a physical-signal
+  vector `G` [6×1], measurements out in pu, `M` [17×1] (`M(15:17)` = filter capacitor currents, added in
+  November 2026; `M(1:14)` unchanged). `afe_two_level_lcl_delta`: the same block with the filter
+  capacitors in delta (same ports and `M`; for the same filter divide `Cf` by 3 and multiply `Rcf` by 3).
+  `check_afe_lcl.py` (python3 + numpy, output committed) checks these two and the two T-type LCL blocks
+  of `afe_ttype_ssc`. Build with `ssc_build afe_ssc` from this folder (`afe_ssc_lib.slx`). Details in
+  [`pwr_electronics/+afe_ssc/README.md`](pwr_electronics/+afe_ssc/README.md).
+- **`afe_ttype_ssc`** — `afe_single_phase_ttype`: single-phase three-level T-type full bridge, the power
+  stage of `afe_single_phase_ttype`: split DC link (two capacitor banks in series with their ESR, the
+  neutral point internal, `Vdc0/2` on each bank at the start), two T-type legs of four switch +
+  antiparallel-diode pairs (outer switches between the DC rails and the midpoint, anti-series pair to
+  the neutral point), one inductor per line and the filter capacitor across the terminals. Gates `G`
+  [8×1] in, measurements `M` [13×1] in pu out (currents on `ibez`, AC voltages on `ubez`, DC voltages
+  on `udc_nom`). Same circuit as `single_phase_inverter_modA` of `sst_cllc_ttype_inv.slx` of
+  `pwr-control/solid-state-transformers` without the device and thermal model.
+  `afe_three_level_ttype_lcl` and `afe_three_level_ttype_lcl_delta` (November 2026): three-phase
+  T-type versions of `afe_ssc.afe_two_level_lcl` and `afe_ssc.afe_two_level_lcl_delta`, star or delta
+  filter capacitors, split DC link with ESR (optional, `afe_ttype_ssc.onoff`), neutral point `np`
+  always a port, gate order `[Q1; Q2; Q3; Q4]` per leg (`G` [12×1]), `M` [22×1] = `M(1:17)` of the
+  two-level blocks + bank voltages, neutral-point current and bank currents. Build with
+  `ssc_build afe_ttype_ssc` from this folder (`afe_ttype_ssc_lib.slx`, committed next to the package;
+  rebuild it to add the two LCL blocks). Details in [`pwr_electronics/+afe_ttype_ssc/README.md`](pwr_electronics/+afe_ttype_ssc/README.md).
+- **`cllc_ssc`** — `cllc_dcx_single_phase`: CLLC resonant DC/DC stage (DC transformer, DCX), the power
+  stage of `cllc_dcx`: DC choke and DC-link capacitor on each side, two full bridges of switch +
+  antiparallel-diode pairs with optional output capacitance `Coss` (ZVS transitions driven by the tank
+  current), symmetrical resonant tank `Lr1`/`Cr1` – `Lr2`/`Cr2`, transformer with magnetizing
+  inductance and core-loss resistance (reluctance model, turns `n1:n2`). Gates `G` [8×1] in,
+  measurements `M` [15×1] in pu out; the options (`coss_on`, DC-link capacitors, chokes) are
+  `cllc_ssc.onoff` enumerations. Same circuit as `sst_cllc_dcx.slx` of
+  `pwr-control/solid-state-transformers`. Build with `ssc_build cllc_ssc` from this folder
+  (`cllc_ssc_lib.slx`, committed next to the package once built). Documented in
+  [`../documentation/cllc_dcx`](../documentation/cllc_dcx) (`cllc_dcx.pdf`, Section 5).
+- **`buck_ssc`** — `interleaved_buck_3legs`: three-leg interleaved buck converter, the power stage of
+  `interleaved_buck_3legs`: DC-link capacitor with its ESR (`Vdc0` at the start), three buck legs of two
+  switch + antiparallel-diode pairs (upper switch between dc+ and the leg output, lower switch between the
+  leg output and dc-), one inductor per leg (`L`, `RL` with the per-leg factors `kL`, `kRL` for mismatched
+  legs), common output capacitor with its ESR; `out-` is the negative rail `dc-`. Gates `G` [6×1] in
+  (upper and lower switch of legs 1, 2, 3), measurements `M` [10×1] in pu out (currents on `ibez`, the
+  output voltage on `ubez`, the DC-link voltage on `udc_nom`). Same circuit as `interleaved_buck.slx` of
+  `pwr-control/modelization-and-control` without the device and thermal model. Build with
+  `ssc_build buck_ssc` from this folder (`buck_ssc_lib.slx`, committed next to the package once built).
+- **`boost_ssc`** — `interleaved_boost_3legs`: three-leg interleaved boost converter, the power stage of
+  `interleaved_boost_3legs`: the hardware of `buck_ssc.interleaved_buck_3legs` with the power flow
+  reversed. Input capacitor with its ESR across the low-voltage terminals (`Vin0` at the start), three
+  legs of two switch + antiparallel-diode pairs (upper switch between dc+ and the leg midpoint, the
+  synchronous rectifier; lower switch between the midpoint and dc-, the boost switch), one inductor per
+  leg from `in+` to the midpoint (`L`, `RL` with the per-leg factors `kL`, `kRL`), DC-link capacitor
+  with its ESR (`Vdc0` at the start, = `Vin0` for a link precharged through the upper diodes); `in-` is
+  the negative rail `dc-`. Gates `G` [6×1] in (upper and lower switch of legs 1, 2, 3, the order of the
+  buck block), measurements `M` [10×1] in pu out (currents on `ibez`, positive from the battery into
+  the legs; the input voltage on `uin_nom`, the DC-link voltage on `udc_nom`). Same circuit as
+  `interleaved_boost.slx` of `pwr-control/modelization-and-control` without the device and thermal
+  model. Build with `ssc_build boost_ssc` from this folder (`boost_ssc_lib.slx`, committed next to the
+  package once built).
+
+## `electrical_machines`
+
+- **`im`** — Induction machine in stationary αβ coordinates, current/rotor-flux state form.
+- **`im_uvw`** — Induction machine in full three-phase representation with a wide output set
+  (phase and dq currents, stator and rotor flux linkages, torque, electrical speed and position).
+- **`im_uvw_2`** — `im_uvw` extended with slip-frame quantities, αβ fluxes and an internal PLL
+  giving stator pulsation, stator phase and slip phase.
+- **`pmsm_alphabeta`** — PMSM in stationary αβ coordinates with saliency and rotating magnet flux
+  states.
+- **`pmsm_dq2`** — PMSM in rotor dq coordinates driven by `ud`/`uq` physical signals (no electrical
+  nodes), salient-pole torque, peak-value convention.
+- **`pmsm_uvw`** — PMSM in three-phase representation with position-dependent self and mutual
+  inductances and explicit motional terms; linear, quadratic friction and inertia on the shaft.
+- **`pmsm_spatial_harmonics_uvw`**, **`pmsm_uvw_with_harmonics`**,
+  **`pmsm_uvw_with_harmonics_2`**, **`pmsm_uvw_with_harmonics_3`** — the same machine with spatial
+  harmonics in the magnet flux: 5th and 7th, 5th and 7th with αβ outputs and a position-sensor
+  `angle_error`, 5th and 11th, and 3rd/5th/7th/11th respectively.
+- **`pmsm_dq_controller`** — Per-unit field-oriented controller for the PMSM models: speed and
+  current PIs, MTPA reference for salient machines, cross-coupling and back-EMF feedforward,
+  anti-windup on the torque limit and a field-weakening PI on the voltage magnitude.
+- **`single_phase_transformer`**, **`single_phase_trafo`** — Linear single-phase transformers,
+  reluctance-based; the second computes the reluctance from the core geometry.
+- **`saturable_single_phase_transformer`** — Reluctance-based transformer with core-loss resistance
+  and flux-density output. Note: the magnetic characteristic in the equations is linear; the
+  geometry parameters only serve to report `Bc`.
+- **`saturable_single_phase_transformer_2`** — Switchable nonlinear magnetization: `en_sat` selects
+  between the linear law and an arctangent characteristic that smoothly limits the flux. No
+  hysteresis.
+- **`three_windings_transformer`** — Three windings on a common core, single flux, linear magnetics.
+- **`scott_t`** — Scott-T transformer converting three-phase to a balanced two-phase system
+  (main plus teaser at √3/2 turns), parameterized in per unit on the rated power and voltages.
+  Secondaries are galvanically separate. Linear magnetizing branch, no saturation or hysteresis.
+- **`tri_monophase_transformer`** — Three-phase to single-phase transformer: two star-connected
+  primaries wound on the same three-limb core (Yy0, neutrals exposed) and one single-phase
+  secondary made of limb coils in series, whose turns distribution on the limbs is a parameter
+  (`[1 -1 0]` line-to-line type, `[1 -1/2 -1/2]` T type, `[1 0 0]` single limb, which needs the
+  neutral). Positive- and zero-sequence magnetizing inductances, per-limb core-loss resistance,
+  parameters in per unit on the single-phase rating; linear magnetics, no saturation. The limb
+  flux linkages are outputs. `test_tri_monophase_transformer.m` is a pure-MATLAB steady-state
+  check (no-load ratio, load, short circuit, parallel primaries, secondary distributions). The
+  block library `tri_monophase_transformer_lib.slx` is not in the repository yet: build it with
+  `ssc_build tri_monophase_transformer` from `electrical_machines`. Documented in
+  `research/electrical_machines/transformers/tri_monophase_transformer` of
+  [repositories-documentation](https://github.com/pwr-control/repositories-documentation).
+- **`three_phase_transformer`** — Package with three two-winding three-phase transformers written
+  from scratch in Simscape language on a common three-limb core model, one component per connection:
+  **`transformer_Dd`** (Dd0/Dd6), **`transformer_Yyn`** (Yyn0/Yyn6, both neutrals N and n exposed)
+  and **`transformer_Dyn`** (Dyn11 default, Dyn1/5/7 by `clock_number`, secondary neutral n exposed).
+  Each component writes the coil equations explicitly: terminal voltage = R and leakage drop plus
+  dψ/dt of the limb, secondary emf `s·n21·dψ/dt` with the limb and the sense of each secondary coil
+  fixed by the vector group (this is where the 30° of the Dyn comes from), mmf balance per limb with
+  the core-loss current, and the magnetizing matrix `ψ = Lm·im − Lc·Σim`, `Lc = (Lm − Lm0)/3`, i.e.
+  `lm` for the positive/negative sequence and `lm0` for the zero sequence (a fraction of a pu for a
+  three-limb core, `lm0 = lm` for a bank of single-phase units). Per-unit parameters on `Sr`, `V1`,
+  `V2`: the base of a delta coil is `3·V²/Sr`, so the same pu numbers give the same line-side
+  behaviour for every connection; `l1 + l2 = ucc/100`, `r1 + r2` = copper losses/Sr, `lm` = rated
+  over magnetizing current, `rfe = Sr`/iron losses. Flux linkages of the primary coils are outputs.
+  Linear magnetics, no saturation. `check_three_phase_transformer.py` (python3 + numpy, output in
+  `check_three_phase_transformer_output.txt`) rebuilds the same equations in the phasor domain and
+  checks, against closed-form expectations, the ratio and phase shift of every clock number, the
+  no-load and short-circuit quantities, the regulation and the power balance at rated load, the
+  neutral shift of the Yyn with a single-phase load (17 % of the phase voltage at 1 pu with
+  `lm0 = 0.5` and N floating, 99 % for a bank with `lm0 = lm`, 1.6 % with N grounded), the absence
+  of neutral shift and the circulating delta current of the Dyn, and the 2/3–1/3 coil split of a
+  line-to-line load on the Dd. `test_three_phase_transformer.m` is the MATLAB port of the same
+  check (not run yet). Each component defines the limb voltage `um_k = dψ_k/dt` once and uses it
+  algebraically in the coil and mmf equations: Simscape counts every equation that contains `der()`
+  as a differential equation and requires as many of them as differentiated variables (9 per
+  component), otherwise the model fails to compile with "Total size of differential equations does
+  not match the total size of differential variables". The block library
+  `three_phase_transformer_lib.slx` is built with `ssc_build three_phase_transformer` from
+  `electrical_machines`: rebuild it after every change to the `.ssc` files.
+- **`configurable_transformer`** — The configurable transformer on the three-limb core of
+  `three_phase_transformer`: one or two three-phase primaries, each in star (neutral brought out) or
+  delta, and one secondary, three-phase in star or delta or single-phase (limb coils in series with the
+  turns distribution `ws` of `tri_monophase_transformer`). The configuration is chosen in dropdowns
+  (enumerations `n_primaries`, `connection`, `secondary_winding` inside the package, as `afe_ssc.onoff`)
+  and the block shows only the ports and parameters it uses. Primary 2 and a three-phase secondary are
+  placed by their clock number against primary 1 (`clock2`, `clock3`, 0 to 11; even between equal
+  connections and odd otherwise, enforced by asserts): the phase-a coil (a-b coil of a delta) sits on
+  limb `-q mod 3` with sense `(-1)^q`, `q = (h + d1 - dw)/2`, `d = 1` for a delta. Coil, mmf and core
+  equations, the `um = dψ/dt` rule and the per-unit conventions are those of `three_phase_transformer`
+  and `tri_monophase_transformer` (on the rating `Sr` of the secondary; base `V²/Sr` of a star coil,
+  `3·V²/Sr` of a delta coil, `V3²/Sr` of the single-phase winding), and each of those components is a
+  configuration of this one. `check_configurable_transformer.py` (python3 + numpy, reuses the solver of
+  `check_three_phase_transformer.py`; output in `check_configurable_transformer_output.txt`, 622 checks)
+  rebuilds the equations in the phasor domain and finds the same node voltages, currents and fluxes as
+  `transformer_Dyn` 1/5/7/11, `transformer_Yyn` 0/6, `transformer_Dd` 0/6 and
+  `tri_monophase_transformer` (`ws` [1 -1 0], [1 -1/2 -1/2], [1 0 0]) with balanced, unbalanced and
+  single-phase loads and in short circuit; against closed forms it checks the ratio and the phase shift
+  of every clock number of primary 2 and of the secondary, the short-circuit impedance between each pair
+  of windings, two primaries sharing a load, and that a single-phase load on a star secondary equals the
+  single-phase secondary (across a-b: `ws` [1 -1 0] with coils of half the r3, l3; across a-n: `ws`
+  [1 0 0] at V3/√3, coil of a third of r3, l3). `test_configurable_transformer.m` makes the same comparison
+  with the library components in Simscape (time domain, 12 cases, all passing on MATLAB R2026b; the
+  cases with two primaries are compared over the last of 20 periods, after the circulating current that
+  Simscape puts between the primaries at the start has decayed). Masked block: `configurable_trafo.slx`
+  in `masked_models/electrical_machines`.
+- **`lit_18_pulse`** — Line interphase transformer (LIT) of an 18-pulse diode rectifier: six single-phase
+  units, two per line, feeding three six-pulse bridges whose DC terminals are in parallel directly, with no
+  DC interphase reactor. Per line k, a current divider X_k (one tapped coil X1-X2-X3: line on the tap X2,
+  X3 to bridge 3) and a coupled reactor Y_k (tapped coil Y1-Y2-Y3 to bridges 1 and 2 of the next line, and
+  a coil Y4-Y5 in the path of the line current to bridges 1 and 2). Ports: line terminals `A`, `B`, `C`
+  on the left, bridge terminals `a1 b1 c1`, `a2 b2 c2`, `a3 b3 c3` and the output `psi` (flux linkages of
+  the six reference coils) on the right. Ideal turns `n_x23 = n_y12 = 2 cos 20°` and
+  `n_y23 = 1 + 2 cos 20°`, dotted ends X1, X2 and Y1, Y2, Y5: equal sharing among the bridges, bridges 1
+  and 2 at +20° and −20° from bridge 3, bridge voltage (1 + 2 cos 20°)/3 = 0.96 of the line voltage. The
+  equations are written per line on the three branch currents line → bridge (no internal node), each core
+  with `um = dψ/dt` written once (15 `der()` equations, 15 differentiated variables). Per unit on `Sr`,
+  `V1` at the line terminals; `rs`, `ls` are the short-circuit impedance of the LIT lumped on the line
+  side, the coil sections have their own r and l, `lm` and `rfe` are referred to the reference coil of each
+  core. Defaults 3 MW, 13.8 kV, 60 Hz, `ls` 0.04: with a stiff source, an impressed DC voltage and 62 A
+  per bridge, commutation di/dt about 0.09 A/µs and 168° of conduction. The commutation loop of a diode
+  (reverse-voltage step at turn-off over the di/dt at the current zero), plus the coil leakages, depends
+  on the DC side: `1.5·n_y23² = 12.4` times `Ls` with an impressed DC voltage or a DC capacitor,
+  `2·(n_y23² − n_y23 + 1) = 12.8` times `Ls` with one smoothed DC current (DC choke). A separate current
+  source on each bridge does not fit the cores (the X units fix the share of bridge 3 at every instant).
+  Linear magnetics, six separate cores, no saturation. `check_lit_18_pulse.py` (python3 + numpy, about
+  15 s, output in `check_lit_18_pulse_output.txt`, 108 checks) reads the equations from the `.ssc` instead of
+  retyping them and compares them with an independent netlist of the six units (phasor domain and time
+  domain with 18 ideal diodes, equal within 1e-10); against closed forms it checks the sharing, the ±20°
+  shifts, the bridge voltage and the core voltages of the ideal LIT, the swap of the shifts in negative
+  sequence, the polarity (Y4 at the polarity of Y1 breaks the sharing), the copper-loss coefficients, the
+  cancellation of the 5th to 13th harmonics and the 1/h spectrum of the 17th, 19th, 35th and 37th on a
+  current-stiff DC side, the energy balance at rated power and the commutation loop for both DC sides
+  (incremental network of the diodes in conduction at the turn-off, against the simulated reverse-voltage
+  step).
+  `test_lit_18_pulse.m` builds the rectifier in Simscape (Component blocks on the source files, diodes
+  `crowbar.diode_fn` from `nonlinear_loads`) and compares the DC and line currents, the harmonics, the
+  shifts and the conduction angle with the values of the Python check (not run yet). The block library
+  `lit_18_pulse_lib.slx` is not in the repository yet: build it with `ssc_build lit_18_pulse` from
+  `electrical_machines`.
+
+## `batteries`
+
+- **`lithium_ion_cell`** — Equivalent-circuit cell/module with analytical OCV (exponential +
+  polynomial + log form), coulomb counting with clamped SOC, one RC overpotential branch and a
+  current-driven hysteresis state. No thermal model, no ageing.
+
+## `electrochemical`
+
+- **`pemfc_stack`** — PEM fuel-cell stack: anode and cathode gas dynamics, Nernst voltage, ohmic
+  drop and an RC activation/concentration branch. Isothermal, no membrane hydration model.
+
+## `electronics`
+
+- **`opamp_cfa`** — Behavioural macromodel of a wideband, high-output-current current-feedback
+  operational amplifier (defaults for the LT1210): input buffer with offset and bias currents and
+  a soft common-mode clamp, transimpedance stage with a slew-rate limit, parasitic output pole,
+  output buffer with supply-referred clipping and current limit, and supply pins carrying the
+  quiescent plus load current so the power balance is consistent.
+
+## `varistors`
+
+- **`varistor_mov`** — Metal-oxide varistor for surge and clamping studies: series inductance and
+  bulk resistance feeding a power-law nonlinear resistor with leakage and capacitance. The
+  exponent is derived from two datasheet points, so the part is entered as varistor voltage and
+  clamping point. Absorbed energy is integrated and optionally checked against the single-pulse
+  rating. Defaults: EPCOS SIOV-B80K680. `test_varistor_mov.m` is a pure-MATLAB sanity check.
+
+## `nonlinear_loads`
+
+- **`+crowbar`** — Thyristor crowbars for coil power supplies, built into `crowbar_lib.slx`
+  (`ssc_build crowbar` from `nonlinear_loads`):
+  - `crowbar_b` — diode-bridge crowbar with one thyristor, functional: bridge of `diode_fn`,
+    `thyristor_fn` with holding current and break-over, RC snubber, peak-holding branch, bleeder,
+    shunt regulator and `firing_unit` (overcurrent, overvoltage, external command);
+  - `crowbar_c` — bidirectional gate-fired crowbar: two antiparallel `thyristor_rr` driven by
+    `firing_unit_bidir` with the same gate command (needs `+thyristor_rr` from `semiconductors`);
+  - building blocks `diode_fn`, `diode_bridge`, `thyristor_fn`, `rlc_branch`, `shunt_regulator`,
+    `firing_unit`, `firing_unit_bidir`.
+  - Wiring and defaults in [`+crowbar/README.md`](nonlinear_loads/+crowbar/README.md).
+
+## `mechanics`
+
+- **`flexshaft`**, **`flexshaft_2masses`** — Two-inertia torsionally flexible shaft (the second
+  exposes the torsion torque and the two speeds as outputs).
+- **`flexshaft_3masses`** — Three inertias and two elastic spans.
+- **`gear`** — Elastic gear pair: the mesh torque is a state driven by the speed mismatch and
+  reflected through the ratio. No backlash, no meshing efficiency.
+- **`gear2`** — Same with the damping coefficients as physical-signal inputs, so friction can be
+  scheduled from outside.
+- **`differential_gear`** — Three-shaft differential with an elastic mesh, inertia and viscous
+  friction on all three shafts.
+
+## `hydro`
+
+Hydrostatic drivetrain components. Pumps and motors share the same structure: rotor inertia,
+viscous friction, turbulent leakage orifice and chamber compressibility.
+
+- Pumps: **`fixed_displacement_pump`**, **`variable_displacement_pump`** (displacement from a
+  signal input), **`variable_displacement_pump_2`** (bulk modulus as a parameter),
+  **`pressure_controlled_pump`** (with a PI pressure regulator, displacement limits and an internal
+  relief valve).
+- Motors: **`fixed_displacement_motor`**, **`variable_displacement_motor`**,
+  **`variable_displacement_motor_2`** (opposite sign convention on Δp and explicit bulk modulus),
+  **`variable_displacement_motor_withTh`** (thermal nodes declared, equations not implemented).
+- Valves: **`hydraulic_orifice`** (fixed turbulent orifice), **`check_valve`** (second-order poppet
+  with end stops), **`relief_valve`** (linear opening ramp over the regulation range),
+  **`shuttle_valve`** and **`inverse_shuttle_valve`** (higher / lower pressure connected to the
+  common port), **`fourway_threeland_valve`** (critical centre),
+  **`fourway_fourland_valve`** (four metering edges with explicit underlap).
+- Actuators: **`bichamber_piston`** and its **`_for_pump`** / **`_for_valve`** variants
+  (double-acting cylinder with stroke-dependent chamber volumes; the two variants add end stops).
+- Valve + actuator assemblies: **`fourway_fourland_valve_bichamber_piston`**,
+  **`hydrostatic_fourway_valve_bichamber_piston`**,
+  **`hydrostatic_threeway_valve_bichamber_piston`** (differential piston with the supply acting
+  permanently on the rod-side annulus).
+- **`linear_swashplate_ctrl`** — Signal-level state-feedback controller for the swashplate
+  displacement.
+- Note: `variable_displacement_pump_withTh` contains the plain pump source, and
+  `pressure_controlled_pump` and `linear_swashplate_ctrl` have no built `_lib.slx`.
+
+## `ice`
+
+- **`engine`**, **`engine_1`**, **`engine_2`** — Diesel engines with hard-coded torque, friction
+  and consumption maps: `engine` reports specific consumption in s/J, `engine_1` in g/(kW·h) with
+  integrated fuel mass, `engine_2` uses a speed/power consumption map and reports fuel volume.
+  All model the throttle as a second-order lag with crankshaft inertia and speed-dependent
+  friction.
+- **`engine_3`**, **`ice`**, **`ice_torque_consumption`** — Generic engines with the maps exposed
+  as parameters instead of hard-coded, so a dataset from
+  [`../setup_files/engines`](../setup_files/engines) can be plugged in.
+- **`engine_speed_ctrl`**, **`engine_speed_ctrl_ii`**, **`engine_speed_ctrl_kinputs`** — PID speed
+  controllers producing throttle, with integral anti-windup and output saturation; the last takes
+  the proportional and integral gains as inputs so they can be scheduled at runtime.
+
+## `control_systems`
+
+Benchmark plants and small building blocks used for control design examples.
+
+- **`pendulum_on_a_cart`** — Full nonlinear cart-pendulum dynamics with cart and pivot damping.
+- **`segway`** — Two-body inverted-pendulum vehicle with the coupled inertia matrix inverted
+  symbolically.
+- **`simple_magnetic_bearing`** — One-axis active magnetic bearing with two opposing electromagnets:
+  position-dependent inductance, motional EMF, nonlinear attraction force and a runaway limiter.
+- **`pm_linear_actuator`** — Voice-coil linear actuator for a spool valve: coil R-L dynamics, back
+  EMF, viscous damping and hard travel limits.
+- **`lotka_volterra`** — Predator-prey pair with the four coefficients as runtime signals.
+- **`pi`** — Generic PI controller with anti-windup and output limits.
+- **`vco`** — Voltage-controlled oscillator with electrical input and output ports.
+- **`gyro_electrical`** — Ideal lossless electrical gyrator/transformer two-port.

@@ -1,0 +1,183 @@
+component mos_loss
+% Power MOSFET loss model (channel + intrinsic body diode)
+%
+% Simplified switching model intended for loss estimation and nominal
+% thermal dimensioning, not for switching-transient studies.
+%
+% Channel      : bidirectional on-state resistance Rds_on(Tj), off-state
+%                resistance Roff. Third-quadrant (synchronous rectification)
+%                conduction is handled automatically.
+% Body diode   : threshold voltage Vf0(Tj) plus series resistance Rd_on(Tj),
+%                in parallel with the channel.
+% Switching    : datasheet energies Eon, Eoff (channel) and Err (body diode
+%                reverse recovery), scaled with blocking voltage, commutated
+%                current and junction temperature.
+% Thermal      : Ht carries channel conduction + Eon/Eoff losses,
+%                Hd carries body-diode conduction + Err losses.
+%
+% Gate input G is a physical signal: G > 0.5 turns the channel on.
+%
+% Notes
+%  - Switching energies are accumulated at switching events and released to
+%    the thermal ports through a first-order filter of time constant tau_avg.
+%    Energy is conserved; tau_avg must be much larger than the switching
+%    period and much smaller than the thermal time constants.
+%  - The current used for Eon is the current sampled at the previous turn-off
+%    of the same device (valid for fsw much larger than the output frequency).
+%  - If the datasheet Eon already includes the reverse recovery of the
+%    complementary body diode, set Err_ref = 0 to avoid double counting.
+
+nodes
+    D  = foundation.electrical.electrical;  % D:left
+    S  = foundation.electrical.electrical;  % S:right
+    Ht = foundation.thermal.thermal;        % Ht:left
+    Hd = foundation.thermal.thermal;        % Hd:right
+end
+
+inputs
+    G = {0, '1'};                           % G:left
+end
+
+parameters
+    % --- Channel conduction ---
+    Rds_on   = {5.0e-3, 'Ohm'};   % On-state resistance at Tref
+    aR       = {5.0e-3, '1/K'};   % Rds_on temperature coefficient
+    Roff     = {1e6,    'Ohm'};   % Off-state resistance
+
+    % --- Body diode conduction ---
+    Vf0      = {2.6,    'V'};     % Body diode threshold voltage at Tref
+    aVf      = {-2.0e-3,'V/K'};   % Threshold voltage temperature coefficient
+    Rd_on    = {6.0e-3, 'Ohm'};   % Body diode on-resistance at Tref
+    aRd      = {4.0e-3, '1/K'};   % Rd_on temperature coefficient
+
+    % --- Datasheet switching energies ---
+    Eon_ref  = {12.0e-3,'J'};     % Turn-on energy at Vdc_ref, I_ref, Tref
+    Eoff_ref = {6.0e-3, 'J'};     % Turn-off energy at Vdc_ref, I_ref, Tref
+    Err_ref  = {1.0e-3, 'J'};     % Body diode recovery energy at Vdc_ref, I_ref, Tref
+    Vdc_ref  = {600,    'V'};     % Reference DC link voltage
+    I_ref    = {300,    'A'};     % Reference current
+    Tref     = {398.15, 'K'};     % Reference junction temperature (125 degC)
+
+    % --- Scaling exponents ---
+    kv_t     = {1.0,  '1'};       % Voltage exponent, channel
+    ki_t     = {1.0,  '1'};       % Current exponent, channel
+    kv_d     = {0.6,  '1'};       % Voltage exponent, body diode
+    ki_d     = {0.5,  '1'};       % Current exponent, body diode
+    cT_t     = {0.0,  '1/K'};     % Esw temperature coefficient, channel
+    cT_d     = {0.0,  '1/K'};     % Err temperature coefficient, body diode
+
+    % --- Numerics ---
+    tau_f    = {1e-6, 's'};       % Measurement filter time constant
+    tau_avg  = {1e-3, 's'};       % Switching loss averaging time constant
+    i_eps    = {1e-3, 'A'};       % Body diode conduction threshold
+    Vdc_init = {600,  'V'};       % Initial value of the held blocking voltage
+end
+
+variables (Access = private)
+    i    = {0, 'A'};              % Total current, D to S
+    ich  = {0, 'A'};              % Channel current
+    id   = {0, 'A'};              % Body diode current (negative when conducting)
+    v    = {0, 'V'};              % Voltage, D to S
+    i_f  = {0, 'A'};              % Filtered total current
+    id_f = {0, 'A'};              % Filtered body diode current
+    v_f  = {0, 'V'};              % Filtered voltage
+    Tjt  = {398.15, 'K'};         % Channel junction temperature
+    Tjd  = {398.15, 'K'};         % Body diode junction temperature
+    Pt   = {0, 'W'};              % Total channel loss
+    Pd   = {0, 'W'};              % Total body diode loss
+    Pt_sw = {0, 'W'};             % Channel switching loss
+    Pd_sw = {0, 'W'};             % Body diode recovery loss
+    Erel_t = {0, 'J'};            % Released channel switching energy
+    Erel_d = {0, 'J'};            % Released body diode recovery energy
+    Qt   = {0, 'W'};              % Heat flow, channel port
+    Qd   = {0, 'W'};              % Heat flow, body diode port
+end
+
+% Event variables: updated only inside the events section
+variables (Access = private)
+    Esw_t = {0, 'J'};             % Accumulated channel switching energy
+    Esw_d = {0, 'J'};             % Accumulated body diode recovery energy
+    Ioff  = {0, 'A'};             % Current sampled at last turn-off
+    Vblk  = Vdc_init;             % Blocking voltage sampled at last turn-on
+end
+
+branches
+    i  : D.i  -> S.i;
+    Qt : Ht.Q -> *;
+    Qd : Hd.Q -> *;
+end
+
+equations
+    let
+        Rch = Rds_on*(1 + aR*(Tjt - Tref));
+        Vfd = Vf0 + aVf*(Tjd - Tref);
+        Rdd = Rd_on*(1 + aRd*(Tjd - Tref));
+    in
+        % --- port quantities ---
+        v   == D.v - S.v;
+        Tjt == Ht.T;
+        Tjd == Hd.T;
+        i   == ich + id;
+
+        % --- channel ---
+        if G > 0.5
+            ich == v/Rch;
+        else
+            ich == v/Roff;
+        end
+
+        % --- intrinsic body diode ---
+        if v < -Vfd
+            id == (v + Vfd)/Rdd;
+        else
+            id == v/Roff;
+        end
+
+        % --- measurement filters (hold pre-commutation values) ---
+        tau_f*i_f.der  + i_f  == i;
+        tau_f*id_f.der + id_f == id;
+        tau_f*v_f.der  + v_f  == v;
+
+        % --- switching energy release ---
+        Pt_sw      == (Esw_t - Erel_t)/tau_avg;
+        Erel_t.der == Pt_sw;
+        Pd_sw      == (Esw_d - Erel_d)/tau_avg;
+        Erel_d.der == Pd_sw;
+
+        % --- total losses and heat flows ---
+        Pt == v*ich + Pt_sw;
+        Pd == v*id  + Pd_sw;
+        Qt == -Pt;
+        Qd == -Pd;
+    end
+end
+
+events
+    % --- turn-on: sample blocking voltage, add Eon ---
+    when edge(G > 0.5)
+        Vblk  = max(v_f, {0,'V'});
+        Esw_t = Esw_t + Eon_ref ...
+                * (max(v_f, {0,'V'})/Vdc_ref)^kv_t ...
+                * (max(Ioff, {0,'A'})/I_ref)^ki_t ...
+                * (1 + cT_t*(Tjt - Tref));
+    end
+
+    % --- turn-off: sample current, add Eoff ---
+    when edge(G < 0.5)
+        Ioff  = max(i_f, {0,'A'});
+        Esw_t = Esw_t + Eoff_ref ...
+                * (Vblk/Vdc_ref)^kv_t ...
+                * (max(i_f, {0,'A'})/I_ref)^ki_t ...
+                * (1 + cT_t*(Tjt - Tref));
+    end
+
+    % --- body diode commutation off: add Err ---
+    when edge(id > -i_eps)
+        Esw_d = Esw_d + Err_ref ...
+                * (Vblk/Vdc_ref)^kv_d ...
+                * (max(-id_f, {0,'A'})/I_ref)^ki_d ...
+                * (1 + cT_d*(Tjd - Tref));
+    end
+end
+
+end

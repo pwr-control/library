@@ -1,0 +1,50 @@
+/*
+Copyright (c) 2026 Davide Bagnara
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#include <phase_shift_flt.h>
+#include <phase_shift_flt_simulink.h>
+#include <math_f.h>
+
+void phase_shift_flt_init(volatile PHASE_SHIFT_FLT *flt, volatile float ts, 
+	volatile float fcut, volatile float scaling)
+{
+	flt->ts = ts;
+	flt->fcut = fcut;
+	flt->a = 1.0f + MATH_2PI * ts * fcut;
+	flt->b = 1.0f - MATH_2PI * ts * fcut;
+	flt->input_flt_1 = 0.0f;
+	flt->output_flt_1 = 0.0f;
+	flt->scaling = scaling;
+}
+
+
+float phase_shift_flt_process(volatile PHASE_SHIFT_FLT *flt, float input)
+{
+	const float filter_output = flt->scaling * (flt->output_flt_1 * flt->b + input - 
+		flt->input_flt_1  * flt->a);
+
+	flt->input_flt_1 = input;
+	flt->output_flt_1 = filter_output;
+	
+	return filter_output;
+}
+

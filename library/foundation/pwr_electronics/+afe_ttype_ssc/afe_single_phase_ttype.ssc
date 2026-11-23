@@ -1,0 +1,297 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component afe_single_phase_ttype
+% AFE Single-Phase Three-Level T-Type Bridge with LC Filter
+% Single-phase three-level T-type full bridge (two legs of four switch +
+% antiparallel diode pairs), split DC link and LC output filter in ONE
+% Simscape block, so that the power stage of one single-phase AFE counts
+% as one nonvirtual block (MATLAB Home licence: at most 1000 nonvirtual
+% blocks per model, referenced models and library links included).
+%
+% Same circuit as single_phase_inverter_modA of sst_cllc_ttype_inv.slx of
+% pwr-control/solid-state-transformers (library blocks
+% dclink_for_three_levels, full_bridge_three_level_ttype_mosfet_based_model
+% and the subsystem output_filter) without the loss and thermal model of
+% the switches, the snubbers and the 107 kOhm measurement divider:
+%   DC link: two capacitor banks in series between dc+ and dc-, Cdc1 + Rdc1
+%     from dc+ to the neutral point np, Cdc2 + Rdc2 from np to dc-; np is
+%     internal (the neutral branches of the two legs connect to it). The
+%     run starts with Vdc0/2 on each bank.
+%   T-type leg x (x = u, v), four switch + antiparallel diode pairs:
+%     Q1 between dc+ and the midpoint m_x (drain on dc+),
+%     Q4 between m_x and dc- (drain on m_x),
+%     Q2 and Q3 in anti-series with common source between np and m_x
+%     (Q2 drain on np, Q3 drain on m_x): the leg output is dc+ with Q1 on,
+%     dc- with Q4 on, np with Q2 and Q3 on. Same arrangement and numbering
+%     as the T-type blocks of pwr-control/library (Q1..Q4 of leg u, Q5..Q8
+%     of leg v).
+%   switch + antiparallel diode pair (current i, voltage v, drain -> source):
+%     gate on  (G(k) > Vth)  ->  i = v/Ron   (bidirectional)
+%     gate off, v < 0        ->  i = v/Ron   (antiparallel diode conducting)
+%     gate off, v >= 0       ->  i = v*Goff  (blocking)
+%   LC filter: inductor L1 + R1 from m_u to the terminal a, inductor L2 + R2
+%     from m_v to the terminal b (the filter inductance split between the
+%     two lines, LFu1 and LFu2 of the model), capacitor Cf + Rcf across the
+%     terminals a and b.
+%
+% Gate input G: physical-signal vector [8x1] in V, order
+%     G = [Q1u; Q2u; Q3u; Q4u; Q1v; Q2v; Q3v; Q4v]
+% (gate_cmds_ph1.cmd_gate_Q1..Q4 and gate_cmds_ph2.cmd_gate_Q1..Q4 of the
+% library modulator single_phase_three_levels_PWM_modulator). Drive it with
+% +15 V (on) / -10 V (off) and Vth = 2.5 V. No dead time and no interlock
+% inside the block: with Q1 and Q4 of a leg on, the leg shorts the DC link
+% through 2*Ron; with Q1 (or Q4) and both neutral switches on, it shorts one
+% bank. Three-level modulation of a leg with the reference m in [-1, 1]:
+% m >= 0, Q2 on, Q1 and Q3 complementary (duty of Q1 = m); m < 0, Q3 on,
+% Q4 and Q2 complementary (duty of Q4 = -m). Leg v is driven with -m, so
+% that the bridge voltage m_u - m_v averages m*udc.
+%
+% Measurement output M: physical-signal vector [13x1], dimensionless (pu):
+%   M(1)  i_s/ibez      converter current, inductor L1, positive OUT of the
+%                       bridge (m_u -> a); the current regulated by the control
+%   M(2)  i_a/ibez      terminal current, positive out of a (i_s - i_cf)
+%   M(3)  u_ac/ubez     terminal voltage a - b (filter capacitor with Rcf)
+%   M(4)  u_s/ubez      bridge voltage, midpoint u - midpoint v
+%   M(5)  udc/udc_nom   DC-link voltage dc+ - dc-
+%   M(6)  udc_p/udc_nom upper bank, dc+ - np
+%   M(7)  udc_n/udc_nom lower bank, np - dc-
+%   M(8)  i_dc/ibez     DC terminal current, positive INTO dc+
+%   M(9)  i_np/ibez     neutral-point current, positive from the two legs
+%                       INTO np
+%   M(10) i_c1/ibez     upper bank current, dc+ -> np
+%   M(11) i_c2/ibez     lower bank current, np -> dc-
+%   M(12) i_cf/ibez     filter capacitor current, a -> b
+%   M(13) i_s2/ibez     inductor L2 current, positive out of the bridge
+%                       (m_v -> b); equal to -i_s with a floating load
+%
+% Ports: a b (AC, left), dc+ dc- (DC, right), G (gates, left), M
+% (measurements, right). Initial conditions: Vdc0/2 on each DC-link bank;
+% the inductor currents and the filter capacitor voltage have priority
+% none (set them in the Variables tab if needed).
+
+  nodes
+    a = foundation.electrical.electrical; % a
+    b = foundation.electrical.electrical; % b
+    p = foundation.electrical.electrical; % dc+
+    n = foundation.electrical.electrical; % dc-
+  end
+
+  inputs
+    G = {zeros(8,1), 'V'}; % G
+  end
+
+  outputs
+    M = {zeros(13,1), '1'}; % M
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth     = {2.5,    'V'    };   % Gate threshold voltage
+    Ron     = {1e-3,   'Ohm'  };   % On-state resistance (switch and diode)
+    Goff    = {1e-6,   '1/Ohm'};   % Off-state conductance
+    % --- split DC link ---
+    Cdc1    = {6e-3,   'F'    };   % Upper bank capacitance (dc+ to np)
+    Rdc1    = {0.5e-3, 'Ohm'  };   % Upper bank series resistance
+    Cdc2    = {6e-3,   'F'    };   % Lower bank capacitance (np to dc-)
+    Rdc2    = {0.5e-3, 'Ohm'  };   % Lower bank series resistance
+    Vdc0    = {800,    'V'    };   % DC-link initial voltage (Vdc0/2 per bank)
+    % --- LC output filter ---
+    L1      = {250e-6, 'H'    };   % Inductance of line a (leg u)
+    R1      = {2e-3,   'Ohm'  };   % Series resistance of line a
+    L2      = {250e-6, 'H'    };   % Inductance of line b (leg v)
+    R2      = {2e-3,   'Ohm'  };   % Series resistance of line b
+    Cf      = {50e-6,  'F'    };   % Filter capacitance (across a and b)
+    Rcf     = {50e-3,  'Ohm'  };   % Filter capacitor series resistance
+    % --- normalization of the measurement output ---
+    ubez    = {720,    'V'    };   % Base voltage (peak)
+    ibez    = {177.5,  'A'    };   % Base current (peak)
+    udc_nom = {800,    'V'    };   % Base DC-link voltage
+  end
+
+  variables
+    % ---- DC link ----
+    vnp   = {0, 'V'};   % Neutral point potential
+    vc1   = {value = {0, 'V'}, priority = priority.none};   % Upper bank voltage (without Rdc1)
+    vc2   = {value = {0, 'V'}, priority = priority.none};   % Lower bank voltage (without Rdc2)
+    ic1   = {0, 'A'};   % Upper bank current, dc+ -> np
+    ic2   = {0, 'A'};   % Lower bank current, np -> dc-
+    % ---- leg u ----
+    vm_u  = {0, 'V'};   % Midpoint potential of leg u
+    vcs_u = {0, 'V'};   % Common-source potential of the neutral pair of leg u
+    i1_u  = {0, 'A'};   % Current of Q1u, dc+ -> midpoint
+    i2_u  = {0, 'A'};   % Current of Q2u, np -> common source
+    i3_u  = {0, 'A'};   % Current of Q3u, midpoint -> common source
+    i4_u  = {0, 'A'};   % Current of Q4u, midpoint -> dc-
+    iL_u  = {value = {0, 'A'}, priority = priority.none};   % Inductor L1 current, midpoint u -> a
+    % ---- leg v ----
+    vm_v  = {0, 'V'};   % Midpoint potential of leg v
+    vcs_v = {0, 'V'};   % Common-source potential of the neutral pair of leg v
+    i1_v  = {0, 'A'};   % Current of Q1v, dc+ -> midpoint
+    i2_v  = {0, 'A'};   % Current of Q2v, np -> common source
+    i3_v  = {0, 'A'};   % Current of Q3v, midpoint -> common source
+    i4_v  = {0, 'A'};   % Current of Q4v, midpoint -> dc-
+    iL_v  = {value = {0, 'A'}, priority = priority.none};   % Inductor L2 current, midpoint v -> b
+    % ---- filter capacitor ----
+    vcf   = {value = {0, 'V'}, priority = priority.none};   % Filter capacitor voltage (without Rcf), a side positive
+    icf   = {0, 'A'};   % Filter capacitor current, a -> b
+    % ---- terminal currents (branches) ----
+    j_p   = {0, 'A'};   % Current entering at dc+
+    j_a   = {0, 'A'};   % Current leaving at a
+    j_b   = {0, 'A'};   % Current leaving at b
+  end
+
+  intermediates (ExternalAccess = observe)
+    v1_u = p.v - vm_u;        % Voltage across Q1u (drain - source)
+    v2_u = vnp - vcs_u;       % Voltage across Q2u
+    v3_u = vm_u - vcs_u;      % Voltage across Q3u
+    v4_u = vm_u - n.v;        % Voltage across Q4u
+    v1_v = p.v - vm_v;        % Voltage across Q1v
+    v2_v = vnp - vcs_v;       % Voltage across Q2v
+    v3_v = vm_v - vcs_v;      % Voltage across Q3v
+    v4_v = vm_v - n.v;        % Voltage across Q4v
+    u_ac = a.v - b.v;         % Terminal voltage
+    u_s  = vm_u - vm_v;       % Bridge voltage
+    udc  = p.v - n.v;         % DC-link voltage
+    i_np = -(i2_u + i2_v);    % Neutral-point current, from the legs into np
+  end
+
+  branches
+    % The midpoints, the common-source nodes and the neutral point are
+    % internal algebraic variables, not nodes. Three branches between the
+    % four terminals carry the terminal currents (the fourth follows from
+    % KCL): the current entering at dc+ leaves at dc-, the currents leaving
+    % at a and at b are taken from dc-. Any distribution of the terminal
+    % currents is possible (the DC and the AC side share the switches).
+    j_p : p.i -> n.i;
+    j_a : n.i -> a.i;
+    j_b : n.i -> b.i;
+  end
+
+  equations
+    % ---------- DC link ----------
+    ic1 == Cdc1*vc1.der;
+    p.v - vnp == vc1 + Rdc1*ic1;
+    ic2 == Cdc2*vc2.der;
+    vnp - n.v == vc2 + Rdc2*ic2;
+    % neutral point: the bank current continues into the lower bank and the neutral switches
+    ic1 == ic2 + i2_u + i2_v;
+
+    % ---------- leg u: switch + antiparallel diode pairs ----------
+    if (G(1) > Vth) || (v1_u < 0)
+      i1_u == v1_u/Ron;
+    else
+      i1_u == v1_u*Goff;
+    end
+    if (G(2) > Vth) || (v2_u < 0)
+      i2_u == v2_u/Ron;
+    else
+      i2_u == v2_u*Goff;
+    end
+    if (G(3) > Vth) || (v3_u < 0)
+      i3_u == v3_u/Ron;
+    else
+      i3_u == v3_u*Goff;
+    end
+    if (G(4) > Vth) || (v4_u < 0)
+      i4_u == v4_u/Ron;
+    else
+      i4_u == v4_u*Goff;
+    end
+    % midpoint and common-source node of leg u
+    i1_u == i4_u + i3_u + iL_u;
+    i2_u + i3_u == 0;
+    % inductor L1, midpoint u -> a
+    vm_u - a.v == L1*iL_u.der + R1*iL_u;
+
+    % ---------- leg v ----------
+    if (G(5) > Vth) || (v1_v < 0)
+      i1_v == v1_v/Ron;
+    else
+      i1_v == v1_v*Goff;
+    end
+    if (G(6) > Vth) || (v2_v < 0)
+      i2_v == v2_v/Ron;
+    else
+      i2_v == v2_v*Goff;
+    end
+    if (G(7) > Vth) || (v3_v < 0)
+      i3_v == v3_v/Ron;
+    else
+      i3_v == v3_v*Goff;
+    end
+    if (G(8) > Vth) || (v4_v < 0)
+      i4_v == v4_v/Ron;
+    else
+      i4_v == v4_v*Goff;
+    end
+    i1_v == i4_v + i3_v + iL_v;
+    i2_v + i3_v == 0;
+    % inductor L2, midpoint v -> b
+    vm_v - b.v == L2*iL_v.der + R2*iL_v;
+
+    % ---------- filter capacitor, a -> b ----------
+    icf == Cf*vcf.der;
+    u_ac == vcf + Rcf*icf;
+
+    % ---------- terminal currents ----------
+    j_p == ic1 + i1_u + i1_v;      % into dc+: upper bank and the two Q1
+    j_a == iL_u - icf;             % out of a
+    j_b == iL_v + icf;             % out of b
+    % (out of dc- = j_p - j_a - j_b = ic2 + i4_u + i4_v, by the KCLs above)
+
+    % ---------- measurements (pu) ----------
+    M == [iL_u/ibez;
+          j_a/ibez;
+          u_ac/ubez;
+          u_s/ubez;
+          udc/udc_nom;
+          (p.v - vnp)/udc_nom;
+          (vnp - n.v)/udc_nom;
+          j_p/ibez;
+          i_np/ibez;
+          ic1/ibez;
+          ic2/ibez;
+          icf/ibez;
+          iL_v/ibez];
+  end
+
+  % DC-link initial voltages: half of Vdc0 on each bank
+  equations (Initial = true)
+    vc1 == Vdc0/2;
+    vc2 == Vdc0/2;
+  end
+
+  annotations
+    a : Side = left;
+    b : Side = left;
+    G : Side = left;
+    p : Side = right;
+    n : Side = right;
+    M : Side = right;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff)
+                UIGroup("Split DC link", Cdc1, Rdc1, Cdc2, Rdc2, Vdc0)
+                UIGroup("LC filter", L1, R1, L2, R2, Cf, Rcf)
+                UIGroup("Normalization", ubez, ibez, udc_nom)];
+  end
+
+end

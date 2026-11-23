@@ -1,0 +1,221 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component transformer_Dd
+% Three-Phase Transformer Dd (delta primary, delta secondary)
+%
+% Two-winding three-phase transformer on a three-limb core: one primary and
+% one secondary coil on each limb (a, b, c). The primary coils are connected
+% in delta between the line terminals A, B, C (coil of limb a across A-B,
+% of limb b across B-C, of limb c across C-A) and the secondary coils in
+% delta between a, b, c in the same order (a-b, b-c, c-a). No neutral on
+% either side. The vector group is selected with clock_number:
+%
+%    0 (default)  Dd0: u_ab in phase with u_AB (same winding sense)
+%    6            Dd6: u_ab opposite to u_AB (secondary coils reversed)
+%
+% Equations, for each limb k with flux linkage psi_k of its primary coil
+% (N1 turns), n21 = N2/N1 the coil turns ratio and s = +1 (Dd0) or -1 (Dd6)
+% the sense of the secondary coil:
+%
+%   limb voltage (induced in the primary coil by the flux of its limb)
+%       um_k = dpsi_k/dt
+%   primary coil (delta, terminals P -> Q, current i1k from P to Q)
+%       u_PQ = R1 i1k + L1 di1k/dt + um_k
+%   secondary coil (delta, terminals p -> q, current i2k inside the coil
+%   from q to p, i.e. delivered at p)
+%       u_pq = s n21 um_k - R2 i2k - L2 di2k/dt
+%   mmf balance of the limb, in primary turns
+%       im_k = i1k - s n21 i2k - ife_k,   ife_k = um_k/Rfe
+%   magnetic circuit of the three-limb core
+%       psi_k = Lm im_k - Lc (im_a + im_b + im_c),   Lc = (Lm - Lm0)/3
+%
+% i.e. the magnetizing inductance is Lm for the positive and the negative
+% sequence of the magnetizing currents and Lm0 for the zero sequence (sum
+% of the three limb fluxes). Core losses are a linear resistance Rfe per
+% limb on the primary coil voltage. The line currents are differences of
+% coil currents (i_A = iAB - iCA, i_a = i2ab - i2ca, ...), so no zero
+% sequence can flow in the lines on either side; the sum of the coil
+% voltages of a delta is identically zero, so no zero-sequence voltage can
+% be impressed on the core either: in this linear model the zero-sequence
+% flux stays at zero and lm0 has no effect (it only matters for the inrush
+% and residual-flux studies that a linear model does not cover). A
+% single-phase load between two lines is fed by the coil across them in
+% parallel with the series of the other two (2/3 and 1/3 of the load
+% current, the limb fluxes stay balanced); at the primary terminals the
+% coil currents recombine and the referred load current flows in the two
+% corresponding lines only, the third line carries its magnetizing current
+% alone, as the check script shows. Compare with transformer_Yyn and
+% transformer_Dyn for the behaviour with a neutral.
+%
+% Per-unit parameters on the rated three-phase power Sr and the rated
+% line-to-line voltages V1, V2: a delta coil carries the line current
+% divided by sqrt(3) at the line voltage, so its base is 3 times the star
+% equivalent, 3*V1^2/Sr on the primary and 3*V2^2/Sr on the secondary (the
+% same pu value of resistance, leakage or magnetizing inductance gives the
+% same line-side behaviour whatever the connection). The coil turns ratio
+% is n21 = V2/V1. From the nameplate: l1 + l2 = ucc/100 (short-circuit
+% voltage), r1 + r2 = copper losses / Sr, lm = rated current / magnetizing
+% current, rfe = Sr / iron losses.
+%
+% Positive current is taken into A, B, C and out of a, b, c (towards the
+% load). The outputs psi_a, psi_b, psi_c are the flux linkages of the
+% primary coils (V*s). Linear magnetics: no saturation, no hysteresis, no
+% winding capacitances, no thermal port.
+
+nodes
+    A = foundation.electrical.electrical; % A:left
+    B = foundation.electrical.electrical; % B:left
+    C = foundation.electrical.electrical; % C:left
+    a = foundation.electrical.electrical; % a:right
+    b = foundation.electrical.electrical; % b:right
+    c = foundation.electrical.electrical; % c:right
+end
+
+outputs
+    psi_a = {0, 'V*s'};  % psi_a:right
+    psi_b = {0, 'V*s'};  % psi_b:right
+    psi_c = {0, 'V*s'};  % psi_c:right
+end
+
+parameters
+    Sr  = {1e6,   'V*A'};   % Rated apparent power (three-phase)
+    V1  = {690,   'V'  };   % Primary rated line-to-line voltage (rms)
+    V2  = {690,   'V'  };   % Secondary rated line-to-line voltage (rms)
+    fr  = {50,    'Hz' };   % Rated frequency
+    clock_number = {0, '1'};    % Vector group clock number (0 or 6)
+    r1  = {0.005, '1'  };   % Primary winding resistance (pu)
+    l1  = {0.025, '1'  };   % Primary leakage inductance (pu)
+    r2  = {0.005, '1'  };   % Secondary winding resistance (pu)
+    l2  = {0.025, '1'  };   % Secondary leakage inductance (pu)
+    lm  = {100,   '1'  };   % Positive-sequence magnetizing inductance (pu)
+    lm0 = {0.5,   '1'  };   % Zero-sequence magnetizing inductance (pu)
+    rfe = {500,   '1'  };   % Core-loss resistance per limb (pu)
+end
+
+parameters(Access=private)
+    wb  = {2*pi,'rad'}*fr;    % rated angular frequency
+    Zb1 = 3*V1^2/Sr;          % base impedance of a primary coil: delta, 3 x the star equivalent
+    Zb2 = 3*V2^2/Sr;          % base impedance of a secondary coil: delta, 3 x the star equivalent
+    n21 = V2/V1;              % coil turns ratio N2/N1
+    s2  = 1 - clock_number/3; % sense of the secondary coils: +1 for Dd0, -1 for Dd6
+    R1  = r1*Zb1;             % resistance of one primary coil
+    L1  = l1*Zb1/wb;          % leakage inductance of one primary coil
+    R2  = r2*Zb2;             % resistance of one secondary coil
+    L2  = l2*Zb2/wb;          % leakage inductance of one secondary coil
+    Lm  = lm*Zb1/wb;          % positive-sequence magnetizing inductance, primary coil referred
+    Lm0 = lm0*Zb1/wb;         % zero-sequence magnetizing inductance, primary coil referred
+    Lc  = (Lm - Lm0)/3;       % limb-to-limb coupling term of the magnetizing inductance matrix
+    Rfe = rfe*Zb1;            % core-loss resistance per limb, primary coil referred
+end
+
+variables
+    iAB  = {0, 'A'};  % current A -> B in the primary coil of limb a
+    iBC  = {0, 'A'};  % current B -> C in the primary coil of limb b
+    iCA  = {0, 'A'};  % current C -> A in the primary coil of limb c
+    i2ab = {0, 'A'};  % current of the secondary coil of limb a, delivered at a (inside the coil b -> a)
+    i2bc = {0, 'A'};  % current of the secondary coil of limb b, delivered at b (inside the coil c -> b)
+    i2ca = {0, 'A'};  % current of the secondary coil of limb c, delivered at c (inside the coil a -> c)
+end
+
+variables(Access=private)
+    psia = {0, 'V*s'};  % flux linkage of the primary coil of limb a
+    psib = {0, 'V*s'};  % flux linkage of the primary coil of limb b
+    psic = {0, 'V*s'};  % flux linkage of the primary coil of limb c
+    uma  = {0, 'V'};    % limb voltage dpsi_a/dt, induced in the primary coil of limb a
+    umb  = {0, 'V'};    % limb voltage of limb b
+    umc  = {0, 'V'};    % limb voltage of limb c
+    ima  = {0, 'A'};    % magnetizing current of limb a, primary coil referred
+    imb  = {0, 'A'};    % magnetizing current of limb b
+    imc  = {0, 'A'};    % magnetizing current of limb c
+end
+
+branches
+    iAB  : A.i -> B.i;
+    iBC  : B.i -> C.i;
+    iCA  : C.i -> A.i;
+    i2ab : b.i -> a.i;
+    i2bc : c.i -> b.i;
+    i2ca : a.i -> c.i;
+end
+
+equations
+    assert(Sr  > 0, 'Rated power must be positive')
+    assert(V1  > 0 && V2 > 0, 'Rated voltages must be positive')
+    assert(fr  > 0, 'Rated frequency must be positive')
+    assert(r1 >= 0 && r2 >= 0, 'Winding resistances must be non-negative')
+    assert(l1 >= 0 && l2 >= 0, 'Leakage inductances must be non-negative')
+    assert(lm  > 0 && lm0 > 0, 'Magnetizing inductances must be positive')
+    assert(rfe > 0, 'Core-loss resistance must be positive')
+    assert(clock_number == 0 || clock_number == 6, 'clock_number must be 0 or 6')
+
+    % Limb voltages: the voltage induced in the primary coil of each limb by
+    % its flux linkage. These are the only equations with der(psi): Simscape
+    % counts every equation that contains der() as a differential equation
+    % and requires as many of them as differentiated variables (9 here:
+    % three fluxes, three primary and three secondary coil currents), so
+    % the derivative of each flux is written once and the limb voltage is
+    % used algebraically everywhere else.
+    uma == der(psia);
+    umb == der(psib);
+    umc == der(psic);
+
+    % Primary coils, delta (motor convention): resistive and leakage drop
+    % plus the limb voltage.
+    A.v - B.v == R1*iAB + L1*der(iAB) + uma;
+    B.v - C.v == R1*iBC + L1*der(iBC) + umb;
+    C.v - A.v == R1*iCA + L1*der(iCA) + umc;
+
+    % Secondary coils, delta (generator convention): the emf s2*n21*um of
+    % the coil on the same limb minus the drop of the coil current, which
+    % leaves the coil at the first terminal of its name.
+    a.v - b.v == s2*n21*uma - R2*i2ab - L2*der(i2ab);
+    b.v - c.v == s2*n21*umb - R2*i2bc - L2*der(i2bc);
+    c.v - a.v == s2*n21*umc - R2*i2ca - L2*der(i2ca);
+
+    % Magneto-motive force balance of each limb, referred to the primary
+    % coil: the secondary coil current demagnetizes with s2*n21*i2 and the
+    % core-loss current um/Rfe is subtracted from the net mmf.
+    ima == iAB - s2*n21*i2ab - uma/Rfe;
+    imb == iBC - s2*n21*i2bc - umb/Rfe;
+    imc == iCA - s2*n21*i2ca - umc/Rfe;
+
+    % Magnetic circuit of the three-limb core: Lm for the positive and the
+    % negative sequence of the magnetizing currents, Lm0 for the zero
+    % sequence (never excited here, see the description).
+    psia == Lm*ima - Lc*(ima + imb + imc);
+    psib == Lm*imb - Lc*(ima + imb + imc);
+    psic == Lm*imc - Lc*(ima + imb + imc);
+
+    psi_a == psia;
+    psi_b == psib;
+    psi_c == psic;
+end
+
+annotations
+    UILayout = [
+        UIGroup('Ratings', Sr, V1, V2, fr)
+        UIGroup('Vector group', clock_number)
+        UIGroup('Impedances', r1, l1, r2, l2, lm, lm0, rfe)];
+end
+
+end

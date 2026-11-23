@@ -1,0 +1,362 @@
+
+=== A. structure of the .ssc files ===
+
+2L star: afe_two_level_lcl "AFE Two-Level Bridge with LCL Filter"  +afe_ssc/afe_two_level_lcl.ssc
+   nodes ['a', 'b', 'c', 'p', 'n'], G[6], M[17], 27 variables, 9 branches, 16 intermediates, onoff ['cap_dc']
+   cap_dc=on: equations = variables + outputs (27 + 17)                     got 44, expected 44                             OK
+   cap_dc=on: der() equations = differentiated variables                    got 10, expected 10                             OK
+   cap_dc=on: differentiated variables declared                             got [], expected []                             OK
+   cap_dc=on: number of states (inductors, capacitors, DC link)             got 10, expected 10                             OK
+   cap_dc=on: dynamic ifs (one per switch) = size of G                      got 6, expected 6                               OK
+   cap_dc=off: equations = variables + outputs (27 + 17)                    got 44, expected 44                             OK
+   cap_dc=off: der() equations = differentiated variables                   got 9, expected 9                               OK
+   cap_dc=off: differentiated variables declared                            got [], expected []                             OK
+   cap_dc=off: number of states (inductors, capacitors, DC link)            got 9, expected 9                               OK
+   cap_dc=off: dynamic ifs (one per switch) = size of G                     got 6, expected 6                               OK
+   initial equations (Vdc0/2 per bank, T-type only)                         got 0, expected 0                               OK
+   every gate index used once, 1..size(G)                                   got [1, 2, 3, 4, 5, 6], expected [1, 2, 3, 4, 5, 6]OK
+   size of G                                                                got 6, expected 6                               OK
+   size of M                                                                got 17, expected 17                             OK
+   branch currents declared as variables                                    got True, expected True                         OK
+   branch nodes declared                                                    got True, expected True                         OK
+   branches (DC link + switches + filter capacitors)                        got 9, expected 9                               OK
+   nodes                                                                    equal (5 items)                                 OK
+   every port has a Side annotation                                         equal (7 items)                                 OK
+   AC ports and G on the left, DC ports and M on the right                  got True, expected True                         OK
+   every parameter in one dialog group                                      equal (19 items)                                OK
+   hidden parameters exist: Cdc, Rdc                                        got True, expected True                         OK
+   no name used twice (variables, intermediates, parameters)                got 62, expected 62                             OK
+   onoff enumeration of the own package                                     got afe_ssc, expected afe_ssc                   OK
+
+2L delta: afe_two_level_lcl_delta "AFE Two-Level Bridge with LCL Filter, Delta Capacitors"  +afe_ssc/afe_two_level_lcl_delta.ssc
+   nodes ['a', 'b', 'c', 'p', 'n'], G[6], M[17], 27 variables, 10 branches, 17 intermediates, onoff ['cap_dc']
+   cap_dc=on: equations = variables + outputs (27 + 17)                     got 44, expected 44                             OK
+   cap_dc=on: der() equations = differentiated variables                    got 10, expected 10                             OK
+   cap_dc=on: differentiated variables declared                             got [], expected []                             OK
+   cap_dc=on: number of states (inductors, capacitors, DC link)             got 10, expected 10                             OK
+   cap_dc=on: dynamic ifs (one per switch) = size of G                      got 6, expected 6                               OK
+   cap_dc=off: equations = variables + outputs (27 + 17)                    got 44, expected 44                             OK
+   cap_dc=off: der() equations = differentiated variables                   got 9, expected 9                               OK
+   cap_dc=off: differentiated variables declared                            got [], expected []                             OK
+   cap_dc=off: number of states (inductors, capacitors, DC link)            got 9, expected 9                               OK
+   cap_dc=off: dynamic ifs (one per switch) = size of G                     got 6, expected 6                               OK
+   initial equations (Vdc0/2 per bank, T-type only)                         got 0, expected 0                               OK
+   every gate index used once, 1..size(G)                                   got [1, 2, 3, 4, 5, 6], expected [1, 2, 3, 4, 5, 6]OK
+   size of G                                                                got 6, expected 6                               OK
+   size of M                                                                got 17, expected 17                             OK
+   branch currents declared as variables                                    got True, expected True                         OK
+   branch nodes declared                                                    got True, expected True                         OK
+   branches (DC link + switches + filter capacitors)                        got 10, expected 10                             OK
+   nodes                                                                    equal (5 items)                                 OK
+   every port has a Side annotation                                         equal (7 items)                                 OK
+   AC ports and G on the left, DC ports and M on the right                  got True, expected True                         OK
+   every parameter in one dialog group                                      equal (19 items)                                OK
+   hidden parameters exist: Cdc, Rdc                                        got True, expected True                         OK
+   no name used twice (variables, intermediates, parameters)                got 63, expected 63                             OK
+   onoff enumeration of the own package                                     got afe_ssc, expected afe_ssc                   OK
+
+TT star: afe_three_level_ttype_lcl "AFE Three-Level T-Type Bridge with LCL Filter"  +afe_ttype_ssc/afe_three_level_ttype_lcl.ssc
+   nodes ['a', 'b', 'c', 'p', 'np', 'n'], G[12], M[22], 37 variables, 13 branches, 27 intermediates, onoff ['cap_dc']
+   cap_dc=on: equations = variables + outputs (37 + 22)                     got 59, expected 59                             OK
+   cap_dc=on: der() equations = differentiated variables                    got 11, expected 11                             OK
+   cap_dc=on: differentiated variables declared                             got [], expected []                             OK
+   cap_dc=on: number of states (inductors, capacitors, DC link)             got 11, expected 11                             OK
+   cap_dc=on: dynamic ifs (one per switch) = size of G                      got 12, expected 12                             OK
+   cap_dc=off: equations = variables + outputs (37 + 22)                    got 59, expected 59                             OK
+   cap_dc=off: der() equations = differentiated variables                   got 9, expected 9                               OK
+   cap_dc=off: differentiated variables declared                            got [], expected []                             OK
+   cap_dc=off: number of states (inductors, capacitors, DC link)            got 9, expected 9                               OK
+   cap_dc=off: dynamic ifs (one per switch) = size of G                     got 12, expected 12                             OK
+   initial equations (Vdc0/2 per bank, T-type only)                         got 2, expected 2                               OK
+   every gate index used once, 1..size(G)                                   equal (12 items)                                OK
+   size of G                                                                got 12, expected 12                             OK
+   size of M                                                                got 22, expected 22                             OK
+   branch currents declared as variables                                    got True, expected True                         OK
+   branch nodes declared                                                    got True, expected True                         OK
+   branches (DC link + switches + filter capacitors)                        got 13, expected 13                             OK
+   nodes                                                                    equal (6 items)                                 OK
+   every port has a Side annotation                                         equal (8 items)                                 OK
+   AC ports and G on the left, DC ports and M on the right                  got True, expected True                         OK
+   every parameter in one dialog group                                      equal (22 items)                                OK
+   hidden parameters exist: Cdc1, Rdc1, Cdc2, Rdc2, Vdc0                    got True, expected True                         OK
+   no name used twice (variables, intermediates, parameters)                got 86, expected 86                             OK
+   onoff enumeration of the own package                                     got afe_ttype_ssc, expected afe_ttype_ssc       OK
+
+TT delta: afe_three_level_ttype_lcl_delta "AFE Three-Level T-Type Bridge with LCL Filter, Delta Capacitors"  +afe_ttype_ssc/afe_three_level_ttype_lcl_delta.ssc
+   nodes ['a', 'b', 'c', 'p', 'np', 'n'], G[12], M[22], 37 variables, 14 branches, 28 intermediates, onoff ['cap_dc']
+   cap_dc=on: equations = variables + outputs (37 + 22)                     got 59, expected 59                             OK
+   cap_dc=on: der() equations = differentiated variables                    got 11, expected 11                             OK
+   cap_dc=on: differentiated variables declared                             got [], expected []                             OK
+   cap_dc=on: number of states (inductors, capacitors, DC link)             got 11, expected 11                             OK
+   cap_dc=on: dynamic ifs (one per switch) = size of G                      got 12, expected 12                             OK
+   cap_dc=off: equations = variables + outputs (37 + 22)                    got 59, expected 59                             OK
+   cap_dc=off: der() equations = differentiated variables                   got 9, expected 9                               OK
+   cap_dc=off: differentiated variables declared                            got [], expected []                             OK
+   cap_dc=off: number of states (inductors, capacitors, DC link)            got 9, expected 9                               OK
+   cap_dc=off: dynamic ifs (one per switch) = size of G                     got 12, expected 12                             OK
+   initial equations (Vdc0/2 per bank, T-type only)                         got 2, expected 2                               OK
+   every gate index used once, 1..size(G)                                   equal (12 items)                                OK
+   size of G                                                                got 12, expected 12                             OK
+   size of M                                                                got 22, expected 22                             OK
+   branch currents declared as variables                                    got True, expected True                         OK
+   branch nodes declared                                                    got True, expected True                         OK
+   branches (DC link + switches + filter capacitors)                        got 14, expected 14                             OK
+   nodes                                                                    equal (6 items)                                 OK
+   every port has a Side annotation                                         equal (8 items)                                 OK
+   AC ports and G on the left, DC ports and M on the right                  got True, expected True                         OK
+   every parameter in one dialog group                                      equal (22 items)                                OK
+   hidden parameters exist: Cdc1, Rdc1, Cdc2, Rdc2, Vdc0                    got True, expected True                         OK
+   no name used twice (variables, intermediates, parameters)                got 87, expected 87                             OK
+   onoff enumeration of the own package                                     got afe_ttype_ssc, expected afe_ttype_ssc       OK
+
+Interfaces of the pairs and block names
+   afe_two_level_lcl: block name unchanged (library link of the masks)      got AFE Two-Level Bridge ..., expected AFE Two-Level Bridge ...OK
+   2L star / 2L delta: same ports and sides                                 equal (2 items)                                 OK
+   2L star / 2L delta: same G and M sizes                                   got ({'G': 6}, {'M': 17}), expected ({'G': 6}, {'M': 17})OK
+   2L star / 2L delta: same parameter names                                 equal (19 items)                                OK
+   2L star / 2L delta: delta Cf = star Cf / 3                               got 0.00012, expected 0.00012                   OK
+   2L star / 2L delta: delta Rcf = 3 * star Rcf                             got 0.15, expected 0.15                         OK
+   2L star / 2L delta: other defaults equal                                 equal (17 items)                                OK
+   TT star / TT delta: same ports and sides                                 equal (2 items)                                 OK
+   TT star / TT delta: same G and M sizes                                   got ({'G': 12}, {'M': 22}), expected ({'G': 12}, {'M': 22})OK
+   TT star / TT delta: same parameter names                                 equal (22 items)                                OK
+   TT star / TT delta: delta Cf = star Cf / 3                               got 0.00012, expected 0.00012                   OK
+   TT star / TT delta: delta Rcf = 3 * star Rcf                             got 0.15, expected 0.15                         OK
+   TT star / TT delta: other defaults equal                                 equal (20 items)                                OK
+   T-type / two-level: same filter, switch and base parameters              equal (16 items)                                OK
+   T-type banks in series = two-level DC link (Cdc1*Cdc2/(Cdc1+Cdc2) = Cdc) got 0.0072, expected 0.0072                     OK
+   T-type banks in series: Rdc1 + Rdc2 = Rdc                                got 0.002, expected 0.002                       OK
+   default LCL: L1 = 336 uH, L2 = 85 uH, Cf = 360 uF star -> f_res = 1018.4 Hz (delta 3*Cf: 1018.4 Hz)
+   f_res of the defaults = 1.02 kHz (value written in the delta headers)    got 1.02, expected 1.02                         OK
+
+=== B. the .ssc equations on an independent circuit simulation ===
+grid 400 V 50 Hz (ideal), DC source 700 V + 10 mOhm, i2 = 0.5 pu in phase with the grid, sine-triangle PWM 4 kHz, dead time 2 us, backward Euler 0.625 us;
+L10 = 0.5*L1p and L20 = 0.5*L2p (mutual terms of the inductors active), other parameters = defaults.
+
+2L star, cap_dc = on, np open, 60 ms: 96000 steps, 33 switch patterns, 1.01 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   27 scalar equations (M apart); worst relative residual 7.96e-11 in: vm_b - R1*i1_b - (Lls1 + La1)*i1_b.der + Lm1*i1_a.der + Lm1*i1_c.der - vk_b == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    7.96e-11 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           2.65e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       1.58e-10 <= 0.000567                            OK
+      size of M                                                             got 17, expected 17                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        1.11e-16 <= 1e-09                               OK
+      M(15) + M(16) + M(17) = 0 (floating star point, pu)                   1.63e-16 <= 1e-09                               OK
+      M(15:17) = M(1:3) - M(7:9) (pu)                                       1.11e-16 <= 1e-09                               OK
+
+2L delta, cap_dc = on, np open, 60 ms: 96000 steps, 33 switch patterns, 1.01 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   27 scalar equations (M apart); worst relative residual 8.11e-11 in: vm_c - R1*i1_c - (Lls1 + La1)*i1_c.der + Lm1*i1_a.der + Lm1*i1_b.der - vk_c == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    8.11e-11 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           2.58e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       1.44e-10 <= 0.000567                            OK
+      size of M                                                             got 17, expected 17                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        0 <= 1e-09                                      OK
+      M(15) - M(17) = M(1) - M(7): line current into the delta (pu)         1.67e-16 <= 1e-09                               OK
+
+TT star, cap_dc = on, np open, 60 ms: 96000 steps, 91 switch patterns, 1.02 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   37 scalar equations (M apart); worst relative residual 1.13e-10 in: iq2_a + iq3_a == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    1.13e-10 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           3.27e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       2.61e-10 <= 0.000567                            OK
+      np open: no current at the np port (A)                                1.44e-10 <= 0.000567                            OK
+      size of M                                                             got 22, expected 22                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        1.11e-16 <= 1e-09                               OK
+      M(18:22), split DC link, = circuit (max error, pu)                    2.19e-13 <= 1e-09                               OK
+      M(15) + M(16) + M(17) = 0 (floating star point, pu)                   1.8e-16 <= 1e-09                                OK
+      M(15:17) = M(1:3) - M(7:9) (pu)                                       1.11e-16 <= 1e-09                               OK
+      initial equation vc1 == Vdc0/2                                        got 0, expected 0                               OK
+      initial equation vc2 == Vdc0/2                                        got 0, expected 0                               OK
+
+TT delta, cap_dc = on, np open, 60 ms: 96000 steps, 91 switch patterns, 1.02 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   37 scalar equations (M apart); worst relative residual 1.31e-10 in: iq2_b + iq3_b == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    1.31e-10 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           3.23e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       3.06e-10 <= 0.000567                            OK
+      np open: no current at the np port (A)                                1.84e-10 <= 0.000567                            OK
+      size of M                                                             got 22, expected 22                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        0 <= 1e-09                                      OK
+      M(18:22), split DC link, = circuit (max error, pu)                    2.37e-13 <= 1e-09                               OK
+      M(15) - M(17) = M(1) - M(7): line current into the delta (pu)         1.94e-16 <= 1e-09                               OK
+      initial equation vc1 == Vdc0/2                                        got 0, expected 0                               OK
+      initial equation vc2 == Vdc0/2                                        got 0, expected 0                               OK
+
+2L star, cap_dc = off, DC link outside, 1 uF + 1 Ohm to ground, 20 ms: 32000 steps, 33 switch patterns, 1.02 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   27 scalar equations (M apart); worst relative residual 8.28e-11 in: vm_b - R1*i1_b - (Lls1 + La1)*i1_b.der + Lm1*i1_a.der + Lm1*i1_c.der - vk_b == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    8.28e-11 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           6.32e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       2.65e-10 <= 0.000567                            OK
+      size of M                                                             got 17, expected 17                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        1.04e-16 <= 1e-09                               OK
+      M(15) + M(16) + M(17) = 0 (floating star point, pu)                   1.53e-16 <= 1e-09                               OK
+      M(15:17) = M(1:3) - M(7:9) (pu)                                       1.11e-16 <= 1e-09                               OK
+   zero-sequence current through the filter (path to ground): peak 75.88 A
+      zero-sequence current flows (> 0.5 A peak)                            got True, expected True                         OK
+      it passes the floating capacitors: sum(i1) = sum(i2) (A)              1.14e-13 <= 1e-06                               OK
+
+2L delta, cap_dc = off, DC link outside, 1 uF + 1 Ohm to ground, 20 ms: 32000 steps, 33 switch patterns, 1.02 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   27 scalar equations (M apart); worst relative residual 7.73e-11 in: vm_b - R1*i1_b - (Lls1 + La1)*i1_b.der + Lm1*i1_a.der + Lm1*i1_c.der - vk_b == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    7.73e-11 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           6.13e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       2.67e-10 <= 0.000567                            OK
+      size of M                                                             got 17, expected 17                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        0 <= 1e-09                                      OK
+      M(15) - M(17) = M(1) - M(7): line current into the delta (pu)         1.6e-16 <= 1e-09                                OK
+   zero-sequence current through the filter (path to ground): peak 75.88 A
+      zero-sequence current flows (> 0.5 A peak)                            got True, expected True                         OK
+      it passes the floating capacitors: sum(i1) = sum(i2) (A)              1.42e-13 <= 1e-06                               OK
+
+TT star, cap_dc = off, DC link outside, 1 uF + 1 Ohm to ground, 20 ms: 32000 steps, 91 switch patterns, 1.02 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   37 scalar equations (M apart); worst relative residual 2.45e-10 in: iq2_b + iq3_b == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    2.45e-10 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           6.07e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       4.59e-10 <= 0.000567                            OK
+      size of M                                                             got 22, expected 22                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        1.04e-16 <= 1e-09                               OK
+      M(18:22), split DC link, = circuit (max error, pu)                    5.43e-13 <= 1e-09                               OK
+      M(15) + M(16) + M(17) = 0 (floating star point, pu)                   1.67e-16 <= 1e-09                               OK
+      M(15:17) = M(1:3) - M(7:9) (pu)                                       1.11e-16 <= 1e-09                               OK
+   zero-sequence current through the filter (path to ground): peak 32.16 A
+      zero-sequence current flows (> 0.5 A peak)                            got True, expected True                         OK
+      it passes the floating capacitors: sum(i1) = sum(i2) (A)              1.14e-13 <= 1e-06                               OK
+
+TT delta, cap_dc = off, DC link outside, 1 uF + 1 Ohm to ground, 20 ms: 32000 steps, 91 switch patterns, 1.02 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   37 scalar equations (M apart); worst relative residual 2.27e-10 in: iq2_b + iq3_b == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    2.27e-10 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           4.54e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       3.97e-10 <= 0.000567                            OK
+      size of M                                                             got 22, expected 22                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        0 <= 1e-09                                      OK
+      M(18:22), split DC link, = circuit (max error, pu)                    7.53e-13 <= 1e-09                               OK
+      M(15) - M(17) = M(1) - M(7): line current into the delta (pu)         1.7e-16 <= 1e-09                                OK
+   zero-sequence current through the filter (path to ground): peak 32.16 A
+      zero-sequence current flows (> 0.5 A peak)                            got True, expected True                         OK
+      it passes the floating capacitors: sum(i1) = sum(i2) (A)              1.14e-13 <= 1e-06                               OK
+
+TT star, two-level gate patterns, 60 ms: 96000 steps, 57 switch patterns, 1.02 solves per step, mode iteration failures 0
+      mode iteration converged at every step                                got 0, expected 0                               OK
+   37 scalar equations (M apart); worst relative residual 1.27e-10 in: iq2_a + iq3_a == 0
+      all .ssc equations satisfied by the circuit (max |residual|/scale)    1.27e-10 <= 1e-09                               OK
+      antiparallel diodes conduct with the gate off (dead time)             got True, expected True                         OK
+      port currents of the .ssc branches = circuit (max error, A)           3.93e-10 <= 0.000567                            OK
+      current out of terminal a = grid-side inductor current i2_a (A)       2.74e-10 <= 0.000567                            OK
+      np open: no current at the np port (A)                                3.93e-10 <= 0.000567                            OK
+      size of M                                                             got 22, expected 22                             OK
+      M(1:14) of the .ssc = circuit quantities (max error, pu)              0 <= 1e-09                                      OK
+      M(15:17), filter capacitor currents, = circuit (max error, pu)        1.11e-16 <= 1e-09                               OK
+      M(18:22), split DC link, = circuit (max error, pu)                    5.32e-13 <= 1e-09                               OK
+      M(15) + M(16) + M(17) = 0 (floating star point, pu)                   1.6e-16 <= 1e-09                                OK
+      M(15:17) = M(1:3) - M(7:9) (pu)                                       1.11e-16 <= 1e-09                               OK
+      initial equation vc1 == Vdc0/2                                        got 0, expected 0                               OK
+      initial equation vc2 == Vdc0/2                                        got 0, expected 0                               OK
+
+=== C. physics of the simulated waveforms ===
+
+2L: star block vs delta block (delta Cf = Cf/3, Rcf = 3*Rcf), same gates
+      i1 abc, max difference (pu)                                           2.39e-13 <= 1e-06                               OK
+      i2 abc, max difference (pu)                                           2.75e-13 <= 1e-06                               OK
+      capacitor voltages M(4:6) (equivalent star), max difference (pu)      8.31e-14 <= 1e-06                               OK
+      vdc, max difference (pu)                                              1.33e-15 <= 1e-06                               OK
+      star icf_a = delta icf_ab - icf_ca, max difference (pu)               1.17e-13 <= 1e-06                               OK
+
+TT: star block vs delta block (delta Cf = Cf/3, Rcf = 3*Rcf), same gates
+      i1 abc, max difference (pu)                                           3.55e-13 <= 1e-06                               OK
+      i2 abc, max difference (pu)                                           3.61e-13 <= 1e-06                               OK
+      capacitor voltages M(4:6) (equivalent star), max difference (pu)      7.7e-14 <= 1e-06                                OK
+      vdc, max difference (pu)                                              1.55e-15 <= 1e-06                               OK
+      star icf_a = delta icf_ab - icf_ca, max difference (pu)               1.48e-13 <= 1e-06                               OK
+
+2L star: fundamentals of the last period vs the LCL phasor model fed with the simulated bridge voltage
+   bridge |Vm| = 317.68 V, |I1| = 279.16 A (279.01), |I2| = 269.29 A (269.18), |Uc| = 325.26 V (325.26), |Icf| = 36.786 A (36.786)
+      i1: |simulated - phasor| / |phasor|                                   0.00103 <= 0.002                                OK
+      i2: |simulated - phasor| / |phasor|                                   0.00107 <= 0.002                                OK
+      capacitor voltage M(4): |simulated - phasor| / |phasor|               2.05e-06 <= 0.002                               OK
+      capacitor current M(15): |simulated - phasor| / |phasor|              6.03e-05 <= 0.005                               OK
+   bridge voltage: m*vdc/2 = 324.92 V, dead-time error (4/pi)*td*fpwm*vdc = 7.11 V, simulated 317.68 V, expected 317.74 V
+      bridge voltage: |simulated - expected| / |m*vdc/2|                    0.000376 <= 0.003                               OK
+
+2L delta: fundamentals of the last period vs the LCL phasor model fed with the simulated bridge voltage
+   bridge |Vm| = 317.68 V, |I1| = 279.16 A (279.01), |I2| = 269.29 A (269.18), |Uc| = 325.26 V (325.26), |Icf| = 21.239 A (21.238)
+      i1: |simulated - phasor| / |phasor|                                   0.00103 <= 0.002                                OK
+      i2: |simulated - phasor| / |phasor|                                   0.00107 <= 0.002                                OK
+      capacitor voltage M(4): |simulated - phasor| / |phasor|               2.05e-06 <= 0.002                               OK
+      capacitor current M(15): |simulated - phasor| / |phasor|              0.000115 <= 0.005                               OK
+      delta: |icf_ab| / |icf_a,line| = 1/sqrt(3)                            got 0.577371, expected 0.57735                  OK
+      delta: icf_ab leads the line current of phase a by 30 deg             got 29.9973, expected 30                        OK
+   bridge voltage: m*vdc/2 = 324.92 V, dead-time error (4/pi)*td*fpwm*vdc = 7.11 V, simulated 317.68 V, expected 317.74 V
+      bridge voltage: |simulated - expected| / |m*vdc/2|                    0.000376 <= 0.003                               OK
+
+TT star: fundamentals of the last period vs the LCL phasor model fed with the simulated bridge voltage
+   bridge |Vm| = 320.66 V, |I1| = 292.11 A (292.28), |I2| = 285.43 A (285.58), |Uc| = 325.82 V (325.82), |Icf| = 36.849 A (36.849)
+      i1: |simulated - phasor| / |phasor|                                   0.00086 <= 0.002                                OK
+      i2: |simulated - phasor| / |phasor|                                   0.000887 <= 0.002                               OK
+      capacitor voltage M(4): |simulated - phasor| / |phasor|               3.12e-06 <= 0.002                               OK
+      capacitor current M(15): |simulated - phasor| / |phasor|              0.00014 <= 0.005                                OK
+   bridge voltage: m*vdc/2 = 324.85 V, dead-time error (4/pi)*td*fpwm*vdc/2 = 3.55 V, simulated 320.66 V, expected 320.99 V
+      bridge voltage: |simulated - expected| / |m*vdc/2|                    0.00392 <= 0.006                                OK
+
+TT delta: fundamentals of the last period vs the LCL phasor model fed with the simulated bridge voltage
+   bridge |Vm| = 320.66 V, |I1| = 292.11 A (292.28), |I2| = 285.43 A (285.58), |Uc| = 325.82 V (325.82), |Icf| = 21.275 A (21.275)
+      i1: |simulated - phasor| / |phasor|                                   0.00086 <= 0.002                                OK
+      i2: |simulated - phasor| / |phasor|                                   0.000887 <= 0.002                               OK
+      capacitor voltage M(4): |simulated - phasor| / |phasor|               3.12e-06 <= 0.002                               OK
+      capacitor current M(15): |simulated - phasor| / |phasor|              7.34e-05 <= 0.005                               OK
+      delta: |icf_ab| / |icf_a,line| = 1/sqrt(3)                            got 0.577369, expected 0.57735                  OK
+      delta: icf_ab leads the line current of phase a by 30 deg             got 30.004, expected 30                         OK
+   bridge voltage: m*vdc/2 = 324.85 V, dead-time error (4/pi)*td*fpwm*vdc/2 = 3.55 V, simulated 320.66 V, expected 320.99 V
+      bridge voltage: |simulated - expected| / |m*vdc/2|                    0.00392 <= 0.006                                OK
+
+TT star: three levels and neutral point
+   leg a at +vdc1 / 0 / -vdc2: 29.3 / 41.4 / 29.3 % of the period
+      time with a midpoint more than 5 V away from the three levels (%)     0.0125 <= 0.1                                   OK
+      the three levels are used                                             got True, expected True                         OK
+   neutral-point current, carrier averages: peak 143.1 A, mean over the period 0.42 A
+      carrier average of i_np = sum(|m_x| * i1_x), max error (pu)           0.00371 <= 0.02                                 OK
+      mean of i_np over the period (pu)                                     0.00074 <= 0.01                                 OK
+   neutral-point unbalance vdc1 - vdc2: -8.91 .. 14.06 V, mean 2.66 V
+      mean unbalance |mean(vdc1 - vdc2)| / vdc                              0.00381 <= 0.01                                 OK
+   150 Hz: |i_np| = 140.3 A, |vdc1 - vdc2| = 10.31 V (|i_np|*|1/(j*3w*Cdc1) + Rdc1| = 10.34 V: the np current flows into the two banks)
+      150 Hz unbalance = -i_np*(1/(j*3w*Cdc1) + Rdc1): relative error       0.00351 <= 0.01                                 OK
+      M(14) = (M(21) + M(22))/2                                             5.55e-17 <= 1e-12                               OK
+
+TT delta: three levels and neutral point
+   leg a at +vdc1 / 0 / -vdc2: 29.3 / 41.4 / 29.3 % of the period
+      time with a midpoint more than 5 V away from the three levels (%)     0.0125 <= 0.1                                   OK
+      the three levels are used                                             got True, expected True                         OK
+   neutral-point current, carrier averages: peak 143.1 A, mean over the period 0.42 A
+      carrier average of i_np = sum(|m_x| * i1_x), max error (pu)           0.00371 <= 0.02                                 OK
+      mean of i_np over the period (pu)                                     0.00074 <= 0.01                                 OK
+   neutral-point unbalance vdc1 - vdc2: -8.91 .. 14.06 V, mean 2.66 V
+      mean unbalance |mean(vdc1 - vdc2)| / vdc                              0.00381 <= 0.01                                 OK
+   150 Hz: |i_np| = 140.3 A, |vdc1 - vdc2| = 10.31 V (|i_np|*|1/(j*3w*Cdc1) + Rdc1| = 10.34 V: the np current flows into the two banks)
+      150 Hz unbalance = -i_np*(1/(j*3w*Cdc1) + Rdc1): relative error       0.00351 <= 0.01                                 OK
+      M(14) = (M(21) + M(22))/2                                             5.55e-17 <= 1e-12                               OK
+
+T-type star driven with two-level patterns (P = Q1+Q2, N = Q3+Q4) vs two-level star, same gates
+      i1, i2 abc: max difference (pu)                                       4.96e-07 <= 0.0001                              OK
+      M(1:17): max difference (pu)                                          7.97e-07 <= 0.0001                              OK
+      neutral-point current only leakage (pu)                               1.85e-06 <= 1e-05                               OK
+
+272 checks, 0 failed

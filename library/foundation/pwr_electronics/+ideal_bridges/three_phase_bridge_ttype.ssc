@@ -1,0 +1,330 @@
+% MIT License
+%
+% Copyright (c) 2026 Davide Bagnara
+%
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+component three_phase_bridge_ttype
+% Three-Phase Bridge T-Type (ideal)
+% Three-level T-type three-phase bridge (three T-type legs, twelve ideal
+% switches with antiparallel freewheeling diodes), no switching dynamics,
+% no conduction drop (Vf = 0), no losses apart from the numerical Ron.
+% Bidirectional: inverter (DC -> AC) and three-level active front end
+% (AC -> DC) with the same block.
+%
+% T-type leg x (x = a, b, c; same arrangement and numbering as the T-type
+% blocks of masked_models/semiconductors_bridges and of afe_ttype_ssc):
+%   Q1     between + and the midpoint m_x (collector on +):  m_x = +  when on
+%   Q4     between m_x and - (collector on m_x):             m_x = -  when on
+%   Q2, Q3 in anti-series, common emitter, between np and m_x (Q2 collector
+%          on np, Q3 collector on m_x):                      m_x = np when both on
+% Allowed states of a leg: P = {Q1, Q2}, O = {Q2, Q3}, N = {Q3, Q4}; Q1/Q3
+% and Q2/Q4 are the complementary pairs. Because of the antiparallel
+% diodes, Q1 with Q3 on shorts the upper bank through D2 (3*Ron), Q4 with
+% Q2 on shorts the lower bank through D3 (3*Ron), Q1 with Q4 on shorts the
+% whole DC link (2*Ron). No dead time and no interlock inside the block:
+% both belong to the modulator.
+%
+% Each switch + diode pair (current i, voltage v, collector -> emitter):
+%   gate on  (G(k) > Vth)   ->  i = v/Ron   (bidirectional)
+%   gate off, v < 0         ->  i = v/Ron   (antiparallel diode conducting)
+%   gate off, v >= 0        ->  i = v*Goff  (blocking)
+%
+% Optional integrated passives (parameters on/off), so that one converter
+% is ONE Simulink block (relevant for the 1000 non-virtual block limit of
+% the Home licence):
+%   - split DC link: Cdc1 + Rdc1 from + to np and Cdc2 + Rdc2 from np to -,
+%     both at Vdc0/2 at the start. The neutral point np is a port in any
+%     case: leave it unconnected with cap_dc = on (the two banks define it),
+%     connect it to the external split DC link (dclink_for_three_levels, or
+%     another T-type block with its capacitors on) with cap_dc = off. The
+%     series resistances keep the two bank voltages independent states when
+%     an ideal DC source sits across + and - (set Vdc0 equal to its voltage).
+%   - series inductor L + RL on each AC terminal (line reactor for the AFE,
+%     output filter for the inverter). Currents i_a, i_b, i_c are the
+%     inductor currents (states).
+%
+% Gate input G: physical-signal vector [12x1] in V, order per leg
+%     G = [Q1a; Q2a; Q3a; Q4a; Q1b; Q2b; Q3b; Q4b; Q1c; Q2c; Q3c; Q4c]
+% (gate_cmds_phu/phv/phw.cmd_gate_Q1..Q4 of the library block
+% three_phase_three_level_ttype_inverter_* and of the modulator
+% three_phase_three_levels_PWM_modulator). Drive it with +15 V (on) /
+% -10 V (off) and Vth = 2.5 V, or with 0/1 and Vth = 0.5 V. One Simulink-PS
+% Converter with a 12-wide Simulink vector. Three-level modulation of a
+% leg with the reference m in [-1, 1] and the carrier c in [0, 1]: m >= 0,
+% Q2 on, Q4 off, Q1 on while c < m (duty m), Q3 = not Q1; m < 0, Q3 on,
+% Q1 off, Q4 on while c < -m (duty -m), Q2 = not Q4. Each midpoint then
+% averages m_x*Vdc/2 with respect to np (balanced banks); the line voltages
+% have five levels.
+%
+% Outputs (physical signals): I = [i_a; i_b; i_c] terminal currents,
+% positive OUT of the bridge (inverter convention, negative as AFE);
+% V = [vdc; vdc1; vdc2] = [(+) - (-); (+) - np; np - (-)], the DC-link
+% voltage and the two bank voltages (vdc1 - vdc2 is the neutral-point
+% unbalance). Leave them unconnected if not needed.
+%
+% Ports: + np - (DC, left), a b c (AC, right), G (bottom), I V (top).
+% Initial conditions: Vdc0 (parameter, only with cap_dc = on); inductor
+% currents from the Variables tab of the block dialog.
+
+  nodes
+    p  = foundation.electrical.electrical; % +:left
+    np = foundation.electrical.electrical; % np:left
+    n  = foundation.electrical.electrical; % -:left
+    a  = foundation.electrical.electrical; % a:right
+    b  = foundation.electrical.electrical; % b:right
+    c  = foundation.electrical.electrical; % c:right
+  end
+
+  inputs
+    G = {zeros(12,1), 'V'}; % G:bottom
+  end
+
+  outputs
+    I = {zeros(3,1), 'A'}; % I:top
+    V = {zeros(3,1), 'V'}; % V:top
+  end
+
+  parameters
+    % --- switches (numerical values, no losses) ---
+    Vth    = {2.5,   'V'    };            % Gate threshold voltage
+    Ron    = {1e-3,  'Ohm'  };            % On-state resistance (switch and diode)
+    Goff   = {1e-6,  '1/Ohm'};            % Off-state conductance
+    % --- split DC link ---
+    cap_dc = ideal_bridges.onoff.on;      % Split DC-link capacitors
+    Cdc1   = {4e-3,  'F'    };            % Upper bank capacitance, + to np
+    Rdc1   = {1e-3,  'Ohm'  };            % Upper bank series resistance
+    Cdc2   = {4e-3,  'F'    };            % Lower bank capacitance, np to -
+    Rdc2   = {1e-3,  'Ohm'  };            % Lower bank series resistance
+    Vdc0   = {0,     'V'    };            % DC-link initial voltage (Vdc0/2 per bank)
+    % --- AC inductors ---
+    ind_ac = ideal_bridges.onoff.on;      % AC series inductors
+    L      = {1e-3,  'H'    };            % Inductance per AC terminal
+    RL     = {10e-3, 'Ohm'  };            % Series resistance per AC terminal
+  end
+
+  variables
+    vc1  = {0, 'V'};   % Upper bank capacitor voltage (without Rdc1)
+    vc2  = {0, 'V'};   % Lower bank capacitor voltage (without Rdc2)
+    ic1  = {0, 'A'};   % Upper bank current, (+) -> np
+    ic2  = {0, 'A'};   % Lower bank current, np -> (-)
+    % leg a
+    vm_a = {0, 'V'};   % Midpoint voltage of leg a (bridge side of the inductor)
+    vs_a = {0, 'V'};   % Common-emitter voltage of the neutral pair Q2a/Q3a
+    i1_a = {0, 'A'};   % Current of Q1a, (+) -> midpoint
+    i2_a = {0, 'A'};   % Current of Q2a, np -> common emitter
+    i3_a = {0, 'A'};   % Current of Q3a, midpoint -> common emitter
+    i4_a = {0, 'A'};   % Current of Q4a, midpoint -> (-)
+    i_a  = {0, 'A'};   % Terminal current a, midpoint -> a (inductor current)
+    % leg b
+    vm_b = {0, 'V'};   % Midpoint voltage of leg b
+    vs_b = {0, 'V'};   % Common-emitter voltage of the neutral pair Q2b/Q3b
+    i1_b = {0, 'A'};   % Current of Q1b
+    i2_b = {0, 'A'};   % Current of Q2b
+    i3_b = {0, 'A'};   % Current of Q3b
+    i4_b = {0, 'A'};   % Current of Q4b
+    i_b  = {0, 'A'};   % Terminal current b
+    % leg c
+    vm_c = {0, 'V'};   % Midpoint voltage of leg c
+    vs_c = {0, 'V'};   % Common-emitter voltage of the neutral pair Q2c/Q3c
+    i1_c = {0, 'A'};   % Current of Q1c
+    i2_c = {0, 'A'};   % Current of Q2c
+    i3_c = {0, 'A'};   % Current of Q3c
+    i4_c = {0, 'A'};   % Current of Q4c
+    i_c  = {0, 'A'};   % Terminal current c
+  end
+
+  intermediates (ExternalAccess = observe)
+    v1_a = p.v - vm_a;   % Voltage across Q1a (collector - emitter)
+    v2_a = np.v - vs_a;  % Voltage across Q2a
+    v3_a = vm_a - vs_a;  % Voltage across Q3a
+    v4_a = vm_a - n.v;   % Voltage across Q4a
+    v1_b = p.v - vm_b;   % Voltage across Q1b
+    v2_b = np.v - vs_b;  % Voltage across Q2b
+    v3_b = vm_b - vs_b;  % Voltage across Q3b
+    v4_b = vm_b - n.v;   % Voltage across Q4b
+    v1_c = p.v - vm_c;   % Voltage across Q1c
+    v2_c = np.v - vs_c;  % Voltage across Q2c
+    v3_c = vm_c - vs_c;  % Voltage across Q3c
+    v4_c = vm_c - n.v;   % Voltage across Q4c
+    vdc  = p.v - n.v;    % DC-link voltage, (+) - (-)
+    vdc1 = p.v - np.v;   % Upper bank voltage at the terminals, (+) - np
+    vdc2 = np.v - n.v;   % Lower bank voltage at the terminals, np - (-)
+    i_np = i3_a + i3_b + i3_c;  % Neutral-point current, from the legs INTO np
+  end
+
+  branches
+    % The midpoints and the common-emitter nodes of the neutral pairs are
+    % internal algebraic variables, not nodes: Q1 is declared as a branch
+    % (+) -> terminal, Q4 as terminal -> (-) and the neutral pair as
+    % terminal -> np carrying the current of Q3 (= -i2 by the KCL of the
+    % common-emitter node), so that the current leaving a terminal is
+    % i1 - i4 - i3.
+    ic1  : p.i  -> np.i;
+    ic2  : np.i -> n.i;
+    i1_a : p.i  -> a.i;
+    i4_a : a.i  -> n.i;
+    i3_a : a.i  -> np.i;
+    i1_b : p.i  -> b.i;
+    i4_b : b.i  -> n.i;
+    i3_b : b.i  -> np.i;
+    i1_c : p.i  -> c.i;
+    i4_c : c.i  -> n.i;
+    i3_c : c.i  -> np.i;
+  end
+
+  equations
+    % ---------- split DC link ----------
+    if cap_dc == ideal_bridges.onoff.on
+      ic1 == Cdc1*vc1.der;
+      ic2 == Cdc2*vc2.der;
+      vdc1 == vc1 + Rdc1*ic1;
+      vdc2 == vc2 + Rdc2*ic2;
+    else
+      ic1 == 0;
+      ic2 == 0;
+      vc1 == vdc1;
+      vc2 == vdc2;
+    end
+
+    % ---------- leg a: switch + antiparallel diode pairs ----------
+    if (G(1) > Vth) || (v1_a < 0)
+      i1_a == v1_a/Ron;
+    else
+      i1_a == v1_a*Goff;
+    end
+    if (G(2) > Vth) || (v2_a < 0)
+      i2_a == v2_a/Ron;
+    else
+      i2_a == v2_a*Goff;
+    end
+    if (G(3) > Vth) || (v3_a < 0)
+      i3_a == v3_a/Ron;
+    else
+      i3_a == v3_a*Goff;
+    end
+    if (G(4) > Vth) || (v4_a < 0)
+      i4_a == v4_a/Ron;
+    else
+      i4_a == v4_a*Goff;
+    end
+    % common-emitter node of the neutral pair, leg midpoint
+    i2_a + i3_a == 0;
+    i_a == i1_a - i4_a - i3_a;
+
+    % ---------- leg b ----------
+    if (G(5) > Vth) || (v1_b < 0)
+      i1_b == v1_b/Ron;
+    else
+      i1_b == v1_b*Goff;
+    end
+    if (G(6) > Vth) || (v2_b < 0)
+      i2_b == v2_b/Ron;
+    else
+      i2_b == v2_b*Goff;
+    end
+    if (G(7) > Vth) || (v3_b < 0)
+      i3_b == v3_b/Ron;
+    else
+      i3_b == v3_b*Goff;
+    end
+    if (G(8) > Vth) || (v4_b < 0)
+      i4_b == v4_b/Ron;
+    else
+      i4_b == v4_b*Goff;
+    end
+    i2_b + i3_b == 0;
+    i_b == i1_b - i4_b - i3_b;
+
+    % ---------- leg c ----------
+    if (G(9) > Vth) || (v1_c < 0)
+      i1_c == v1_c/Ron;
+    else
+      i1_c == v1_c*Goff;
+    end
+    if (G(10) > Vth) || (v2_c < 0)
+      i2_c == v2_c/Ron;
+    else
+      i2_c == v2_c*Goff;
+    end
+    if (G(11) > Vth) || (v3_c < 0)
+      i3_c == v3_c/Ron;
+    else
+      i3_c == v3_c*Goff;
+    end
+    if (G(12) > Vth) || (v4_c < 0)
+      i4_c == v4_c/Ron;
+    else
+      i4_c == v4_c*Goff;
+    end
+    i2_c + i3_c == 0;
+    i_c == i1_c - i4_c - i3_c;
+
+    % ---------- AC terminals ----------
+    if ind_ac == ideal_bridges.onoff.on
+      vm_a - a.v == L*i_a.der + RL*i_a;
+      vm_b - b.v == L*i_b.der + RL*i_b;
+      vm_c - c.v == L*i_c.der + RL*i_c;
+    else
+      vm_a == a.v;
+      vm_b == b.v;
+      vm_c == c.v;
+    end
+
+    % ---------- measurements ----------
+    I == [i_a; i_b; i_c];
+    V == [vdc; vdc1; vdc2];
+  end
+
+  % DC-link initial voltage: half of Vdc0 on each bank (only with the capacitors)
+  if cap_dc == ideal_bridges.onoff.on
+    equations (Initial = true)
+      vc1 == Vdc0/2;
+      vc2 == Vdc0/2;
+    end
+  end
+
+  % hide the parameters of the passives that are switched off
+  if cap_dc == ideal_bridges.onoff.off
+    annotations
+      [Cdc1, Rdc1, Cdc2, Rdc2, Vdc0] : ExternalAccess = none;
+    end
+  end
+  if ind_ac == ideal_bridges.onoff.off
+    annotations
+      [L, RL] : ExternalAccess = none;
+    end
+  end
+
+  annotations
+    p  : Side = left;
+    np : Side = left;
+    n  : Side = left;
+    a  : Side = right;
+    b  : Side = right;
+    c  : Side = right;
+    G  : Side = bottom;
+    I  : Side = top;
+    V  : Side = top;
+    UILayout = [UIGroup("Switches", Vth, Ron, Goff)
+                UIGroup("Split DC link", cap_dc, Cdc1, Rdc1, Cdc2, Rdc2, Vdc0)
+                UIGroup("AC inductors", ind_ac, L, RL)];
+  end
+
+end
