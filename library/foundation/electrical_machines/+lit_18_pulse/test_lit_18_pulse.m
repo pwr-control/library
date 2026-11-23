@@ -46,7 +46,7 @@ function nfail = test_lit_18_pulse(tol)
         'Solver', 'FixedStepDiscrete', 'FixedStep', num2str(h, 17));
     build_model(mdl, V1, fr, Rdc, Ldc, h);
     set_param(mdl, 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog', 'SimscapeLogLimitData', 'on', ...
-        'SimscapeLogDataHistory', num2str(ceil(1.5*spp)));
+        'SimscapeLogDataHistory', ceil(1.5*spp));     % a number, not a string
     fprintf('\ntest_lit_18_pulse: %g kV, %g Hz, DC side %g H + %g Ohm, %d periods, backward Euler %.3g us\n', ...
         V1/1e3, fr, Ldc, Rdc, periods, h*1e6);
     out = sim(mdl, 'ReturnWorkspaceOutputs', 'on');
