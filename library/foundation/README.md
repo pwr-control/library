@@ -281,10 +281,12 @@ Single-block power stages of the compact converter blocks of [`../masked_models`
   (incremental network of the diodes in conduction at the turn-off, against the simulated reverse-voltage
   step).
   `test_lit_18_pulse.m` builds the rectifier in Simscape (Component blocks on the source files, diodes
-  `crowbar.diode_fn` from `nonlinear_loads`) and compares the DC and line currents, the harmonics, the
-  shifts and the conduction angle with the values of the Python check (not run yet). The block library
-  `lit_18_pulse_lib.slx` is not in the repository yet: build it with `ssc_build lit_18_pulse` from
-  `electrical_machines`.
+  `crowbar.diode_fn` from `nonlinear_loads`), integrates it like the Python check (Simscape local solver,
+  backward Euler at 1.04 µs: with diodes this close to ideal a variable-step solver with zero-crossing
+  detection chatters at the first commutations) and compares the DC and line currents, the harmonics, the
+  shifts and the conduction angle with the values of the Python check (not passed in MATLAB yet). The
+  block library `lit_18_pulse_lib.slx` comes from `ssc_build lit_18_pulse` in `electrical_machines`:
+  build it again after changing the `.ssc`.
 
 ## `batteries`
 

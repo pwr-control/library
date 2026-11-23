@@ -8,7 +8,11 @@ function nfail = test_lit_18_pulse(tol)
 %   needed: an ideal three-phase source at 13.8 kV, 60 Hz (star, neutral on the reference), lit_18_pulse
 %   with its default parameters, three six-pulse bridges of crowbar.diode_fn diodes (Vf 0, Ron 1 mOhm,
 %   Goff 1 nS, from library/foundation/nonlinear_loads) with their DC terminals in parallel, and a
-%   current-stiff DC side, 0.5 H in series with 95 Ohm. The model runs 12 periods with Simscape logging.
+%   current-stiff DC side, 0.5 H in series with 95 Ohm. The model runs 12 periods at a fixed step of
+%   1/(16000 fr) = 1.04 us with the Simscape local solver (backward Euler), the integration of the Python
+%   reference; Simscape logging keeps the last 1.5 periods. A variable-step solver with zero-crossing
+%   detection stops at the first commutations: with diodes this close to ideal it chatters (1000
+%   consecutive zero crossings on one diode a few microseconds after the start).
 %   On the last period the DC current, the DC current of each bridge (sum of its upper diodes), the line
 %   current of line a (fundamental, rms, harmonics 17 and 19), the phase of the bridge currents of line a
 %   (bridges 1 and 2 against bridge 3) and the conduction angle of the upper diode of bridge 3 on line a
@@ -17,9 +21,10 @@ function nfail = test_lit_18_pulse(tol)
 %   harmonics of the line current must stay below 0.2 % of the fundamental (cancelled by the 18-pulse
 %   connection). One line per check is printed; the function returns the number of failed checks.
 %
-%   The source phase differs from the Python run (sine here, cosine there): the transients of the start
-%   decay in a few milliseconds (DC side L/R = 5.3 ms) and the compared quantities do not depend on the
-%   phase of the source.
+%   The source and the start are those of the Python run: cosine (line a at its peak at t = 0), zero
+%   currents and fluxes. The DC side settles in a few milliseconds (L/R = 5.3 ms), but the start leaves
+%   DC currents of a few tens of mA in the LIT that take seconds to decay; with the source started at
+%   another phase they move the DC current between the bridges by up to 0.1 % (sine: bridge 1 +0.09 %).
 
     if nargin < 1
         tol = 5e-3;
@@ -28,6 +33,8 @@ function nfail = test_lit_18_pulse(tol)
     ref = struct('Id', 177.85, 'Id1', 59.198, 'Id2', 59.344, 'Id3', 59.305, 'IL1', 126.96, 'ILrms', 127.2, ...
                  'h17', 4.6239, 'h19', 3.8772, 'sh1', 20.027, 'sh2', -19.958, 'cond', 169.25);
     V1 = 13.8e3;  fr = 60;  periods = 12;  Rdc = 95;  Ldc = 0.5;
+    spp = 16000;                                  % steps per period, as check_lit_18_pulse.py part D
+    h = 1/(fr*spp);
 
     mdl = 'test_lit_18_pulse_mdl';
     if bdIsLoaded(mdl)
@@ -35,11 +42,13 @@ function nfail = test_lit_18_pulse(tol)
     end
     new_system(mdl);
     cleanup = onCleanup(@() close_system(mdl, 0));
-    set_param(mdl, 'StopTime', num2str(periods/fr, 17), 'Solver', 'ode23t', 'RelTol', '1e-7', ...
-        'MaxStep', num2str(1/(fr*4000), 17));
-    build_model(mdl, V1, fr, Rdc, Ldc);
-    set_param(mdl, 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog', 'SimscapeLogLimitData', 'off');
-    fprintf('\ntest_lit_18_pulse: %g kV, %g Hz, DC side %g H + %g Ohm, %d periods\n', V1/1e3, fr, Ldc, Rdc, periods);
+    set_param(mdl, 'StopTime', num2str(periods/fr, 17), 'SolverType', 'Fixed-step', ...
+        'Solver', 'FixedStepDiscrete', 'FixedStep', num2str(h, 17));
+    build_model(mdl, V1, fr, Rdc, Ldc, h);
+    set_param(mdl, 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog', 'SimscapeLogLimitData', 'on', ...
+        'SimscapeLogDataHistory', num2str(ceil(1.5*spp)));
+    fprintf('\ntest_lit_18_pulse: %g kV, %g Hz, DC side %g H + %g Ohm, %d periods, backward Euler %.3g us\n', ...
+        V1/1e3, fr, Ldc, Rdc, periods, h*1e6);
     out = sim(mdl, 'ReturnWorkspaceOutputs', 'on');
     log = out.simlog;
 
@@ -99,10 +108,13 @@ function nfail = test_lit_18_pulse(tol)
 end
 
 % ================================================================================================ model
-function build_model(mdl, V1, fr, Rdc, Ldc)
+function build_model(mdl, V1, fr, Rdc, Ldc, h)
     fl = 'fl_lib/Electrical/Electrical ';
     comp = library_block('nesl_utility', '^Simscape\s+Component$');
     sc = add_block('nesl_utility/Solver Configuration', [mdl '/solver'], 'Position', [40 520 80 550]);
+    % fixed-step local solver on the physical network: no zero-crossing detection on the diodes
+    set_param(sc, 'UseLocalSolver', 'on', 'LocalSolverChoice', 'NE_BACKWARD_EULER_ADVANCER', ...
+        'LocalSolverSampleTime', num2str(h, 17));
     gnd = add_block([fl 'Elements/Electrical Reference'], [mdl '/ground'], 'Position', [120 600 140 620]);
     hg = pconn(gnd);
     add_line(mdl, pconn(sc), hg, 'autorouting', 'on');
@@ -119,7 +131,8 @@ function build_model(mdl, V1, fr, Rdc, Ldc)
     names = 'ABC';
     for k = 1:3
         v = add_block([fl 'Sources/AC Voltage Source'], [mdl '/V' names(k)], 'Position', [150 60*k 190 60*k + 40], ...
-            'amp', num2str(V1*sqrt(2/3), 17), 'shift', num2str(-120*(k - 1), 17), 'frequency', num2str(fr, 17));
+            'amp', num2str(V1*sqrt(2/3), 17), 'shift', num2str(90 - 120*(k - 1), 17), ...  % cosine, as the Python run
+            'frequency', num2str(fr, 17));
         hv = get_param(v, 'PortHandles');
         add_line(mdl, hv.LConn(1), ph.LConn(k), 'autorouting', 'on');
         add_line(mdl, hv.RConn(1), hg, 'autorouting', 'on');
@@ -184,7 +197,7 @@ function y = resample_series(series, tt, t0)
     t = series.time;
     v = series.values('A');                       % every compared series is a current
     assert(t(1) <= t0 + 1e-12 && t(end) >= tt(end), 'test_lit_18_pulse: the log does not cover the last period');
-    [t, iu] = unique(t, 'last');                  % zero-crossing events can repeat a time
+    [t, iu] = unique(t, 'last');                  % a variable-step log can repeat a time at events
     y = interp1(t, v(iu), tt, 'linear');
 end
 
